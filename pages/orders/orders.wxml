@@ -17,8 +17,9 @@
   </view>
 
   <view wx:elif="{{loadError}}" class="state">
-    <text class="state-emoji">😵</text>
-    <text class="state-tip">订单没加载出来，网络可能开小差了</text>
+    <text class="state-emoji">🍽️</text>
+    <text class="state-tip">订单需要先开通云开发</text>
+    <text class="state-sub">菜单已经可以正常用了；想让两个人共享订单，照项目里的《部署指南.md》开通云开发即可</text>
     <button class="btn-retry" bindtap="loadOrders">重试</button>
   </view>
 

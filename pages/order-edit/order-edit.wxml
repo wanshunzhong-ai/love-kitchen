@@ -99,7 +99,7 @@
         <view
           class="pick-item"
           wx:for="{{pickerDishes}}"
-          wx:key="_id"
+          wx:key="id"
           data-idx="{{index}}"
           bindtap="onPickDish"
         >
