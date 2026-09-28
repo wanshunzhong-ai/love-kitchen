@@ -1,43 +1,18 @@
-// 订单数据服务：CloudBase PostgreSQL（小程序直连 + RLS 授权）
+// 订单数据服务：WorkBuddy 云服务 · PostgreSQL（小程序直连）
 //
-// 为什么不用云函数：
-//   云函数写入数据库需要「管理员密钥」，而本项目没有配置 API Key；
-//   小程序端反而天然带着微信身份 JWT，配好 RLS 策略后即可安全读写。
+// 为什么是这一套：
+//   云开发自建环境要求「环境必须绑定当前小程序 AppID」，本项目用的是
+//   平台代建的腾讯云账号环境，WxAppId 为空，绑定不上，所以整体换成
+//   WorkBuddy 云服务 —— 它自带网关和授权，小程序端不需要任何密钥。
 //
-// 权限模型（已在数据库侧配好，见 cloudbase/migrations/20260928150000_orders_rls.sql）：
-//   表级 GRANT + 行级 RLS 策略，允许 authenticated（已登录的微信用户）读写订单表。
-//   订单是「两个人共享同一份」的语义，因此策略不按人隔离 —— 谁能登录谁就能看全部。
+// 身份与权限：
+//   小程序端没有 Origin，SDK 用 publishableKey + 微信 Referer 走环境网关；
+//   行级权限（RLS）在数据库侧配置，订单表当前是「两人共享一份」的语义，
+//   策略放开，因此谁能进小程序谁就能看全部订单 —— 这正是情侣点菜想要的效果。
 //
-// 字段与小程序端历史的 NoSQL 版本保持一致（_id / created_at 为毫秒数），
-// 这样 pages/ 下所有页面零改动。
+// 字段与页面层的约定和历史上完全一致（id / items / created_at 毫秒数），
+// 所以 pages/ 下所有页面零改动。
 
-// 数据库 SDK 的加载。
-//
-// 优先用相对路径直接指向构建产物（miniprogram_npm/...)，这样完全不依赖
-// 微信工具的 npm 解析规则 —— 万一「构建 npm」状态异常也不会报
-// 「暂不支持 npm 模块」。只有该文件缺失时才回退到按包名加载。
-//
-// 注意：require 的路径必须是静态字符串，小程序才能做依赖分析。
-function loadSDK() {
-  try {
-    return require('../miniprogram_npm/@cloudbase/wx-cloud-client-sdk/index.js')
-  } catch (e) {
-    // 回退：交给小程序的 npm 解析
-    try {
-      return require('@cloudbase/wx-cloud-client-sdk')
-    } catch (e2) {
-      throw new Error(
-        '找不到数据库 SDK。请确认项目里存在 miniprogram_npm/@cloudbase/wx-cloud-client-sdk/index.js' +
-          '（或在开发者工具执行「工具 → 构建 npm」）。原始错误：' +
-          ((e2 && e2.message) || e2)
-      )
-    }
-  }
-}
-
-const { init } = loadSDK()
-
-const ENV_ID = 'zws-04161130-l-d6gd7g8f0c8c7fb17'
 const TABLE = 'orders'
 
 // 允许的订单状态（与 utils/constants.js 保持一致）
@@ -47,39 +22,83 @@ const ORDER_STATUSES = ['pending', 'cooking', 'done']
 // 200 条足够很长一段时间的日常使用，超出后只显示最近的。
 const MAX_ORDERS = 200
 
-let _db = null
+// ---------------------------------------------------------------------------
+// 云服务初始化参数
+//
+// 这两个值是「公开发布密钥」和「环境网关地址」，可以放在前端代码里：
+//   · publishableKey 只标识「是哪个应用」，本身不带任何权限；
+//   · endpoint 是小程序专用固定网关，不能改写成别的域名。
+// 真正有权力的密钥全部留在服务端，永远不会下发到小程序。
+//
+// ⚠️ 这两个值只能来自云服务开通结果，不要手工改写、不要从别处猜。
+// ---------------------------------------------------------------------------
+const PUBLIC_CONFIG = {
+  endpoint: 'https://mp-api.app.workbuddy.host',
+  publishableKey: 'wbpk_Q7J8UvVewXzjOG0IpQ4004_YvTgzvQz246XbF58PqpMDb7AO7mrwPjs',
+}
 
-// 懒初始化：首次调用时才建立连接
-function getDB() {
-  if (_db) return _db
+// 数据库 SDK 的加载。
+//
+// 优先用相对路径直接指向构建产物（miniprogram_npm/...），这样完全不依赖
+// 微信工具的 npm 解析规则 —— 万一「构建 npm」状态异常也不会报
+// 「暂不支持 npm 模块」。只有该文件缺失时才回退到按包名加载。
+//
+// 注意：require 的路径必须是静态字符串，小程序才能做依赖分析。
+function loadSDK() {
+  try {
+    // 小程序专用子路径（含 wx.request / 存储 / polyfill 的完整装配，顺序由 SDK 保证）
+    return require('../miniprogram_npm/@tencent-ai/workbuddy-cloud-sdk/index.js')
+  } catch (e) {
+    // 回退：交给小程序的 npm 解析
+    try {
+      return require('@tencent-ai/workbuddy-cloud-sdk/miniprogram')
+    } catch (e2) {
+      throw new Error(
+        '找不到云服务 SDK。请确认项目里存在 ' +
+          'miniprogram_npm/@tencent-ai/workbuddy-cloud-sdk/index.js' +
+          '（或在开发者工具执行「工具 → 构建 npm」）。原始错误：' +
+          ((e2 && e2.message) || e2)
+      )
+    }
+  }
+}
 
-  // wx.cloud 缺失有两种常见原因，必须区分清楚，否则会把人引向错误方向：
-  //   1) 基础库确实太老（< 2.2.3）——少见
-  //   2) 该 AppID 未开通/未关联云开发环境 —— 更常见，
-  //      表现为基础库版本明明很新，但 wx.cloud 依然是 undefined
-  if (typeof wx.cloud === 'undefined' || !wx.cloud) {
-    const ver = (wx.getAccountInfoSync && wx.getAccountInfoSync().miniProgram)
-      ? wx.getAccountInfoSync().miniProgram.envVersion
-      : ''
-    throw new Error(
-      '云开发未就绪（wx.cloud 不存在）。' +
-        '最常见原因是当前 AppID 没有开通云开发、或开发者工具里未关联云环境；' +
-        '也可能是基础库低于 2.2.3。' +
-        (ver ? '（当前环境：' + ver + '）' : '') +
-        ' 请在开发者工具「云开发」面板确认已开通并关联环境，然后重新编译。'
-    )
+// 诊断包装：把失败的云请求打到手机 vConsole，方便真机排查。
+// 它只记录失败摘要（方法/地址/状态码/错误码），不记录请求体、凭据和完整响应。
+const { createDiagnosticWx } = require('./workbuddy-cloud-diagnostics')
+
+const { createMiniProgramWorkBuddyCloud } = loadSDK()
+
+let _cloud = null
+
+// 懒初始化：首次调用时才建立客户端；同一个实例被所有 action 复用
+function getCloud() {
+  if (_cloud) return _cloud
+
+  if (typeof wx === 'undefined' || !wx) {
+    throw new Error('当前不在小程序环境里（找不到 wx 对象），云服务无法初始化。')
   }
 
   try {
-    _db = init(wx.cloud).rdb()
+    _cloud = createMiniProgramWorkBuddyCloud({
+      // 两个值都必传：小程序没有 location.origin，SDK 的同源兜底在这里不存在，
+      // 漏掉 endpoint 会在初始化阶段直接失败。
+      endpoint: PUBLIC_CONFIG.endpoint,
+      publishableKey: PUBLIC_CONFIG.publishableKey,
+      // 只包这一层，不改全局 wx.request，也不碰 SDK 的请求/鉴权逻辑
+      wx: createDiagnosticWx(wx),
+    })
   } catch (err) {
     // 初始化失败不缓存，允许下次重试
-    _db = null
-    throw new Error(
-      '数据库连接初始化失败：' + ((err && (err.message || err.errMsg)) || err)
-    )
+    _cloud = null
+    throw new Error('云服务初始化失败：' + ((err && (err.message || err.errMsg)) || err))
   }
-  return _db
+
+  return _cloud
+}
+
+function getDB() {
+  return getCloud().database
 }
 
 // PG 的 timestamptz 取回来是 ISO 字符串，而页面层 formatTime 期望毫秒数
@@ -134,12 +153,23 @@ function normalizeItems(raw) {
 }
 
 // 统一处理 SDK 返回：出错就抛，交给调用方 catch
+//
+// 除了 SDK 自己报的 error，这里还识别一类「静默失败」：
+// 写操作（更新/删除）被 RLS 拦截时，SDK 返回的 data 是空数组而不是错误，
+// 如果不额外判断，页面会误以为成功了 —— 所以写操作另用 requireAffected 校验。
 function unwrap(res) {
   if (res && res.error) {
     const e = res.error
-    throw new Error((e && (e.message || e.code)) || '数据库操作失败')
+    const msg = (e && (e.message || e.code)) || '数据库操作失败'
+    throw new Error(msg)
   }
   return res || {}
+}
+
+// 写操作用：确认真的影响了行数，空数组说明没改到（多半是权限或记录不存在）
+function affectedRows(res) {
+  const out = unwrap(res)
+  return Array.isArray(out.data) ? out.data : []
 }
 
 async function listOrders() {
@@ -177,7 +207,8 @@ async function createOrder(event) {
 
   const res = unwrap(await getDB().from(TABLE).insert(row).select())
   const inserted = Array.isArray(res.data) && res.data.length ? res.data[0] : null
-  return { id: inserted ? String(inserted.id) : '' }
+  if (!inserted) throw new Error('订单没能写入，请稍后再试')
+  return { id: String(inserted.id) }
 }
 
 // 编辑订单：菜品清单全量替换（页面每次提交完整清单）
@@ -201,8 +232,8 @@ async function updateOrder(event) {
     patch.status = payload.status
   }
 
-  const res = unwrap(await getDB().from(TABLE).update(patch).eq('id', id).select())
-  const rows = Array.isArray(res.data) ? res.data : []
+  const rows = affectedRows(await getDB().from(TABLE).update(patch).eq('id', id).select())
+  if (!rows.length) throw new Error('这一单没能保存，可能已经被删掉了')
   return { updated: rows.length }
 }
 
@@ -212,14 +243,14 @@ async function updateOrderStatus(event) {
   if (id === undefined || id === null || id === '') throw new Error('缺少订单 id')
   if (ORDER_STATUSES.indexOf(status) < 0) throw new Error('订单状态不合法')
 
-  const res = unwrap(
+  const rows = affectedRows(
     await getDB()
       .from(TABLE)
       .update({ status: status, updated_at: new Date().toISOString() })
       .eq('id', id)
       .select()
   )
-  const rows = Array.isArray(res.data) ? res.data : []
+  if (!rows.length) throw new Error('这一单没能更新，可能已经被删掉了')
   return { updated: rows.length }
 }
 
@@ -227,8 +258,8 @@ async function deleteOrder(event) {
   const id = event && event.id
   if (id === undefined || id === null || id === '') throw new Error('缺少订单 id')
 
-  const res = unwrap(await getDB().from(TABLE).delete().eq('id', id).select())
-  const rows = Array.isArray(res.data) ? res.data : []
+  const rows = affectedRows(await getDB().from(TABLE).delete().eq('id', id).select())
+  if (!rows.length) throw new Error('这一单没能删除，可能已经被删掉了')
   return { removed: rows.length }
 }
 
@@ -254,4 +285,4 @@ async function handle(action, payload) {
   return fn(payload || {})
 }
 
-module.exports = { handle, ACTIONS, ENV_ID, TABLE }
+module.exports = { handle, ACTIONS, PUBLIC_CONFIG, TABLE }

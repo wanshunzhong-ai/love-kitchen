@@ -6,14 +6,15 @@
 //   1) 菜品（菜单）→ 内置在小程序端（utils/dishes.js）
 //      菜单是静态数据（101 道菜），内置进代码最快：零后台配置、离线可用、读取零延迟。
 //
-//   2) 订单 → CloudBase PostgreSQL（utils/orders.js，小程序直连 + RLS 授权）
+//   2) 订单 → WorkBuddy 云服务 PostgreSQL（utils/orders.js，小程序直连）
 //      订单要两个人共享，必须进真数据库。
-//      小程序端天然带着微信身份（JWT），配好 RLS 策略后即可安全读写，
-//      不需要维护任何服务端密钥。
+//      云服务自带网关与授权，小程序端零密钥；权限在数据库侧用 RLS 控制。
 //
-// 历史包袱说明：早期版本订单走云函数（wx.cloud.callFunction）。
-//   改用 PG 后该路径已废弃并删除 —— 云函数环境不注入 JWT，
-//   端点只认微信身份，云函数以匿名身份访问数据库时能读不能写。
+// 历史包袱说明（都已废弃并删除，不要再回头走）：
+//   · 云函数方案（wx.cloud.callFunction）—— 云函数环境不注入登录态，
+//     以匿名身份访问数据库时能读不能写；
+//   · 自建 CloudBase 环境 —— 要求环境绑定当前小程序 AppID，
+//     本项目用的环境 WxAppId 为空，绑不上，整体换成了 WorkBuddy 云服务。
 const localDishes = require('./dishes')
 const localOrders = require('./orders')
 

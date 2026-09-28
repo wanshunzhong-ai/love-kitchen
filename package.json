@@ -2,8 +2,8 @@
   "name": "love-kitchen-miniprogram",
   "version": "1.0.0",
   "private": true,
-  "description": "爱心小厨房 · 给女朋友点菜的微信小程序（订单走 CloudBase PostgreSQL 小程序直连）",
+  "description": "爱心小厨房 · 给女朋友点菜的微信小程序（订单走 WorkBuddy 云服务 PostgreSQL）",
   "dependencies": {
-    "@cloudbase/wx-cloud-client-sdk": "^1.8.10"
+    "@tencent-ai/workbuddy-cloud-sdk": "^0.1.2-dev.1b37f73.202609222026"
   }
 }

@@ -20,36 +20,31 @@
 | ---- | ----------------------------------------------- |
 | 前端   | 微信原生小程序（WXML / WXSS / JS），零框架、业务代码零第三方依赖       |
 | 菜单数据 | **内置在代码里**（`data/dishes.js`，101 道菜），**零后台配置即可用**   |
-| 订单存储 | CloudBase **PostgreSQL**（关系型数据库）                |
-| 订单访问 | **小程序直连数据库**（`@cloudbase/wx-cloud-client-sdk`，微信身份鉴权） |
-| 权限控制 | 表级 `GRANT` + 行级 `RLS 策略`（见 `cloudbase/migrations/`） |
+| 订单存储 | WorkBuddy 云服务 · **PostgreSQL**（关系型数据库）                |
+| 订单访问 | **小程序直连**（`@tencent-ai/workbuddy-cloud-sdk/miniprogram`，`wx.request` 走固定网关） |
+| 权限控制 | 数据库侧行级 `RLS 策略`（云服务已预配好，业务代码零权限代码） |
 
 > **为什么菜单要内置、订单才进数据库？**
 > 菜单是静态数据（101 道菜，一年也改不了几次），内置进代码最快：零后台配置、离线可用、读取零延迟。
 > 订单必须两个人共享，所以要进真数据库。至于为什么是「小程序直连」而不是「云函数中转」，见下方说明。
 
-### 为什么订单不用云函数？
+### 为什么订单不用云函数？为什么不用自建云开发？
 
-早期版本订单走云函数（`wx.cloud.callFunction`），后来改成了小程序直连。原因是一个很硬的限制：
+订单后端踩过两条路，都放弃了，最终落在 WorkBuddy 云服务上：
 
-- 云函数的运行环境**不注入微信用户身份（JWT）**，它访问数据库时只能以「匿名」身份进行；
-- 而匿名身份在 PG 上默认只有读取权限，写入会直接报 `permission denied for table orders`；
-- 想让云函数以管理员身份写库，得额外配置数据库 API Key —— 这一步对个人项目来说既麻烦又容易配错。
+1. **云函数（`wx.cloud.callFunction`）**：云函数运行环境**不注入微信用户身份（JWT）**，访问数据库只能以「匿名」身份进行，PG 上默认只有读权限，写入直接报 `permission denied`；想让云函数写库还得配管理员 API Key —— 对个人项目既麻烦又容易配错。
+2. **自建云开发 + 小程序直连 PG**：官方为小程序直连设计的路径，但有一个隐藏门槛 —— **云开发环境必须绑定当前小程序的 AppID**。本项目当时用的环境是平台代建腾讯云账号创建的，`WxAppId` 为空，在开发者工具里绑不上，`wx.cloud` 压根不会出现，「直连」无从谈起。
+3. **WorkBuddy 云服务（现状）**：自带固定网关和授权体系，小程序端**零密钥** —— 只需要一个公开的 `publishableKey`（仅标识应用、不带权限）+ SDK 自动装配的 `wx.request` 通道。权限由数据库侧 RLS 把关，业务代码里没有任何权限逻辑。
 
-而**小程序端天然带着用户微信身份**。配上 RLS 策略后，已登录的微信用户即可安全读写订单，**不需要维护任何服务端密钥**。这是官方为小程序直连场景设计的路径，也正好符合「两个人共享同一份订单」的需求。
+这条路径也正好符合「两个人共享同一份订单」的需求。
 
 ## 📂 项目结构
 
 ```
 love-kitchen/
-├── app.js / app.json / app.wxss     # 应用入口（含 wx.cloud.init 容错）、tabBar 与全局样式
+├── app.js / app.json / app.wxss     # 应用入口、tabBar 与全局样式（云客户端懒加载，入口零初始化）
 ├── data/
 │   └── dishes.js                    # 内置的 101 道菜（id 为纯数字，供本地服务读取）
-├── cloudbase/
-│   └── migrations/                  # 数据库结构变更脚本（按时间戳顺序）
-│       ├── 20260928140000_create_orders.sql   # 建 orders 表 + 索引 + 约束
-│       ├── 20260928150000_orders_rls.sql      # 配 GRANT + RLS 策略（authenticated）
-│       └── 20260928160000_orders_anon_grant.sql # 给 anon 补写权限（关键修复）
 ├── pages/
 │   ├── menu/        # 点菜页：分类、购物车、随机帮选
 │   ├── checkout/    # 确认订单：数量、备注、点菜人
@@ -57,16 +52,18 @@ love-kitchen/
 │   ├── order-edit/  # 编辑订单：改菜 / 备注 / 点菜人 / 状态 / 删除
 │   └── dish-edit/   # 加菜 / 编辑 / 下架
 ├── utils/
-│   ├── api.js       # 数据唯一出口：菜品走本地、订单走 PG
+│   ├── api.js       # 数据唯一出口：菜品走本地、订单走云数据库
 │   ├── dishes.js    # 本地菜品服务（内置数据 + 用户改动的本地覆盖层）
-│   ├── orders.js    # 订单服务：小程序直连 PostgreSQL
+│   ├── orders.js    # 订单服务：小程序直连 WorkBuddy 云服务 PostgreSQL
+│   ├── workbuddy-cloud-diagnostics.js # 云请求诊断：失败时把摘要打进 vConsole（真机排查用）
 │   ├── constants.js # 分类 / 辣度 / 订单状态常量
 │   ├── store.js     # 购物车与昵称（本地存储）
 │   └── format.js    # 时间格式化
-├── miniprogram_npm/                 # 已构建好的数据库 SDK（单文件产物，随仓库提供）
+├── miniprogram_npm/                 # 已构建好的云服务 SDK（单文件产物，随仓库提供）
+├── cloudbase/                       # （历史存档）早期自建云开发时期的迁移脚本，已不再使用
 ├── scripts/
 │   └── build-npm.js                 # 重新生成上面这份产物（升级 SDK 时才用）
-├── package.json                     # 声明 @cloudbase/wx-cloud-client-sdk 依赖
+├── package.json                     # 声明 @tencent-ai/workbuddy-cloud-sdk 依赖
 └── project.config.json
 ```
 
@@ -84,36 +81,21 @@ git clone https://github.com/wanshunzhong-ai/love-kitchen.git
 
 **这一步不需要任何后台配置。** 菜单数据已内置在 `data/dishes.js`，点「编译」即可浏览菜单、加购物车。按「预览」扫码，手机也能看。
 
-订单功能依赖的 SDK（`@cloudbase/wx-cloud-client-sdk`）**已按官方规范构建好放在仓库的 `miniprogram_npm/` 目录**，克隆下来即可用，**不需要执行 npm install / 构建 npm**。
+订单功能依赖的 SDK（`@tencent-ai/workbuddy-cloud-sdk`）**已按官方规范构建好放在仓库的 `miniprogram_npm/` 目录**，克隆下来即可用，**不需要执行 npm install / 构建 npm**。
 
-> 该 SDK 的入口是 rollup 打包出的自包含单文件（零外部 `require`），因此可以离线复现构建产物。
+> 该 SDK 的小程序入口是打包出的自包含单文件（零外部 `require`），因此可以离线复现构建产物。
 > 需要重新生成时（升级 SDK 版本后）执行 `node scripts/build-npm.js`，或用开发者工具的「工具 → 构建 npm」。
 > 若小程序报「暂不支持 npm 模块」，先重新编译 → 清缓存重开项目 → 最后才考虑重新构建。
 
-### 3. 建数据库表（订单功能需要，换环境才要做）
-
-`cloudbase/migrations/` 下的两个 SQL 脚本已经在当前环境执行完毕。**如果你换了自己的云环境**，需要按顺序执行它们：
-
-1. 打开开发者工具 → 顶部「云开发」→ 控制台；
-2. 左侧「数据库」→ 选择 **PostgreSQL**；
-3. 依次执行 `20260928140000_create_orders.sql`、`20260928150000_orders_rls.sql` 的内容；
-   - 也可以让 WorkBuddy 帮你执行（它会走官方的迁移流程，自动校验文件一致性）。
-
-**执行成功的验证方式**：在 SQL 控制台执行下面这句，应返回 `rowLevelSecurityEnabled: true` 和 4 条策略：
-
-```sql
-SELECT relname, relrowsecurity FROM pg_class WHERE relname = 'orders';
-SELECT policyname, cmd FROM pg_policies WHERE tablename = 'orders';
-```
-
-### 4. 编译运行
+### 3. 编译运行（订单功能开箱即用）
 
 点「编译」，即可浏览菜单、加购物车、下单。按「预览」扫码，手机也能看。
 
-- **域名校验**：本项目**不需要**勾选「不校验合法域名」。小程序直连数据库走的是云开发内部通道，不受 `wx.request` 合法域名限制。
+- **不需要建表**：云服务环境里的 `orders` 表和权限策略已就绪，业务代码零 DDL。
+- **不需要配域名**：SDK 走小程序专用固定网关，发布流程会自动把网关域名登记进微信的 request 合法域名，开发期在工具里也不受域名校验影响。
 - **真机调试**报 `800059 file not found` 时：工具内「清除缓存 → 重新编译」，或关闭项目重新打开（文件索引缓存问题）。
 
-### 5. 发布体验版（想让对方用手机访问时）
+### 4. 发布体验版（想让对方用手机访问时）
 
 1. 开发者工具右上角「**上传**」→ 填版本号（如 `1.0.1`）。
 2. mp.weixin.qq.com → 管理 → 版本管理 → 开发版本 →「**选为体验版**」。
@@ -139,7 +121,7 @@ SELECT policyname, cmd FROM pg_policies WHERE tablename = 'orders';
 > **id 必须是纯数字**：`pages/checkout` 用 `Number(dataset.id)` 做购物车加减，字符串 id 会得到 `NaN` 导致加减失效。
 > 用户在小程序里加菜 / 改菜会写入**本地覆盖层**（`wx.setStorageSync('dishes_override_v1')`），不改动内置数据；删除内置菜则记入黑名单 `dishes_deleted_v1`，避免重启后「复活」。
 
-**orders（订单）** — CloudBase PostgreSQL 表，见 `cloudbase/migrations/20260928140000_create_orders.sql`
+**orders（订单）** — WorkBuddy 云服务 PostgreSQL 表（随云服务环境预建）
 
 | 字段              | 类型          | 说明                                         |
 | --------------- | ----------- | ------------------------------------------ |
@@ -172,24 +154,15 @@ PostgreSQL 的权限是**两层**的，两层都通过才成功：
 | 第一层  | 表级 `GRANT`                  | 决定这个角色「能不能碰这张表」    |
 | 第二层  | 行级 `RLS 策略`                 | 决定这个角色「能碰表里的哪些行」   |
 
-`orders` 表已启用了 RLS，且策略配为「**打开这个小程序的人可读、可写全部订单**」——因为订单是「两个人共享同一份」的语义，不需要按人隔离。
+`orders` 表已启用 RLS，策略配为「**打开这个小程序的人可读、可写全部订单**」——因为订单是「两个人共享同一份」的语义，不需要按人隔离。
 
-**三种数据库角色**：
-
-| 角色              | 谁                        | 本项目用途          |
-| --------------- | ------------------------ | ------------- |
-| `anon`          | 未建立登录态的访问                | **本项目的订单读写者**（已补齐写权限） |
-| `authenticated` | 已登录的微信用户                 | 同样已配好读写策略（备用） |
-| `service_role`  | 管理员（绕过 RLS）              | 全权限           |
-
-> ⚠️ **踩坑记录（重要）**：`@cloudbase/wx-cloud-client-sdk` 的 `rdb()` **并不直接发 HTTP 请求给 PostgREST**，而是把每个请求包装成 `wx.cloud.callFunction` 调用、由服务端代理转发。这条链路上小程序端**不会附带「已登录」的 JWT**，因此数据库侧解析出的角色是 **`anon` 而不是 `authenticated`**。
->
-> 表现就是：**读得到（`anon` 默认有 `SELECT`）、写不进（无 `INSERT`）**——订单页正常显示 0 条，但一下单就失败。
->
-> 所以本项目是给 `anon` 补的写权限（见 `20260928160000_orders_anon_grant.sql`）。如果日后要对外开放，应改为接入 CloudBase 登录拿到 `authenticated` 身份，而不是继续放开 `anon`。
+这些都在云服务环境里**预先配好**，业务代码里没有任何权限逻辑。两点值得知道：
 
 > **RLS 的本质是「默认拒绝一切」**：只要表启用了 RLS 却没有匹配的策略，所有操作都会被拒绝。
 > 所以「表建好了但读不出来 / 写不进去」几乎一定是策略没配或没配全，而不是代码问题。
+>
+> **前端手里的 `publishableKey` 不是密钥**：它只标识「是哪个应用」，本身不带任何权限；
+> 真正的权限边界在数据库 RLS。前端代码里永远不会出现有权限的密钥。
 
 ## 🔌 接口
 
@@ -215,17 +188,11 @@ PostgreSQL 的权限是**两层**的，两层都通过才成功：
 **Q：手机真机 / 体验版提示「菜单没加载出来」？**
 菜单是内置数据，正常不会出现。若出现，检查是不是改坏了 `data/dishes.js`（在开发者工具「调试器 → Console」看报错）。
 
-**Q：订单页报「基础库版本过低（需 2.2.3+）」？**
-微信基础库太老。开发者工具 → 详情 → 本地设置 → 把「调试基础库」调高（选 3.x 版本）。
+**Q：下单报「下单没成功：…」？**
+失败提示里带了真实原因，先读提示本身。通用排查：① 确认网络可用；② 真机上打开调试（右上角「…」→ 开发调试）后在 vConsole 里找 `[WorkBuddy Cloud] request failed` 日志 —— 里面带了方法、地址、HTTP 状态码和错误信息，是最直接的线索；③ 若显示 `url not in domain list`，说明网关域名还没登记进微信合法域名（正式发布流程会自动登记，工具调试期可临时勾选「不校验合法域名」验证）。
 
-**Q：订单报「permission denied for table orders」？**
-数据库权限没配好。回到「快速开始」第 3 步，确认：
-1. migration 里的 `GRANT ... TO authenticated` 执行了；
-2. RLS 策略（4 条：SELECT / INSERT / UPDATE / DELETE）都在；
-3. 你正处于**已登录**状态（`authenticated` 角色），而不是匿名。
-
-**Q：小程序报「暂不支持 npm 模块：@cloudbase/wx-cloud-client-sdk」？**
-按顺序排查：① 确认 `miniprogram_npm/@cloudbase/wx-cloud-client-sdk/index.js` 存在；② 重新点「编译」；③ 「工具 → 清除缓存 → 清除全部缓存」后**关闭项目重新打开**再编译；④ 仍不行就项目根目录 `npm install` 后执行「工具 → 构建 npm」（或 `node scripts/build-npm.js`）。
+**Q：小程序报「暂不支持 npm 模块：@tencent-ai/workbuddy-cloud-sdk」？**
+按顺序排查：① 确认 `miniprogram_npm/@tencent-ai/workbuddy-cloud-sdk/index.js` 存在；② 重新点「编译」；③ 「工具 → 清除缓存 → 清除全部缓存」后**关闭项目重新打开**再编译；④ 仍不行就项目根目录 `npm install` 后执行「工具 → 构建 npm」（或 `node scripts/build-npm.js`）。
 
 **Q：改完代码后订单功能突然不好用了？**
 先想想是不是刚改过 `package.json`。改动依赖后要 `npm install` 并重新构建（`node scripts/build-npm.js` 或「工具 → 构建 npm」）。
@@ -233,9 +200,8 @@ PostgreSQL 的权限是**两层**的，两层都通过才成功：
 **Q：真机调试报 800059 file not found？**
 开发者工具的文件索引缓存问题：清除缓存 → 重新编译；无效则关闭项目重新打开。
 
-**Q：数据库免费额度会过期吗？**
-会。**小程序正式发布上线后**，免费环境会变成「上线后第 15 天到期」，到期后不转付费（约 19.9 元/月）环境会被回收、数据不可找回。只在开发者工具 / 体验版阶段使用通常不受影响，但建议在正式发布前评估。
-好消息：**菜单在代码里，永远不会丢**，风险只涉及订单数据。
+**Q：云服务的免费额度会过期吗？**
+WorkBuddy 云服务有免费额度（数据库读写量、存储量等），日常两人点菜的用量远够不到上限。额度详情在 WorkBuddy 的「设置 → 数据管理」面板可查。好消息：**菜单在代码里，永远不会丢**，风险只涉及订单数据。
 
 **Q：菜品超过 100 道还能拉全吗？**
 可以。内置数据不受此限制。订单侧 `listOrders` 一次最多取 200 条（`range(0, 199)`），日常使用绰绰有余；超出后只显示最近 200 条。
