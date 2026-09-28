@@ -1,19 +1,34 @@
-// 云函数调用封装：全应用唯一数据出口
+// 数据调用封装：全应用唯一数据出口
 //
-// 两种数据源：
-//   1) 菜品（菜单）→ 默认走「本地内置数据」（utils/dishes.js），零后台配置即可用；
-//      把下面 USE_LOCAL_DISHES 改成 false 就切回云函数。
-//   2) 订单 → 走云函数 lovekitchen（wx.cloud.callFunction，微信内部通道），
-//      不需要任何 request 合法域名，因此真机 / 体验版 / 正式版都能正常访问。
+// 两类数据，两种来源，对页面都是同样的 Promise 形状，
+// 因此 pages/ 下所有页面无需关心底层到底是哪一种：
+//
+//   1) 菜品（菜单）→ 内置在小程序端（utils/dishes.js）
+//      菜单是静态数据（101 道菜），内置进代码最快：零后台配置、离线可用、读取零延迟。
+//
+//   2) 订单 → CloudBase PostgreSQL（utils/orders.js，小程序直连 + RLS 授权）
+//      订单要两个人共享，必须进真数据库。
+//      小程序端天然带着微信身份（JWT），配好 RLS 策略后即可安全读写，
+//      不需要维护任何服务端密钥。
+//
+// 历史包袱说明：早期版本订单走云函数（wx.cloud.callFunction）。
+//   改用 PG 后该路径已废弃并删除 —— 云函数环境不注入 JWT，
+//   端点只认微信身份，云函数以匿名身份访问数据库时能读不能写。
 const localDishes = require('./dishes')
+const localOrders = require('./orders')
 
-const FN_NAME = 'lovekitchen'
+// 菜品 action：由 utils/dishes.js 接管
+const DISH_ACTIONS = ['listDishes', 'getDish', 'saveDish', 'deleteDish']
 
-// 菜单是否走本地内置数据：true = 零后台可用（推荐）；false = 走云函数读数据库
-const USE_LOCAL_DISHES = true
-
-// 哪些 action 由本地菜品服务接管
-const DISH_ACTIONS = ['listDishes', 'getDish', 'saveDish', 'deleteDish', 'stats']
+// 订单 action：由 utils/orders.js 接管
+const ORDER_ACTIONS = [
+  'listOrders',
+  'getOrder',
+  'createOrder',
+  'updateOrder',
+  'updateOrderStatus',
+  'deleteOrder',
+]
 
 /**
  * 调用数据接口
@@ -22,30 +37,21 @@ const DISH_ACTIONS = ['listDishes', 'getDish', 'saveDish', 'deleteDish', 'stats'
  * @returns {Promise<object>} 业务数据；失败时抛错，由调用方 catch
  */
 async function call(action, payload) {
-  // 菜品类 action：本地实现（同步逻辑，包成 Promise 对齐调用方）
-  if (USE_LOCAL_DISHES && DISH_ACTIONS.indexOf(action) >= 0) {
-    return localDishes.handle(action, payload || {})
+  const args = payload || {}
+
+  if (DISH_ACTIONS.indexOf(action) >= 0) {
+    return localDishes.handle(action, args)
   }
 
-  // 其余（订单类）：走云函数
-  const event = Object.assign({ action: action }, payload || {})
-
-  let res
-  try {
-    res = await wx.cloud.callFunction({ name: FN_NAME, data: event })
-  } catch (err) {
-    // 网络层失败（环境未初始化、云开发未开通、云函数不存在、超时等）
-    const msg = (err && (err.errMsg || err.message)) || '网络异常'
-    const wrapped = new Error('云函数调用失败：' + msg)
-    wrapped.cause = err
-    throw wrapped
+  if (ORDER_ACTIONS.indexOf(action) >= 0) {
+    return localOrders.handle(action, args)
   }
 
-  const result = (res && res.result) || {}
-  if (!result.ok) {
-    throw new Error(result.error || '服务端返回异常')
-  }
-  return result
+  throw new Error('未知的 action: ' + action)
 }
 
-module.exports = { call, FN_NAME, USE_LOCAL_DISHES, DISH_ACTIONS }
+module.exports = {
+  call,
+  DISH_ACTIONS,
+  ORDER_ACTIONS,
+}
