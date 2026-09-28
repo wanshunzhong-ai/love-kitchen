@@ -15,11 +15,18 @@
   margin-bottom: 20rpx;
 }
 
+.section-hint {
+  font-size: 22rpx;
+  font-weight: 400;
+  color: #C4B2AC;
+}
+
 /* 菜品清单 */
 .cart-item {
   display: flex;
   align-items: center;
-  padding: 16rpx 0;
+  justify-content: space-between;
+  padding: 20rpx 0;
   border-bottom: 2rpx solid #FFF2EC;
 }
 
@@ -27,26 +34,58 @@
   border-bottom: none;
 }
 
+.ci-main {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
 .ci-emoji {
   font-size: 44rpx;
   width: 72rpx;
   text-align: center;
+  flex-shrink: 0;
 }
 
-.ci-name {
+.ci-info {
   flex: 1;
-  font-size: 28rpx;
-  color: #4A3B38;
+  min-width: 0;
   padding: 0 12rpx;
 }
 
-.ci-spice {
+.ci-name {
+  font-size: 28rpx;
+  color: #4A3B38;
+}
+
+/* 辣度选择条 */
+.ci-spices {
+  display: flex;
+  margin-top: 10rpx;
+}
+
+.ci-chip {
   font-size: 20rpx;
-  color: #C97B8E;
-  background: #FFF0F4;
-  padding: 4rpx 12rpx;
+  line-height: 34rpx;
+  padding: 0 14rpx;
+  margin-right: 10rpx;
   border-radius: 999rpx;
-  margin-right: 8rpx;
+  color: #A89690;
+  background: #F8F3F1;
+  border: 2rpx solid transparent;
+}
+
+.ci-chip-on {
+  color: #D42B2B;
+  background: #FFE7E4;
+  border-color: #F5B6AE;
+  font-weight: 600;
+}
+
+.ci-actions {
+  display: flex;
+  align-items: center;
   flex-shrink: 0;
 }
 

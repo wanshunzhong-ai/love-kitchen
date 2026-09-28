@@ -1,14 +1,11 @@
-// 编辑订单页：改菜品、改备注、改点菜人、改状态，或整单删除
+// 编辑订单页：改菜品、改每道菜的辣度、改备注、改点菜人、改状态，或整单删除
 const api = require('../../utils/api')
-const { CATEGORIES, ORDER_STATUS_OPTIONS } = require('../../utils/constants')
+const { CATEGORIES, ORDER_STATUS_OPTIONS, SPICE_LEVELS } = require('../../utils/constants')
 
-// 与 checkout 同款的辣度标签配色，靠 spiceIdx 套 class
-const SPICE_LEVELS = [
-  { key: '不辣', level: 0 },
-  { key: '微辣', level: 1 },
-  { key: '中辣', level: 2 },
-  { key: '特辣', level: 3 },
-]
+/** 订单内条目的唯一键：同一道菜的不同辣度算两条 */
+function itemKey(it) {
+  return String(it.dishId != null ? it.dishId : it.name) + '|' + (it.spice || '不辣')
+}
 
 Page({
   data: {
@@ -18,6 +15,7 @@ Page({
     orderBy: '',
     status: 'pending',
     statusOptions: ORDER_STATUS_OPTIONS,
+    spiceLevels: SPICE_LEVELS,
     categories: [{ key: '全部', emoji: '📜' }].concat(CATEGORIES),
     activeCategory: '全部',
     allDishes: [],
@@ -42,22 +40,23 @@ Page({
     this.loadOrder(id)
   },
 
-  // 用 item.name 作 key（订单快照里的 dishId 可能是字符串，也可能为空）
+  // 给每条补 key / spiceIdx，供 wxml 使用
   decorate(items) {
     return (Array.isArray(items) ? items : []).map(function (it) {
+      const spice = it.spice || '不辣'
       const hit = SPICE_LEVELS.find(function (s) {
-        return s.key === it.spice
+        return s.key === spice
       })
-      const level = hit ? hit.level : 0
-      return {
-        key: it.name,
+      const row = {
         dishId: it.dishId,
         name: it.name,
         emoji: it.emoji || '🍴',
-        spice: it.spice || '不辣',
-        spiceIdx: level,
+        spice: spice,
+        spiceIdx: hit ? hit.level : 0,
         qty: Number(it.qty) || 1,
       }
+      row.key = itemKey(row)
+      return row
     })
   },
 
@@ -132,6 +131,37 @@ Page({
     this.setData({ items: items, totalCount: this.countOf(items) })
   },
 
+  // 改某道菜的辣度；若改后与同单已有条目重复则合并数量
+  onTapSpice(e) {
+    const key = e.currentTarget.dataset.key
+    const spice = e.currentTarget.dataset.spice
+
+    const items = this.data.items.map(function (it) {
+      return Object.assign({}, it)
+    })
+    const idx = items.findIndex(function (it) {
+      return it.key === key
+    })
+    if (idx < 0) return
+
+    const target = items[idx]
+    target.spice = spice
+    target.spiceIdx = (SPICE_LEVELS.find(function (s) {
+      return s.key === spice
+    }) || { level: 0 }).level
+    target.key = itemKey(target)
+
+    const dupIdx = items.findIndex(function (it, i) {
+      return i !== idx && it.key === target.key
+    })
+    if (dupIdx >= 0) {
+      items[dupIdx].qty += target.qty
+      items.splice(idx, 1)
+    }
+
+    this.setData({ items: items, totalCount: this.countOf(items) })
+  },
+
   // ---------- 从菜单加菜 ----------
 
   async openPicker() {
@@ -179,27 +209,32 @@ Page({
   onPickDish(e) {
     const dish = this.data.pickerDishes[e.currentTarget.dataset.idx]
     if (!dish) return
+    const spice = dish.spice || '不辣'
+
     const items = this.data.items.slice()
+    const row = {
+      dishId: dish._id || dish.id,
+      name: dish.name,
+      emoji: dish.emoji || '🍴',
+      spice: spice,
+      spiceIdx: (SPICE_LEVELS.find(function (s) {
+        return s.key === spice
+      }) || { level: 0 }).level,
+      qty: 1,
+    }
+    row.key = itemKey(row)
+
     const found = items.find(function (it) {
-      return it.key === dish.name
+      return it.key === row.key
     })
     if (found) {
       found.qty += 1
     } else {
-      items.push({
-        key: dish.name,
-        dishId: dish._id || dish.id,
-        name: dish.name,
-        emoji: dish.emoji || '🍴',
-        spice: dish.spice || '不辣',
-        spiceIdx: (SPICE_LEVELS.find(function (s) {
-          return s.key === (dish.spice || '不辣')
-        }) || { level: 0 }).level,
-        qty: 1,
-      })
+      items.push(row)
     }
+
     this.setData({ items: items, totalCount: this.countOf(items) })
-    wx.showToast({ title: '已加入这一单', icon: 'none' })
+    wx.showToast({ title: '已加入这一单（' + spice + '）', icon: 'none' })
   },
 
   // ---------- 保存 / 删除 ----------

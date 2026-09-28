@@ -29,11 +29,15 @@ Page({
       const res = await api.call('listOrders')
       const orders = (res.orders || []).map(function (o) {
         const items = (Array.isArray(o.items) ? o.items : []).map(function (it) {
+          const spice = it.spice || '不辣'
           const hit = SPICE_LEVELS.find(function (s) {
-            return s.key === it.spice
+            return s.key === spice
           })
           const level = hit ? hit.level : 0
           return Object.assign({}, it, {
+            // 同一道菜可能有多种辣度，key 必须带上辣度才唯一
+            rowKey: String(it.name) + '|' + spice,
+            spice: spice,
             spiceIdx: level,
             spiceText: level > 0 ? '🌶️'.repeat(level) : '不辣',
           })

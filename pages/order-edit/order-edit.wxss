@@ -28,8 +28,13 @@
 .cart-item {
   display: flex;
   align-items: center;
-  padding: 16rpx 0;
+  justify-content: space-between;
+  padding: 20rpx 0;
   border-bottom: 2rpx solid #FFF2EC;
+}
+
+.cart-item:last-child {
+  border-bottom: none;
 }
 
 .ci-emoji {
@@ -42,6 +47,13 @@
 .ci-main {
   flex: 1;
   min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+.ci-info {
+  flex: 1;
+  min-width: 0;
   padding: 0 12rpx;
 }
 
@@ -50,11 +62,33 @@
   color: #4A3B38;
 }
 
-.ci-spice {
-  margin-left: 12rpx;
-  padding: 2rpx 12rpx;
-  border-radius: 999rpx;
+/* 辣度选择条：点一下直接切换 */
+.ci-spices {
+  display: flex;
+  margin-top: 10rpx;
+}
+
+.ci-chip {
   font-size: 20rpx;
+  line-height: 34rpx;
+  padding: 0 14rpx;
+  margin-right: 10rpx;
+  border-radius: 999rpx;
+  color: #A89690;
+  background: #F8F3F1;
+  border: 2rpx solid transparent;
+}
+
+.ci-chip-on {
+  color: #D42B2B;
+  background: #FFE7E4;
+  border-color: #F5B6AE;
+  font-weight: 600;
+}
+
+.ci-actions {
+  display: flex;
+  align-items: center;
   flex-shrink: 0;
 }
 

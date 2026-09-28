@@ -14,6 +14,16 @@ Page({
     cartCount: 0,
     loading: true,
     loadError: false,
+    // 搜索
+    keyword: '',
+    searchFocus: false,
+    // 辣度选择弹层
+    spicePicker: {
+      open: false,
+      dish: null,
+      selected: '不辣',
+      levels: SPICE_LEVELS,
+    },
   },
 
   onShow() {
@@ -35,6 +45,8 @@ Page({
           id: d._id || d.id,
           spiceIdx: level,
           spiceText: level > 0 ? '🌶️'.repeat(level) : '不辣',
+          // 预生成小写检索串，避免每次输入都重复 toLowerCase
+          _hay: ((d.name || '') + ' ' + (d.description || '') + ' ' + (d.category || '')).toLowerCase(),
         })
       })
       this.setData({ dishes: dishes, loading: false })
@@ -45,15 +57,50 @@ Page({
     }
   },
 
+  // 搜索框输入
+  onSearchInput(e) {
+    this.setData({ keyword: e.detail.value })
+    this.applyFilter()
+  },
+
+  onSearchFocus() {
+    this.setData({ searchFocus: true })
+  },
+
+  onSearchBlur() {
+    this.setData({ searchFocus: false })
+  },
+
+  // 清空搜索
+  clearSearch() {
+    this.setData({ keyword: '' })
+    this.applyFilter()
+  },
+
   applyFilter() {
-    const { dishes, activeCategory } = this.data
-    const filteredDishes =
+    const { dishes, activeCategory, keyword } = this.data
+
+    let list =
       activeCategory === '全部'
         ? dishes
         : dishes.filter(function (d) {
             return d.category === activeCategory
           })
-    this.setData({ filteredDishes: filteredDishes })
+
+    // 关键词：菜名 / 介绍 / 分类 都参与匹配（多关键词用空格分隔，需全部命中）
+    const kw = (keyword || '').trim().toLowerCase()
+    if (kw) {
+      const parts = kw.split(/\s+/).filter(function (p) {
+        return p
+      })
+      list = list.filter(function (d) {
+        return parts.every(function (p) {
+          return d._hay.indexOf(p) >= 0
+        })
+      })
+    }
+
+    this.setData({ filteredDishes: list })
   },
 
   onTapCategory(e) {
@@ -61,11 +108,45 @@ Page({
     this.applyFilter()
   },
 
+  // 点「＋」→ 先让他选辣度（默认就是这道菜的推荐辣度）
   onAddTap(e) {
     const dish = this.data.filteredDishes[e.currentTarget.dataset.idx]
     if (!dish) return
-    store.addToCart(dish)
-    this.setData({ cartCount: store.cartCount() })
+    this.openSpicePicker(dish)
+  },
+
+  openSpicePicker(dish) {
+    this.setData({
+      spicePicker: {
+        open: true,
+        dish: dish,
+        selected: dish.spice || '不辣', // 默认推荐辣度
+        levels: SPICE_LEVELS,
+      },
+    })
+  },
+
+  closeSpicePicker() {
+    this.setData({ 'spicePicker.open': false })
+  },
+
+  onPickSpice(e) {
+    this.setData({ 'spicePicker.selected': e.currentTarget.dataset.spice })
+  },
+
+  // 弹层内容区不穿透关闭
+  noop() {},
+
+  // 确认加入（用弹层里选中的辣度）
+  confirmAdd() {
+    const { dish, selected } = this.data.spicePicker
+    if (!dish) return
+    store.addToCart(dish, selected)
+    this.setData({
+      cartCount: store.cartCount(),
+      'spicePicker.open': false,
+    })
+    wx.showToast({ title: '已加入购物车', icon: 'success' })
   },
 
   // 点菜品卡片 → 编辑这道菜
@@ -99,9 +180,8 @@ Page({
       cancelText: '再想想',
       success: (res) => {
         if (res.confirm) {
-          store.addToCart(dish)
-          this.setData({ cartCount: store.cartCount() })
-          wx.showToast({ title: '已加入购物车', icon: 'success' })
+          // 和「＋」一样，先让选辣度（默认推荐辣度）
+          this.openSpicePicker(dish)
         }
       },
     })

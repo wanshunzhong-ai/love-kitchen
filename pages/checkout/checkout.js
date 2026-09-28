@@ -1,6 +1,7 @@
-// 确认订单页：调整数量、写备注、填点菜人，提交到云端
+// 确认订单页：调整数量、逐道改辣度、写备注、填点菜人，提交到云端
 const api = require('../../utils/api')
 const store = require('../../utils/store')
+const { SPICE_LEVELS } = require('../../utils/constants')
 
 Page({
   data: {
@@ -9,28 +10,39 @@ Page({
     remark: '',
     nickname: '',
     submitting: false,
+    spiceLevels: SPICE_LEVELS,
   },
 
   onShow() {
-    const cart = store.getCart()
+    this.refreshCart()
+  },
+
+  refreshCart() {
     this.setData({
-      cart: cart,
+      cart: store.getCart(),
       totalCount: store.cartCount(),
       nickname: store.getNickname(),
     })
   },
 
+  // 数量加减：按条目 key（菜 + 辣度）定位，同菜不同辣度互不影响
   onQtyChange(e) {
-    const dishId = Number(e.currentTarget.dataset.id)
+    const key = e.currentTarget.dataset.key
     const delta = Number(e.currentTarget.dataset.delta)
-    const cart = store.changeQty(dishId, delta)
-    this.setData({ cart: cart, totalCount: store.cartCount() })
+    store.changeQty(key, delta)
+    this.refreshCart()
   },
 
   onRemoveItem(e) {
-    const dishId = Number(e.currentTarget.dataset.id)
-    const cart = store.removeFromCart(dishId)
-    this.setData({ cart: cart, totalCount: store.cartCount() })
+    store.removeFromCart(e.currentTarget.dataset.key)
+    this.refreshCart()
+  },
+
+  // 逐道改辣度：同菜已有该辣度时会自动合并数量
+  onTapSpice(e) {
+    const key = e.currentTarget.dataset.key
+    store.changeSpice(key, e.currentTarget.dataset.spice)
+    this.refreshCart()
   },
 
   onRemarkInput(e) {
@@ -62,7 +74,7 @@ Page({
           dishId: it.dishId,
           name: it.name,
           emoji: it.emoji,
-          spice: it.spice || '不辣',
+          spice: it.spice || '不辣', // 用户选定的辣度
           qty: it.qty,
         }
       })

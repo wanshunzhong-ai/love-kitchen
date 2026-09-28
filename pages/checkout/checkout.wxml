@@ -8,17 +8,36 @@
   <block wx:else>
     <!-- 菜品清单 -->
     <view class="card section">
-      <view class="section-title">🧺 选好的菜</view>
-      <view class="cart-item" wx:for="{{cart}}" wx:key="dishId">
-        <text class="ci-emoji">{{item.emoji}}</text>
-        <text class="ci-name">{{item.name}}</text>
-        <text class="ci-spice">{{item.spice || '不辣'}}</text>
-        <view class="ci-stepper">
-          <view class="step" data-id="{{item.dishId}}" data-delta="-1" catchtap="onQtyChange">−</view>
-          <text class="step-num">{{item.qty}}</text>
-          <view class="step step-plus" data-id="{{item.dishId}}" data-delta="1" catchtap="onQtyChange">＋</view>
+      <view class="section-title">🧺 选好的菜<text class="section-hint">（辣度可以逐道改）</text></view>
+
+      <view class="cart-item" wx:for="{{cart}}" wx:key="key">
+        <view class="ci-main">
+          <text class="ci-emoji">{{item.emoji}}</text>
+          <view class="ci-info">
+            <text class="ci-name">{{item.name}}</text>
+            <!-- 辣度选择：点一下直接切换 -->
+            <view class="ci-spices">
+              <text
+                class="ci-chip {{item.spice === sp ? 'ci-chip-on' : ''}}"
+                wx:for="{{spiceLevels}}"
+                wx:for-item="sp"
+                wx:key="key"
+                data-key="{{item.key}}"
+                data-spice="{{sp.key}}"
+                catchtap="onTapSpice"
+              >{{sp.key}}</text>
+            </view>
+          </view>
         </view>
-        <text class="ci-remove" data-id="{{item.dishId}}" catchtap="onRemoveItem">✕</text>
+
+        <view class="ci-actions">
+          <view class="ci-stepper">
+            <view class="step" data-key="{{item.key}}" data-delta="-1" catchtap="onQtyChange">−</view>
+            <text class="step-num">{{item.qty}}</text>
+            <view class="step step-plus" data-key="{{item.key}}" data-delta="1" catchtap="onQtyChange">＋</view>
+          </view>
+          <text class="ci-remove" data-key="{{item.key}}" catchtap="onRemoveItem">✕</text>
+        </view>
       </view>
     </view>
 

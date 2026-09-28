@@ -8,6 +8,22 @@
     <view class="hero-add" bindtap="goAddDish">＋ 加菜</view>
   </view>
 
+  <!-- 搜索 -->
+  <view class="search {{searchFocus ? 'search-on' : ''}}">
+    <text class="search-icon">🔍</text>
+    <input
+      class="search-input"
+      value="{{keyword}}"
+      placeholder="搜菜名、食材、分类…"
+      placeholder-class="search-ph"
+      confirm-type="search"
+      bindinput="onSearchInput"
+      bindfocus="onSearchFocus"
+      bindblur="onSearchBlur"
+    />
+    <text wx:if="{{keyword}}" class="search-clear" bindtap="clearSearch">✕</text>
+  </view>
+
   <!-- 分类 -->
   <scroll-view class="cats" scroll-x enhanced="{{true}}" show-scrollbar="{{false}}">
     <view
@@ -31,13 +47,26 @@
     <button class="btn-retry" bindtap="loadDishes">重试</button>
   </view>
 
-  <view wx:elif="{{filteredDishes.length === 0}}" class="state">
+  <!-- 搜不到（有菜单但没匹配） -->
+  <view wx:elif="{{dishes.length > 0 && filteredDishes.length === 0}}" class="state">
+    <text class="state-emoji">🔍</text>
+    <text class="state-tip">没找到「{{keyword}}」{{activeCategory === '全部' ? '' : '（' + activeCategory + '）'}}</text>
+    <text class="state-sub">换个词试试，或者看看全部菜单</text>
+    <button class="btn-retry" bindtap="clearSearch">看看全部菜单</button>
+  </view>
+
+  <!-- 菜单本身是空的 -->
+  <view wx:elif="{{dishes.length === 0}}" class="state">
     <text class="state-emoji">🍳</text>
     <text class="state-tip">菜单还是空的，点「加菜」放第一道菜进来吧</text>
     <button class="btn-retry" bindtap="goAddDish">去加菜</button>
   </view>
 
   <view wx:else class="dish-list">
+    <view wx:if="{{keyword}}" class="result-hint">
+      找到 <text class="result-num">{{filteredDishes.length}}</text> 道菜
+    </view>
+
     <view class="dish card" wx:for="{{filteredDishes}}" wx:key="id">
       <view class="dish-emoji">{{item.emoji}}</view>
       <view class="dish-info" data-idx="{{index}}" bindtap="onDishTap">
@@ -59,5 +88,37 @@
     <view class="cart-badge">{{cartCount}}</view>
     <text class="cart-label">已选好菜</text>
     <view class="cart-go">去下单</view>
+  </view>
+
+  <!-- 辣度选择弹层 -->
+  <view wx:if="{{spicePicker.open}}" class="mask" bindtap="closeSpicePicker">
+    <view class="sheet" catchtap="noop">
+      <view class="sheet-head">
+        <view class="sheet-dish">
+          <text class="sheet-emoji">{{spicePicker.dish.emoji}}</text>
+          <text class="sheet-name">{{spicePicker.dish.name}}</text>
+        </view>
+        <text class="sheet-close" bindtap="closeSpicePicker">✕</text>
+      </view>
+
+      <view class="sheet-tip">
+        想吃什么辣度？<text class="sheet-tip-sub">（推荐 {{spicePicker.dish.spice || '不辣'}}）</text>
+      </view>
+
+      <view class="spice-opts">
+        <view
+          class="spice-opt spice-opt-{{item.level}} {{spicePicker.selected === item.key ? 'spice-opt-on' : ''}}"
+          wx:for="{{spicePicker.levels}}"
+          wx:key="key"
+          data-spice="{{item.key}}"
+          bindtap="onPickSpice"
+        >
+          <text class="so-txt">{{item.key}}</text>
+          <text class="so-chili">{{item.level > 0 ? '🌶️' : '🚫'}}</text>
+        </view>
+      </view>
+
+      <button class="btn-main sheet-btn" bindtap="confirmAdd">加入购物车 🛒</button>
+    </view>
   </view>
 </view>

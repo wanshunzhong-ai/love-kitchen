@@ -13,17 +13,33 @@
       </view>
 
       <view class="cart-item" wx:for="{{items}}" wx:key="key">
-        <text class="ci-emoji">{{item.emoji}}</text>
         <view class="ci-main">
-          <text class="ci-name">{{item.name}}</text>
-          <text class="ci-spice spice-{{item.spiceIdx}}">{{item.spice}}</text>
+          <text class="ci-emoji">{{item.emoji}}</text>
+          <view class="ci-info">
+            <text class="ci-name">{{item.name}}</text>
+            <!-- 辣度可改：点一下直接切换 -->
+            <view class="ci-spices">
+              <text
+                class="ci-chip {{item.spice === sp ? 'ci-chip-on' : ''}}"
+                wx:for="{{spiceLevels}}"
+                wx:for-item="sp"
+                wx:key="key"
+                data-key="{{item.key}}"
+                data-spice="{{sp.key}}"
+                catchtap="onTapSpice"
+              >{{sp.key}}</text>
+            </view>
+          </view>
         </view>
-        <view class="ci-stepper">
-          <view class="step" data-key="{{item.key}}" data-delta="-1" catchtap="onQtyChange">−</view>
-          <text class="step-num">{{item.qty}}</text>
-          <view class="step step-plus" data-key="{{item.key}}" data-delta="1" catchtap="onQtyChange">＋</view>
+
+        <view class="ci-actions">
+          <view class="ci-stepper">
+            <view class="step" data-key="{{item.key}}" data-delta="-1" catchtap="onQtyChange">−</view>
+            <text class="step-num">{{item.qty}}</text>
+            <view class="step step-plus" data-key="{{item.key}}" data-delta="1" catchtap="onQtyChange">＋</view>
+          </view>
+          <text class="ci-remove" data-key="{{item.key}}" catchtap="onRemoveItem">✕</text>
         </view>
-        <text class="ci-remove" data-key="{{item.key}}" catchtap="onRemoveItem">✕</text>
       </view>
 
       <view wx:if="{{items.length === 0}}" class="empty-hint">这一单已经空了，从下面加几道菜吧</view>

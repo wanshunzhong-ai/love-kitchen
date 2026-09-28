@@ -35,6 +35,61 @@
   box-shadow: 0 4rpx 12rpx rgba(255, 122, 158, 0.25);
 }
 
+/* 搜索 */
+.search {
+  display: flex;
+  align-items: center;
+  background: #ffffff;
+  border-radius: 999rpx;
+  padding: 0 28rpx;
+  margin-bottom: 20rpx;
+  border: 2rpx solid #F6E3DC;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.search-on {
+  border-color: #FFB3C7;
+  box-shadow: 0 4rpx 16rpx rgba(255, 122, 158, 0.15);
+}
+
+.search-icon {
+  font-size: 26rpx;
+  margin-right: 12rpx;
+  flex-shrink: 0;
+}
+
+.search-input {
+  flex: 1;
+  height: 76rpx;
+  font-size: 28rpx;
+  color: #4A3B38;
+}
+
+.search-ph {
+  color: #C4B2AC;
+  font-size: 26rpx;
+}
+
+.search-clear {
+  width: 48rpx;
+  text-align: center;
+  color: #C4B2AC;
+  font-size: 26rpx;
+  flex-shrink: 0;
+}
+
+/* 搜索结果提示 */
+.result-hint {
+  font-size: 24rpx;
+  color: #B9A29B;
+  padding: 0 8rpx 16rpx;
+}
+
+.result-num {
+  color: #FF5C8A;
+  font-weight: 600;
+}
+
 /* 分类 */
 .cats {
   white-space: nowrap;
@@ -197,4 +252,130 @@
   padding: 16rpx 40rpx;
   font-size: 28rpx;
   font-weight: 600;
+}
+
+/* ---------- 辣度选择弹层 ---------- */
+
+.mask {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background: rgba(63, 47, 44, 0.45);
+  z-index: 100;
+  display: flex;
+  align-items: flex-end;
+}
+
+.sheet {
+  width: 100%;
+  background: #FFFCFB;
+  border-radius: 32rpx 32rpx 0 0;
+  padding: 32rpx 32rpx 48rpx;
+  box-sizing: border-box;
+  animation: sheet-up 0.22s ease-out;
+}
+
+@keyframes sheet-up {
+  from { transform: translateY(40rpx); opacity: 0.4; }
+  to   { transform: translateY(0);     opacity: 1; }
+}
+
+.sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8rpx;
+}
+
+.sheet-dish {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.sheet-emoji {
+  font-size: 48rpx;
+  margin-right: 16rpx;
+}
+
+.sheet-name {
+  font-size: 34rpx;
+  font-weight: 700;
+  color: #4A3B38;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sheet-close {
+  font-size: 32rpx;
+  color: #C4B2AC;
+  padding: 8rpx 12rpx;
+}
+
+.sheet-tip {
+  font-size: 26rpx;
+  color: #8A7772;
+  margin-bottom: 24rpx;
+}
+
+.sheet-tip-sub {
+  font-size: 24rpx;
+  color: #C4B2AC;
+}
+
+/* 辣度四宫格 */
+.spice-opts {
+  display: flex;
+  margin-bottom: 40rpx;
+}
+
+.spice-opt {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 22rpx 0;
+  margin-right: 16rpx;
+  border-radius: 20rpx;
+  background: #ffffff;
+  border: 3rpx solid #F0E4DF;
+  box-sizing: border-box;
+}
+
+.spice-opt:last-child {
+  margin-right: 0;
+}
+
+.so-txt {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #6B5854;
+}
+
+.so-chili {
+  font-size: 22rpx;
+  margin-top: 6rpx;
+  line-height: 1.2;
+}
+
+/* 选中的档位按辣度描边，视觉上"越辣越红" */
+.spice-opt-on.spice-opt-0 { border-color: #B9A29B; background: #F8F3F1; }
+.spice-opt-on.spice-opt-1 { border-color: #E07B4F; background: #FFF3EC; }
+.spice-opt-on.spice-opt-2 { border-color: #E0533F; background: #FFEDE8; }
+.spice-opt-on.spice-opt-3 { border-color: #D42B2B; background: #FFE7E4; }
+
+.spice-opt-on .so-txt {
+  color: #D42B2B;
+}
+
+.spice-opt-on.spice-opt-0 .so-txt {
+  color: #8A7772;
+}
+
+.sheet-btn {
+  width: 100%;
 }

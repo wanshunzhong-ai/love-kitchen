@@ -37,7 +37,7 @@
       </view>
 
       <view class="order-items">
-        <view class="order-item" wx:for="{{item.items}}" wx:for-item="dish" wx:key="dishId">
+        <view class="order-item" wx:for="{{item.items}}" wx:for-item="dish" wx:key="rowKey">
           <view class="oi-left">
             <text>{{dish.emoji}} {{dish.name}}</text>
             <text class="oi-spice spice-{{dish.spiceIdx}}">{{dish.spiceText}}</text>
