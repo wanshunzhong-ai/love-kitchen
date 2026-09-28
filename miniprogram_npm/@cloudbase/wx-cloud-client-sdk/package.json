@@ -2,5 +2,5 @@
   "name": "@cloudbase/wx-cloud-client-sdk",
   "version": "1.8.10",
   "description": "wx cloud client sdk",
-  "main": "lib/wxCloudClientSDK.cjs.js"
+  "main": "index.js"
 }

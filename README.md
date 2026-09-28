@@ -62,6 +62,9 @@ love-kitchen/
 │   ├── constants.js # 分类 / 辣度 / 订单状态常量
 │   ├── store.js     # 购物车与昵称（本地存储）
 │   └── format.js    # 时间格式化
+├── miniprogram_npm/                 # 已构建好的数据库 SDK（单文件产物，随仓库提供）
+├── scripts/
+│   └── build-npm.js                 # 重新生成上面这份产物（升级 SDK 时才用）
 ├── package.json                     # 声明 @cloudbase/wx-cloud-client-sdk 依赖
 └── project.config.json
 ```
@@ -80,10 +83,11 @@ git clone https://github.com/wanshunzhong-ai/love-kitchen.git
 
 **这一步不需要任何后台配置。** 菜单数据已内置在 `data/dishes.js`，点「编译」即可浏览菜单、加购物车。按「预览」扫码，手机也能看。
 
-订单功能依赖的 SDK（`@cloudbase/wx-cloud-client-sdk`）**已构建好放在仓库的 `miniprogram_npm/` 目录**，克隆下来即可用，**不需要执行 npm install / 构建 npm**。
+订单功能依赖的 SDK（`@cloudbase/wx-cloud-client-sdk`）**已按官方规范构建好放在仓库的 `miniprogram_npm/` 目录**，克隆下来即可用，**不需要执行 npm install / 构建 npm**。
 
-> 只有当你升级了 SDK 版本（改 `package.json` 后 `npm install`）才需要「工具 → 构建 npm」重新生成；
-> 若小程序报「暂不支持 npm 模块」，先重新编译，仍报错再检查 `miniprogram_npm/` 目录是否存在。
+> 该 SDK 的入口是 rollup 打包出的自包含单文件（零外部 `require`），因此可以离线复现构建产物。
+> 需要重新生成时（升级 SDK 版本后）执行 `node scripts/build-npm.js`，或用开发者工具的「工具 → 构建 npm」。
+> 若小程序报「暂不支持 npm 模块」，先重新编译 → 清缓存重开项目 → 最后才考虑重新构建。
 
 ### 3. 建数据库表（订单功能需要，换环境才要做）
 
@@ -214,10 +218,10 @@ PostgreSQL 的权限是**两层**的，两层都通过才成功：
 3. 你正处于**已登录**状态（`authenticated` 角色），而不是匿名。
 
 **Q：小程序报「暂不支持 npm 模块：@cloudbase/wx-cloud-client-sdk」？**
-说明运行时找不到 `miniprogram_npm/`。依次试：① 重新点「编译」；② 「工具 → 清除缓存 → 清除全部缓存」后重新编译；③ 检查项目里 `miniprogram_npm/@cloudbase/wx-cloud-client-sdk/` 是否存在——被误删的话，在项目根目录 `npm install` 后执行「工具 → 构建 npm」重新生成。
+按顺序排查：① 确认 `miniprogram_npm/@cloudbase/wx-cloud-client-sdk/index.js` 存在；② 重新点「编译」；③ 「工具 → 清除缓存 → 清除全部缓存」后**关闭项目重新打开**再编译；④ 仍不行就项目根目录 `npm install` 后执行「工具 → 构建 npm」（或 `node scripts/build-npm.js`）。
 
 **Q：改完代码后订单功能突然不好用了？**
-先想想是不是刚改过 `package.json`。改动依赖后要 `npm install` 并重新「构建 npm」。
+先想想是不是刚改过 `package.json`。改动依赖后要 `npm install` 并重新构建（`node scripts/build-npm.js` 或「工具 → 构建 npm」）。
 
 **Q：真机调试报 800059 file not found？**
 开发者工具的文件索引缓存问题：清除缓存 → 重新编译；无效则关闭项目重新打开。

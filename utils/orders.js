@@ -11,7 +11,31 @@
 // 字段与小程序端历史的 NoSQL 版本保持一致（_id / created_at 为毫秒数），
 // 这样 pages/ 下所有页面零改动。
 
-const { init } = require('@cloudbase/wx-cloud-client-sdk')
+// 数据库 SDK 的加载。
+//
+// 优先用相对路径直接指向构建产物（miniprogram_npm/...)，这样完全不依赖
+// 微信工具的 npm 解析规则 —— 万一「构建 npm」状态异常也不会报
+// 「暂不支持 npm 模块」。只有该文件缺失时才回退到按包名加载。
+//
+// 注意：require 的路径必须是静态字符串，小程序才能做依赖分析。
+function loadSDK() {
+  try {
+    return require('../miniprogram_npm/@cloudbase/wx-cloud-client-sdk/index.js')
+  } catch (e) {
+    // 回退：交给小程序的 npm 解析
+    try {
+      return require('@cloudbase/wx-cloud-client-sdk')
+    } catch (e2) {
+      throw new Error(
+        '找不到数据库 SDK。请确认项目里存在 miniprogram_npm/@cloudbase/wx-cloud-client-sdk/index.js' +
+          '（或在开发者工具执行「工具 → 构建 npm」）。原始错误：' +
+          ((e2 && e2.message) || e2)
+      )
+    }
+  }
+}
+
+const { init } = loadSDK()
 
 const ENV_ID = 'zws-04161130-l-d6gd7g8f0c8c7fb17'
 const TABLE = 'orders'
