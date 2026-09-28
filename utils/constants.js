@@ -24,6 +24,13 @@ const ORDER_STATUS = {
   done: { text: '已上菜', emoji: '🎉' },
 }
 
+// 订单状态下拉选项（编辑订单时用）
+const ORDER_STATUS_OPTIONS = [
+  { key: 'pending', text: '待开做', emoji: '📝' },
+  { key: 'cooking', text: '开做中', emoji: '👩‍🍳' },
+  { key: 'done', text: '已上菜', emoji: '🎉' },
+]
+
 // 辣度档位（level 决定 🌶️ 数量与标签配色）
 const SPICE_LEVELS = [
   { key: '不辣', level: 0 },
@@ -32,4 +39,4 @@ const SPICE_LEVELS = [
   { key: '特辣', level: 3 },
 ]
 
-module.exports = { CATEGORIES, DISH_EMOJIS, ORDER_STATUS, SPICE_LEVELS }
+module.exports = { CATEGORIES, DISH_EMOJIS, ORDER_STATUS, ORDER_STATUS_OPTIONS, SPICE_LEVELS }

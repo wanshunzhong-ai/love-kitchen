@@ -50,7 +50,7 @@
       <view class="order-foot">
         <text class="order-time">{{item.timeText}}</text>
         <view class="order-actions">
-          <view wx:if="{{item.status === 'pending'}}" class="act act-ghost" data-idx="{{index}}" catchtap="onCancel">取消</view>
+          <view class="act act-ghost" data-idx="{{index}}" catchtap="onEditOrder">✏️ 编辑</view>
           <view wx:if="{{item.status === 'pending'}}" class="act act-main" data-idx="{{index}}" catchtap="onStartCooking">开始做</view>
           <view wx:if="{{item.status === 'cooking'}}" class="act act-main" data-idx="{{index}}" catchtap="onFinishCooking">做好了</view>
         </view>

@@ -104,37 +104,11 @@ Page({
     this.updateStatus(e.currentTarget.dataset.idx, 'done')
   },
 
-  // 只允许取消「待开做」的订单
-  onCancel(e) {
-    const idx = e.currentTarget.dataset.idx
-    const order = this.data.orders[idx]
+  // 编辑这一单：改菜、改备注、改点菜人、改状态，或整单删除
+  onEditOrder(e) {
+    const order = this.data.orders[e.currentTarget.dataset.idx]
     if (!order) return
-    wx.showModal({
-      title: '取消这单？',
-      content: '「' + (order.order_by || '宝贝') + '」的订单将被删掉',
-      confirmText: '取消订单',
-      cancelText: '手滑了',
-      success: async (res) => {
-        if (!res.confirm) return
-        try {
-          const r = await api.call('deleteOrder', { id: order.id })
-          if (!r.removed) {
-            wx.showToast({ title: '没删掉，再试一次', icon: 'none' })
-            return
-          }
-          this.setData({
-            orders: this.data.orders.filter(function (o) {
-              return o.id !== order.id
-            }),
-          })
-          this.applyFilter()
-          wx.showToast({ title: '已取消', icon: 'none' })
-        } catch (err) {
-          console.error('[orders] 取消订单失败', err)
-          wx.showToast({ title: '网络开小差了，稍后再试', icon: 'none' })
-        }
-      },
-    })
+    wx.navigateTo({ url: '/pages/order-edit/order-edit?id=' + order.id })
   },
 
   goMenu() {

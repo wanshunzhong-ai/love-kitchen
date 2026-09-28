@@ -3,7 +3,8 @@
     "pages/menu/menu",
     "pages/orders/orders",
     "pages/checkout/checkout",
-    "pages/dish-edit/dish-edit"
+    "pages/dish-edit/dish-edit",
+    "pages/order-edit/order-edit"
   ],
   "window": {
     "navigationBarBackgroundColor": "#FF7A9E",

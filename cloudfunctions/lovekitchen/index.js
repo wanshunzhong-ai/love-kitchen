@@ -129,6 +129,48 @@ async function createOrder(event) {
   return { id: res._id }
 }
 
+async function getOrder(event) {
+  const id = event.id
+  if (!id) throw new Error('缺少订单 id')
+  const res = await db.collection(ORDERS).doc(String(id)).get()
+  return { order: res.data || null }
+}
+
+// 编辑订单：可改菜品清单、备注、点菜人；菜品为全量替换（前端每次提交完整清单）
+async function updateOrder(event) {
+  const id = event.id
+  const payload = event.payload || {}
+  if (!id) throw new Error('缺少订单 id')
+
+  const items = Array.isArray(payload.items) ? payload.items : []
+  if (!items.length) throw new Error('订单里没有菜品')
+
+  const patch = {
+    items: items.map(function (it) {
+      return {
+        dishId: it.dishId,
+        name: it.name,
+        emoji: it.emoji,
+        spice: it.spice || '不辣',
+        qty: Number(it.qty) || 1,
+      }
+    }),
+    remark: payload.remark || '',
+    order_by: payload.order_by || '宝贝',
+    updated_at: Date.now(),
+  }
+  // 允许顺带改状态，但只接受合法值
+  if (payload.status !== undefined) {
+    if (['pending', 'cooking', 'done'].indexOf(payload.status) < 0) {
+      throw new Error('订单状态不合法')
+    }
+    patch.status = payload.status
+  }
+
+  const res = await db.collection(ORDERS).doc(String(id)).update({ data: patch })
+  return { updated: (res.stats && res.stats.updated) || 0 }
+}
+
 async function updateOrderStatus(event) {
   const id = event.id
   const status = event.status
@@ -169,6 +211,8 @@ const ACTIONS = {
   deleteDish: deleteDish,
   listOrders: listOrders,
   createOrder: createOrder,
+  getOrder: getOrder,
+  updateOrder: updateOrder,
   updateOrderStatus: updateOrderStatus,
   deleteOrder: deleteOrder,
   stats: stats,

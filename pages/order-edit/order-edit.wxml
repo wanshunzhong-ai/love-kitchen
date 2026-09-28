@@ -1,0 +1,114 @@
+<view class="page">
+  <view wx:if="{{loading}}" class="state">
+    <text class="state-emoji">📝</text>
+    <text class="state-tip">正在打开这一单…</text>
+  </view>
+
+  <block wx:else>
+    <!-- 菜品清单 -->
+    <view class="card section">
+      <view class="section-title">
+        🧺 这一单的菜
+        <text class="title-count">共 {{totalCount}} 道</text>
+      </view>
+
+      <view class="cart-item" wx:for="{{items}}" wx:key="key">
+        <text class="ci-emoji">{{item.emoji}}</text>
+        <view class="ci-main">
+          <text class="ci-name">{{item.name}}</text>
+          <text class="ci-spice spice-{{item.spiceIdx}}">{{item.spice}}</text>
+        </view>
+        <view class="ci-stepper">
+          <view class="step" data-key="{{item.key}}" data-delta="-1" catchtap="onQtyChange">−</view>
+          <text class="step-num">{{item.qty}}</text>
+          <view class="step step-plus" data-key="{{item.key}}" data-delta="1" catchtap="onQtyChange">＋</view>
+        </view>
+        <text class="ci-remove" data-key="{{item.key}}" catchtap="onRemoveItem">✕</text>
+      </view>
+
+      <view wx:if="{{items.length === 0}}" class="empty-hint">这一单已经空了，从下面加几道菜吧</view>
+
+      <view class="add-dish" bindtap="openPicker">＋ 从菜单加菜</view>
+    </view>
+
+    <!-- 点菜人 -->
+    <view class="card section">
+      <view class="section-title">🙋 谁点的</view>
+      <input
+        class="input"
+        value="{{orderBy}}"
+        placeholder="比如：宝贝"
+        placeholder-class="ph"
+        maxlength="12"
+        bindinput="onNickInput"
+      />
+    </view>
+
+    <!-- 备注 -->
+    <view class="card section">
+      <view class="section-title">💬 想对大厨说</view>
+      <textarea
+        class="textarea"
+        value="{{remark}}"
+        placeholder="辣度、忌口、想说的话…（可不填）"
+        placeholder-class="ph"
+        maxlength="100"
+        bindinput="onRemarkInput"
+      />
+    </view>
+
+    <!-- 状态 -->
+    <view class="card section">
+      <view class="section-title">📌 这一单到哪一步了</view>
+      <view class="status-row">
+        <view
+          class="schip {{status === item.key ? 'schip-active' : ''}}"
+          wx:for="{{statusOptions}}"
+          wx:key="key"
+          data-status="{{item.key}}"
+          bindtap="onTapStatus"
+        >{{item.emoji}} {{item.text}}</view>
+      </view>
+    </view>
+
+    <button class="btn-main submit" disabled="{{saving}}" bindtap="onSave">保存修改 ✓</button>
+    <view class="btn-delete" bindtap="onDelete">🗑 删掉这一单</view>
+  </block>
+
+  <!-- 加菜弹层 -->
+  <view wx:if="{{pickerOpen}}" class="mask" bindtap="closePicker">
+    <view class="sheet" catchtap="noop">
+      <view class="sheet-head">
+        <text class="sheet-title">加菜</text>
+        <text class="sheet-close" bindtap="closePicker">✕</text>
+      </view>
+
+      <scroll-view class="cats" scroll-x enhanced="{{true}}" show-scrollbar="{{false}}">
+        <view
+          class="cat {{activeCategory === item.key ? 'cat-active' : ''}}"
+          wx:for="{{categories}}"
+          wx:key="key"
+          data-cat="{{item.key}}"
+          bindtap="onTapPickerCategory"
+        >{{item.emoji}} {{item.key}}</view>
+      </scroll-view>
+
+      <scroll-view class="picker-list" scroll-y>
+        <view wx:if="{{pickerLoading}}" class="picker-state">正在翻菜单…</view>
+        <view wx:elif="{{pickerDishes.length === 0}}" class="picker-state">这个分类下还没有菜</view>
+        <view
+          class="pick-item"
+          wx:for="{{pickerDishes}}"
+          wx:key="_id"
+          data-idx="{{index}}"
+          bindtap="onPickDish"
+        >
+          <text class="pick-emoji">{{item.emoji}}</text>
+          <text class="pick-name">{{item.name}}</text>
+          <text class="pick-spice">{{item.spice || '不辣'}}</text>
+          <text class="pick-add">＋</text>
+        </view>
+      </scroll-view>
+    </view>
+  </view>
+</view>

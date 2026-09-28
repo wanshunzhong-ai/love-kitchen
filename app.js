@@ -8,9 +8,7 @@ App({
       return
     }
     wx.cloud.init({
-      // 这里填你的云开发环境 ID（微信开发者工具 → 云开发 → 设置 → 环境 ID）
-      // 若只有一个环境，也可以写 wx.cloud.DYNAMIC_CURRENT_ENV
-      env: 'lovekitchen-env',
+      // 不传 env：自动使用你开通云开发时的默认环境（只有一个环境时最省心）
       traceUser: true,
     })
   },

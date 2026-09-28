@@ -1,0 +1,319 @@
+/* 编辑订单页 */
+.page {
+  padding: 24rpx 24rpx 80rpx;
+}
+
+.section {
+  padding: 28rpx;
+  margin-bottom: 24rpx;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #4A3B38;
+  margin-bottom: 20rpx;
+}
+
+.title-count {
+  font-size: 22rpx;
+  font-weight: 400;
+  color: #B9A29B;
+}
+
+/* 菜品行 */
+.cart-item {
+  display: flex;
+  align-items: center;
+  padding: 16rpx 0;
+  border-bottom: 2rpx solid #FFF2EC;
+}
+
+.ci-emoji {
+  font-size: 44rpx;
+  width: 72rpx;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.ci-main {
+  flex: 1;
+  min-width: 0;
+  padding: 0 12rpx;
+}
+
+.ci-name {
+  font-size: 28rpx;
+  color: #4A3B38;
+}
+
+.ci-spice {
+  margin-left: 12rpx;
+  padding: 2rpx 12rpx;
+  border-radius: 999rpx;
+  font-size: 20rpx;
+  flex-shrink: 0;
+}
+
+.spice-0 {
+  background: #F4EDE9;
+  color: #A89690;
+}
+
+.spice-1 {
+  background: #FFE9E0;
+  color: #E07B4F;
+}
+
+.spice-2 {
+  background: #FFDCD6;
+  color: #E0533F;
+}
+
+.spice-3 {
+  background: #FFD0CC;
+  color: #D42B2B;
+}
+
+.ci-stepper {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.step {
+  width: 48rpx;
+  height: 48rpx;
+  line-height: 44rpx;
+  text-align: center;
+  border-radius: 50%;
+  border: 2rpx solid #EAD9D3;
+  color: #8A7772;
+  font-size: 30rpx;
+}
+
+.step-plus {
+  background: linear-gradient(135deg, #FF7A9E, #FF9F43);
+  border-color: transparent;
+  color: #ffffff;
+}
+
+.step-num {
+  min-width: 56rpx;
+  text-align: center;
+  font-size: 28rpx;
+  font-weight: 600;
+}
+
+.ci-remove {
+  width: 48rpx;
+  text-align: center;
+  color: #D8C7C1;
+  font-size: 26rpx;
+  margin-left: 8rpx;
+  flex-shrink: 0;
+}
+
+.empty-hint {
+  padding: 32rpx 0;
+  text-align: center;
+  font-size: 24rpx;
+  color: #C9B8B2;
+}
+
+.add-dish {
+  margin-top: 24rpx;
+  text-align: center;
+  font-size: 26rpx;
+  color: #FF5C8A;
+  font-weight: 600;
+  background: #FFF3F6;
+  border-radius: 999rpx;
+  padding: 18rpx 0;
+  border: 2rpx dashed #FFD3E0;
+}
+
+/* 输入 */
+.input {
+  background: #FFFBF9;
+  border-radius: 16rpx;
+  padding: 20rpx 24rpx;
+  font-size: 28rpx;
+}
+
+.textarea {
+  background: #FFFBF9;
+  border-radius: 16rpx;
+  padding: 20rpx 24rpx;
+  font-size: 28rpx;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 120rpx;
+}
+
+.ph {
+  color: #D8C7C1;
+}
+
+/* 状态 */
+.status-row {
+  display: flex;
+  gap: 16rpx;
+}
+
+.schip {
+  flex: 1;
+  text-align: center;
+  padding: 16rpx 0;
+  border-radius: 999rpx;
+  font-size: 24rpx;
+  color: #8A7772;
+  background: #FFFBF9;
+  border: 2rpx solid #F6E3DC;
+}
+
+.schip-active {
+  background: linear-gradient(135deg, #FF7A9E, #FF9F43);
+  color: #ffffff;
+  border-color: transparent;
+  font-weight: 600;
+}
+
+/* 按钮 */
+.submit {
+  margin-top: 16rpx;
+  line-height: 96rpx;
+  font-size: 30rpx;
+}
+
+.btn-delete {
+  margin-top: 24rpx;
+  text-align: center;
+  line-height: 88rpx;
+  font-size: 28rpx;
+  color: #D9534F;
+  background: #FFF1F0;
+  border-radius: 999rpx;
+}
+
+/* 加菜弹层 */
+.mask {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background: rgba(63, 47, 44, 0.45);
+  z-index: 100;
+  display: flex;
+  align-items: flex-end;
+}
+
+.sheet {
+  width: 100%;
+  background: #FFF7F3;
+  border-radius: 32rpx 32rpx 0 0;
+  padding: 28rpx 24rpx 40rpx;
+  box-sizing: border-box;
+  max-height: 78vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20rpx;
+}
+
+.sheet-title {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #4A3B38;
+}
+
+.sheet-close {
+  font-size: 32rpx;
+  color: #B9A29B;
+  padding: 0 12rpx;
+}
+
+.cats {
+  white-space: nowrap;
+  margin-bottom: 20rpx;
+}
+
+.cat {
+  display: inline-block;
+  padding: 12rpx 28rpx;
+  margin-right: 16rpx;
+  background: #ffffff;
+  border-radius: 999rpx;
+  font-size: 24rpx;
+  color: #8A7772;
+  border: 2rpx solid #F6E3DC;
+}
+
+.cat-active {
+  background: linear-gradient(135deg, #FF7A9E, #FF9F43);
+  color: #ffffff;
+  border-color: transparent;
+  font-weight: 600;
+}
+
+.picker-list {
+  flex: 1;
+  max-height: 54vh;
+}
+
+.picker-state {
+  padding: 60rpx 0;
+  text-align: center;
+  font-size: 24rpx;
+  color: #B9A29B;
+}
+
+.pick-item {
+  display: flex;
+  align-items: center;
+  background: #ffffff;
+  border-radius: 20rpx;
+  padding: 20rpx 24rpx;
+  margin-bottom: 16rpx;
+}
+
+.pick-emoji {
+  font-size: 44rpx;
+  width: 64rpx;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.pick-name {
+  flex: 1;
+  font-size: 28rpx;
+  color: #4A3B38;
+  padding-left: 8rpx;
+}
+
+.pick-spice {
+  font-size: 20rpx;
+  color: #C97B8E;
+  background: #FFF0F4;
+  padding: 4rpx 14rpx;
+  border-radius: 999rpx;
+  flex-shrink: 0;
+}
+
+.pick-add {
+  width: 56rpx;
+  text-align: center;
+  font-size: 34rpx;
+  color: #FF5C8A;
+  font-weight: 700;
+  flex-shrink: 0;
+}
