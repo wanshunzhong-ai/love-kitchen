@@ -29,6 +29,7 @@
   },
   "style": "v2",
   "componentFramework": "glass-easel",
+  "cloud": true,
   "sitemapLocation": "sitemap.json",
   "lazyCodeLoading": "requiredComponents"
 }
