@@ -1,5 +1,6 @@
 // 加菜 / 编辑菜品页：新增、修改、下架菜品
 const api = require('../../utils/api')
+const ui = require('../../utils/ui')
 const { CATEGORIES, DISH_EMOJIS, SPICE_LEVELS } = require('../../utils/constants')
 
 Page({
@@ -30,7 +31,7 @@ Page({
       const res = await api.call('getDish', { id: id })
       const data = res.dish
       if (!data) {
-        wx.showToast({ title: '这道菜不存在了', icon: 'none' })
+        ui.toast('这道菜不存在了')
         setTimeout(function () {
           wx.navigateBack()
         }, 800)
@@ -46,7 +47,7 @@ Page({
       })
     } catch (err) {
       console.error('[dish-edit] 加载菜品失败', err)
-      wx.showToast({ title: '网络开小差了', icon: 'none' })
+      ui.toast('网络开小差了')
       setTimeout(function () {
         wx.navigateBack()
       }, 800)
@@ -77,11 +78,11 @@ Page({
     if (this.data.saving) return
     const name = (this.data.name || '').trim()
     if (!name) {
-      wx.showToast({ title: '先给菜起个名字吧', icon: 'none' })
+      ui.toast('先给菜起个名字吧')
       return
     }
     this.setData({ saving: true })
-    wx.showLoading({ title: '保存中…', mask: true })
+    ui.showLoading('保存中…')
     const payload = {
       name: name,
       category: this.data.category,
@@ -91,15 +92,15 @@ Page({
     }
     try {
       await api.call('saveDish', { id: this.data.id, payload: payload })
-      wx.hideLoading()
-      wx.showToast({ title: this.data.id ? '改好了 ✓' : '上新啦 ✓', icon: 'none' })
+      ui.hideLoading()
+      ui.toast(this.data.id ? '改好了 ✓' : '上新啦 ✓')
       setTimeout(function () {
         wx.navigateBack()
       }, 800)
     } catch (err) {
-      wx.hideLoading()
+      ui.hideLoading()
       console.error('[dish-edit] 保存失败', err)
-      wx.showToast({ title: '没保存成功，再试一次', icon: 'none' })
+      ui.toast('没保存成功，再试一次')
       this.setData({ saving: false })
     }
   },
@@ -117,16 +118,16 @@ Page({
         try {
           const r = await api.call('deleteDish', { id: id })
           if (!r.removed) {
-            wx.showToast({ title: '没删掉，再试一次', icon: 'none' })
+            ui.toast('没删掉，再试一次')
             return
           }
-          wx.showToast({ title: '已下架', icon: 'none' })
+          ui.toast('已下架')
           setTimeout(function () {
             wx.navigateBack()
           }, 800)
         } catch (err) {
           console.error('[dish-edit] 下架菜品失败', err)
-          wx.showToast({ title: '网络开小差了，稍后再试', icon: 'none' })
+          ui.toast('网络开小差了，稍后再试')
         }
       },
     })

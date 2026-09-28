@@ -1,5 +1,6 @@
 // 订单页：两个人都能看到全部订单，并推进状态（待开做 → 开做中 → 已上菜）
 const api = require('../../utils/api')
+const ui = require('../../utils/ui')
 const { ORDER_STATUS, SPICE_LEVELS } = require('../../utils/constants')
 const { formatTime } = require('../../utils/format')
 
@@ -76,15 +77,15 @@ Page({
   async updateStatus(idx, nextStatus) {
     const order = this.data.orders[idx]
     if (!order) return
-    wx.showLoading({ title: '处理中…', mask: true })
+    ui.showLoading('处理中…')
     try {
       const res = await api.call('updateOrderStatus', {
         id: order.id,
         status: nextStatus,
       })
-      wx.hideLoading()
+      ui.hideLoading()
       if (!res.updated) {
-        wx.showToast({ title: '没更新成功，再试一次', icon: 'none' })
+        ui.toast('没更新成功，再试一次')
         return
       }
       const orders = this.data.orders.map(function (o) {
@@ -92,11 +93,11 @@ Page({
       })
       this.setData({ orders: orders })
       this.applyFilter()
-      wx.showToast({ title: ORDER_STATUS[nextStatus].text, icon: 'none' })
+      ui.toast(ORDER_STATUS[nextStatus].text)
     } catch (err) {
-      wx.hideLoading()
+      ui.hideLoading()
       console.error('[orders] 状态更新失败', err)
-      wx.showToast({ title: '网络开小差了，稍后再试', icon: 'none' })
+      ui.toast('网络开小差了，稍后再试')
     }
   },
 

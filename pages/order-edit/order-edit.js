@@ -1,5 +1,6 @@
 // 编辑订单页：改菜品、改每道菜的辣度、改备注、改点菜人、改状态，或整单删除
 const api = require('../../utils/api')
+const ui = require('../../utils/ui')
 const { CATEGORIES, ORDER_STATUS_OPTIONS, SPICE_LEVELS } = require('../../utils/constants')
 
 /** 订单内条目的唯一键：同一道菜的不同辣度算两条 */
@@ -30,7 +31,7 @@ Page({
   onLoad(options) {
     const id = options && options.id ? String(options.id) : ''
     if (!id) {
-      wx.showToast({ title: '订单不存在', icon: 'none' })
+      ui.toast('订单不存在')
       setTimeout(function () {
         wx.navigateBack()
       }, 800)
@@ -72,7 +73,7 @@ Page({
       const res = await api.call('getOrder', { id: id })
       const order = res.order
       if (!order) {
-        wx.showToast({ title: '这单不存在了', icon: 'none' })
+        ui.toast('这单不存在了')
         setTimeout(function () {
           wx.navigateBack()
         }, 800)
@@ -89,7 +90,7 @@ Page({
       })
     } catch (err) {
       console.error('[order-edit] 加载订单失败', err)
-      wx.showToast({ title: '网络开小差了', icon: 'none' })
+      ui.toast('网络开小差了')
       setTimeout(function () {
         wx.navigateBack()
       }, 800)
@@ -179,7 +180,7 @@ Page({
     } catch (err) {
       console.error('[order-edit] 加载菜单失败', err)
       this.setData({ pickerLoading: false })
-      wx.showToast({ title: '菜单没加载出来，稍后再试', icon: 'none' })
+      ui.toast('菜单没加载出来，稍后再试')
     }
   },
 
@@ -234,7 +235,7 @@ Page({
     }
 
     this.setData({ items: items, totalCount: this.countOf(items) })
-    wx.showToast({ title: '已加入这一单（' + spice + '）', icon: 'none' })
+    ui.toast('已加入这一单（' + spice + '）')
   },
 
   // ---------- 保存 / 删除 ----------
@@ -242,11 +243,11 @@ Page({
   async onSave() {
     if (this.data.saving) return
     if (!this.data.items.length) {
-      wx.showToast({ title: '这一单至少要留一道菜', icon: 'none' })
+      ui.toast('这一单至少要留一道菜')
       return
     }
     this.setData({ saving: true })
-    wx.showLoading({ title: '保存中…', mask: true })
+    ui.showLoading('保存中…')
     try {
       const res = await api.call('updateOrder', {
         id: this.data.id,
@@ -265,20 +266,20 @@ Page({
           status: this.data.status,
         },
       })
-      wx.hideLoading()
+      ui.hideLoading()
       if (!res.updated) {
-        wx.showToast({ title: '没保存成功，再试一次', icon: 'none' })
+        ui.toast('没保存成功，再试一次')
         this.setData({ saving: false })
         return
       }
-      wx.showToast({ title: '改好了 ✓', icon: 'none' })
+      ui.toast('改好了 ✓')
       setTimeout(function () {
         wx.navigateBack()
       }, 800)
     } catch (err) {
-      wx.hideLoading()
+      ui.hideLoading()
       console.error('[order-edit] 保存订单失败', err)
-      wx.showToast({ title: '没保存成功，再试一次', icon: 'none' })
+      ui.toast('没保存成功，再试一次')
       this.setData({ saving: false })
     }
   },
@@ -293,22 +294,22 @@ Page({
       cancelText: '留着',
       success: async (res) => {
         if (!res.confirm) return
-        wx.showLoading({ title: '删除中…', mask: true })
+        ui.showLoading('删除中…')
         try {
           const r = await api.call('deleteOrder', { id: id })
-          wx.hideLoading()
+          ui.hideLoading()
           if (!r.removed) {
-            wx.showToast({ title: '没删掉，再试一次', icon: 'none' })
+            ui.toast('没删掉，再试一次')
             return
           }
-          wx.showToast({ title: '已删除', icon: 'none' })
+          ui.toast('已删除')
           setTimeout(function () {
             wx.navigateBack()
           }, 800)
         } catch (err) {
-          wx.hideLoading()
+          ui.hideLoading()
           console.error('[order-edit] 删除订单失败', err)
-          wx.showToast({ title: '网络开小差了，稍后再试', icon: 'none' })
+          ui.toast('网络开小差了，稍后再试')
         }
       },
     })

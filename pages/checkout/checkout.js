@@ -1,6 +1,7 @@
 // 确认订单页：调整数量、逐道改辣度、写备注、填点菜人，提交到云端
 const api = require('../../utils/api')
 const store = require('../../utils/store')
+const ui = require('../../utils/ui')
 const { SPICE_LEVELS } = require('../../utils/constants')
 
 Page({
@@ -61,13 +62,13 @@ Page({
     if (this.data.submitting) return
     const cart = this.data.cart
     if (!cart.length) {
-      wx.showToast({ title: '还没选菜哦', icon: 'none' })
+      ui.toast('还没选菜哦')
       return
     }
     const nickname = (this.data.nickname || '').trim() || '宝贝'
     store.setNickname(nickname)
     this.setData({ submitting: true })
-    wx.showLoading({ title: '下单中…', mask: true })
+    ui.showLoading('下单中…')
     try {
       const items = cart.map(function (it) {
         return {
@@ -86,16 +87,16 @@ Page({
           status: 'pending',
         },
       })
-      wx.hideLoading()
+      ui.hideLoading()
       store.clearCart()
-      wx.showToast({ title: '订单已送达厨房 🎉', icon: 'none' })
+      ui.toast('订单已送达厨房 🎉')
       setTimeout(function () {
         wx.switchTab({ url: '/pages/orders/orders' })
       }, 800)
     } catch (err) {
-      wx.hideLoading()
+      ui.hideLoading()
       console.error('[checkout] 下单失败', err)
-      wx.showToast({ title: '下单没成功，再试一次', icon: 'none' })
+      ui.toast('下单没成功，再试一次')
       this.setData({ submitting: false })
     }
   },

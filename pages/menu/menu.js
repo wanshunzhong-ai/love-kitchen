@@ -2,6 +2,7 @@
 const api = require('../../utils/api')
 const { CATEGORIES, SPICE_LEVELS } = require('../../utils/constants')
 const store = require('../../utils/store')
+const ui = require('../../utils/ui')
 
 const ALL = { key: '全部', emoji: '📜' }
 
@@ -146,7 +147,7 @@ Page({
       cartCount: store.cartCount(),
       'spicePicker.open': false,
     })
-    wx.showToast({ title: '已加入购物车', icon: 'success' })
+    ui.toast('已加入购物车', 'success')
   },
 
   // 点菜品卡片 → 编辑这道菜
@@ -169,7 +170,7 @@ Page({
   onRandom() {
     const dishes = this.data.dishes
     if (!dishes.length) {
-      wx.showToast({ title: '菜单还是空的，先加道菜吧', icon: 'none' })
+      ui.toast('菜单还是空的，先加道菜吧')
       return
     }
     const dish = dishes[Math.floor(Math.random() * dishes.length)]
