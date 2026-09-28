@@ -74,8 +74,10 @@ Page({
   },
 
   // 推进状态：写入云端后本地同步，失败时明确提示
+  // 注意：找的是 filteredOrders（列表实际渲染的那份），
+  //       否则「筛选后」索引会与 orders 对不上，改错单。
   async updateStatus(idx, nextStatus) {
-    const order = this.data.orders[idx]
+    const order = this.data.filteredOrders[idx]
     if (!order) return
     ui.showLoading('处理中…')
     try {
@@ -111,9 +113,49 @@ Page({
 
   // 编辑这一单：改菜、改备注、改点菜人、改状态，或整单删除
   onEditOrder(e) {
-    const order = this.data.orders[e.currentTarget.dataset.idx]
+    const order = this.data.filteredOrders[e.currentTarget.dataset.idx]
     if (!order) return
     wx.navigateTo({ url: '/pages/order-edit/order-edit?id=' + order.id })
+  },
+
+  // 删除整单：二次确认后从云端删除，再刷新列表
+  onDeleteOrder(e) {
+    const order = this.data.filteredOrders[e.currentTarget.dataset.idx]
+    if (!order) return
+    const self = this
+    wx.showModal({
+      title: '删掉这一单？',
+      content: '删掉就找不回来了哦',
+      confirmText: '删掉',
+      confirmColor: '#FF7A9E',
+      cancelText: '再想想',
+      success: function (res) {
+        if (res.confirm) self.doDeleteOrder(order)
+      },
+    })
+  },
+
+  async doDeleteOrder(order) {
+    ui.showLoading('删除中…')
+    try {
+      const res = await api.call('deleteOrder', { id: order.id })
+      ui.hideLoading()
+      if (!res.removed) {
+        ui.toast('没删掉，再试一次')
+        return
+      }
+      // 本地同步移除，避免再拉一次接口
+      const orders = this.data.orders.filter(function (o) {
+        return o.id !== order.id
+      })
+      this.setData({ orders: orders })
+      this.applyFilter()
+      ui.toast('已删除')
+    } catch (err) {
+      ui.hideLoading()
+      console.error('[orders] 删除订单失败', err)
+      ui.toast('网络开小差了，稍后再试')
+    }
   },
 
   goMenu() {

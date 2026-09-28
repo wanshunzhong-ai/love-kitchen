@@ -52,6 +52,7 @@
         <text class="order-time">{{item.timeText}}</text>
         <view class="order-actions">
           <view class="act act-ghost" data-idx="{{index}}" catchtap="onEditOrder">✏️ 编辑</view>
+          <view class="act act-danger" data-idx="{{index}}" catchtap="onDeleteOrder">🗑️ 删掉</view>
           <view wx:if="{{item.status === 'pending'}}" class="act act-main" data-idx="{{index}}" catchtap="onStartCooking">开始做</view>
           <view wx:if="{{item.status === 'cooking'}}" class="act act-main" data-idx="{{index}}" catchtap="onFinishCooking">做好了</view>
         </view>

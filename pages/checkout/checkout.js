@@ -89,14 +89,19 @@ Page({
       })
       ui.hideLoading()
       store.clearCart()
+      // 重置提交态，否则从订单页返回后按钮会一直是禁用的
+      this.setData({ submitting: false })
       ui.toast('订单已送达厨房 🎉')
+      // 用 navigateBack 回订单页（orders 是 tabBar 页，switchTab 会保留本页在栈里）
       setTimeout(function () {
         wx.switchTab({ url: '/pages/orders/orders' })
       }, 800)
     } catch (err) {
       ui.hideLoading()
       console.error('[checkout] 下单失败', err)
-      ui.toast('下单没成功，再试一次')
+      // 把真实错误透出来，避免只看到「下单没成功」却无从排查
+      const msg = (err && (err.message || err.errMsg)) || '未知错误'
+      ui.toast('下单没成功：' + msg)
       this.setData({ submitting: false })
     }
   },

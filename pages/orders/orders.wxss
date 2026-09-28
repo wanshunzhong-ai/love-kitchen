@@ -160,15 +160,33 @@
   color: #8A7772;
 }
 
-/* 编辑按钮：三个按钮并排时收窄一点，避免换行 */
+/* 编辑按钮：多个按钮并排时收窄一点，避免换行 */
 .order-actions .act-ghost {
-  padding: 12rpx 22rpx;
-  font-size: 24rpx;
+  padding: 12rpx 18rpx;
+  font-size: 23rpx;
 }
 
 .order-actions .act-main {
-  padding: 12rpx 26rpx;
-  font-size: 24rpx;
+  padding: 12rpx 22rpx;
+  font-size: 23rpx;
+}
+
+/* 删除按钮：描边弱化，避免误触；点了还有二次确认兜底 */
+.act-danger {
+  border: 2rpx solid #F3D2D8;
+  color: #C96A80;
+}
+
+.order-actions .act-danger {
+  padding: 12rpx 18rpx;
+  font-size: 23rpx;
+}
+
+/* 按钮多了以后允许换行，窄屏也不会挤成一团 */
+.order-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .act-main {
