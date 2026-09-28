@@ -6,7 +6,7 @@ Page({
   data: {
     id: null,
     name: '',
-    category: '荤菜',
+    category: '经典热菜',
     emoji: '🍗',
     spice: '不辣',
     description: '',

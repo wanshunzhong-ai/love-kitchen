@@ -4,7 +4,7 @@
 
 ## ✨ 功能特性
 
-- 📖 **菜单分类浏览**：荤菜 / 素菜 / 汤 / 主食 / 甜品 / 其他
+- 📖 **菜单分类浏览**：经典热菜 / 凉菜腌腊 / 汤羹煲 / 小吃点心 / 米粉主食 / 其他（已预置 100 道江西特色菜）
 - 🛒 **购物车下单**：数量加减、一键下单、点菜人署名
 - 💬 **订单备注**：辣度、忌口、想说的小留言
 - 👩‍🍳 **订单状态跟踪**：待开做 → 开做中 → 已上菜，双方都能推进状态
@@ -14,11 +14,11 @@
 
 ## 🛠 技术栈
 
-| 层 | 技术 |
-|---|---|
-| 前端 | 微信原生小程序（WXML / WXSS / JS），零框架零依赖 |
-| 后端 | WorkBuddy Cloud（Serverless，免服务器运维） |
-| 数据库 | PostgreSQL + 行级安全（RLS） |
+| 层       | 技术                                                               |
+| ------- | ---------------------------------------------------------------- |
+| 前端      | 微信原生小程序（WXML / WXSS / JS），零框架零依赖                                 |
+| 后端      | WorkBuddy Cloud（Serverless，免服务器运维）                               |
+| 数据库     | PostgreSQL + 行级安全（RLS）                                           |
 | 客户端 SDK | `@tencent-ai/workbuddy-cloud-sdk`（supabase-js 风格 API，小程序专用构建已内置） |
 
 ## 📂 项目结构
@@ -53,7 +53,7 @@ git clone https://github.com/wanshunzhong-ai/love-kitchen.git
 
 ### 2. 依赖说明
 
-云 SDK 构建产物已内置在 `miniprogram_npm/`，**克隆即可运行**，不需要 `npm install`。
+云 SDK 构建产物已内置在 `miniprogram_npm/`，**克隆即可运行**，不需要 `npm install`。  
 如果产物被清理过：先 `npm install`，再在开发者工具点「工具 → 构建 npm」。
 
 ### 3. 本地运行注意
@@ -71,26 +71,26 @@ git clone https://github.com/wanshunzhong-ai/love-kitchen.git
 
 **dishes（菜单）**
 
-| 字段 | 类型 | 说明 |
-|---|---|---|
-| id | BIGINT IDENTITY | 主键 |
-| name | TEXT NOT NULL | 菜名 |
-| category | TEXT，默认 '其他' | 分类 |
-| emoji | TEXT，默认 '🍽️' | 展示图标 |
-| spice | TEXT，默认 '不辣' | 辣度：不辣 / 微辣 / 中辣 / 特辣 |
-| description | TEXT | 介绍 |
-| created_at | TIMESTAMPTZ | 创建时间 |
+| 字段          | 类型              | 说明                   |
+| ----------- | --------------- | -------------------- |
+| id          | BIGINT IDENTITY | 主键                   |
+| name        | TEXT NOT NULL   | 菜名                   |
+| category    | TEXT，默认 '其他'    | 分类                   |
+| emoji       | TEXT，默认 '🍽️'   | 展示图标                 |
+| spice       | TEXT，默认 '不辣'    | 辣度：不辣 / 微辣 / 中辣 / 特辣 |
+| description | TEXT            | 介绍                   |
+| created_at  | TIMESTAMPTZ     | 创建时间                 |
 
 **orders（订单）**
 
-| 字段 | 类型 | 说明 |
-|---|---|---|
-| id | BIGINT IDENTITY | 主键 |
-| items | JSONB NOT NULL | 菜品快照 `[{dishId, name, emoji, spice, qty}]` |
-| remark | TEXT | 订单备注 |
-| order_by | TEXT，默认 '宝贝' | 点菜人 |
-| status | TEXT，默认 'pending' | pending（待开做）/ cooking（开做中）/ done（已上菜） |
-| created_at / updated_at | TIMESTAMPTZ | 时间 |
+| 字段                      | 类型                | 说明                                         |
+| ----------------------- | ----------------- | ------------------------------------------ |
+| id                      | BIGINT IDENTITY   | 主键                                         |
+| items                   | JSONB NOT NULL    | 菜品快照 `[{dishId, name, emoji, spice, qty}]` |
+| remark                  | TEXT              | 订单备注                                       |
+| order_by                | TEXT，默认 '宝贝'      | 点菜人                                        |
+| status                  | TEXT，默认 'pending' | pending（待开做）/ cooking（开做中）/ done（已上菜）      |
+| created_at / updated_at | TIMESTAMPTZ       | 时间                                         |
 
 **建表 SQL（含两人共享的 RLS 策略）**
 
@@ -126,13 +126,13 @@ CREATE POLICY orders_couple_all ON orders FOR ALL TO authenticated, anon USING (
 
 ## ❓ 常见问题
 
-**Q：模拟器提示「菜单没加载出来，网络可能开小差了」？**
+**Q：模拟器提示「菜单没加载出来，网络可能开小差了」？**  
 开发阶段未走正式发布，接口域名不在微信白名单里，勾选「不校验合法域名」即可（见快速开始第 3 步）。正式发布时域名会自动注册。
 
-**Q：真机调试报 800059 file not found？**
+**Q：真机调试报 800059 file not found？**  
 开发者工具的文件索引缓存问题：清除缓存 → 重新编译；无效则关闭项目重新打开。
 
-**Q：提示找不到模块 `@tencent-ai/workbuddy-cloud-sdk`？**
+**Q：提示找不到模块 `@tencent-ai/workbuddy-cloud-sdk`？**  
 `npm install` 后在开发者工具点「工具 → 构建 npm」。
 
 ## 🗺 Roadmap
