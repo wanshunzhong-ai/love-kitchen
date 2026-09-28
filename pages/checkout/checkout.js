@@ -1,5 +1,5 @@
 // 确认订单页：调整数量、写备注、填点菜人，提交到云端
-const { cloud } = require('../../utils/cloud')
+const api = require('../../utils/api')
 const store = require('../../utils/store')
 
 Page({
@@ -58,16 +58,23 @@ Page({
     wx.showLoading({ title: '下单中…', mask: true })
     try {
       const items = cart.map(function (it) {
-        return { dishId: it.dishId, name: it.name, emoji: it.emoji, qty: it.qty }
+        return {
+          dishId: it.dishId,
+          name: it.name,
+          emoji: it.emoji,
+          spice: it.spice || '不辣',
+          qty: it.qty,
+        }
       })
-      const { error } = await cloud.database.from('orders').insert({
-        items: items,
-        remark: (this.data.remark || '').trim() || null,
-        order_by: nickname,
-        status: 'pending',
+      await api.call('createOrder', {
+        payload: {
+          items: items,
+          remark: (this.data.remark || '').trim(),
+          order_by: nickname,
+          status: 'pending',
+        },
       })
       wx.hideLoading()
-      if (error) throw error
       store.clearCart()
       wx.showToast({ title: '订单已送达厨房 🎉', icon: 'none' })
       setTimeout(function () {

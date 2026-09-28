@@ -13,6 +13,9 @@ $RECYCLE.BIN/
 # Node.js
 node_modules/
 
+# 云函数依赖（由开发者工具「上传并部署」时在云端安装）
+cloudfunctions/*/node_modules/
+
 # WorkBuddy 本地文件（工作日志与内部交付标记，不上传）
 .workbuddy/
 .wbapp_*.genie

@@ -14,30 +14,37 @@
 
 ## 🛠 技术栈
 
-| 层       | 技术                                                               |
-| ------- | ---------------------------------------------------------------- |
-| 前端      | 微信原生小程序（WXML / WXSS / JS），零框架零依赖                                 |
-| 后端      | WorkBuddy Cloud（Serverless，免服务器运维）                               |
-| 数据库     | PostgreSQL + 行级安全（RLS）                                           |
-| 客户端 SDK | `@tencent-ai/workbuddy-cloud-sdk`（supabase-js 风格 API，小程序专用构建已内置） |
+| 层    | 技术                                                |
+| ---- | ------------------------------------------------- |
+| 前端   | 微信原生小程序（WXML / WXSS / JS），零框架零依赖                  |
+| 后端   | 微信云开发（云函数 `lovekitchen`，Serverless，免服务器运维）         |
+| 数据库  | 云开发数据库（文档型，`dishes` / `orders` 两个集合）              |
+| 通信方式 | `wx.cloud.callFunction`（微信内部通道，**不需要配置任何 request 合法域名**） |
+
+> **为什么用云函数而不是直连数据库？**
+> 微信小程序对 `wx.request` 的合法域名有强制校验，而第三方域名无法自行加入白名单——这就是「电脑模拟器能跑、手机真机报错」的根因。
+> 云函数走微信内部通道，完全绕开域名校验；同时数据库权限可设为「所有人不可读写」，所有读写都在服务端完成，既避免了前端权限坑，又天然保证两个人共享同一份数据。
 
 ## 📂 项目结构
 
 ```
 love-kitchen/
-├── app.js / app.json / app.wxss     # 应用入口、tabBar 与全局样式
+├── app.js / app.json / app.wxss     # 应用入口（含 wx.cloud.init）、tabBar 与全局样式
+├── cloudfunctions/
+│   └── lovekitchen/                 # 唯一的云函数：菜品 / 订单的统一读写入口
+│       ├── index.js                 # action 路由 + 分页拉取
+│       ├── package.json
+│       └── config.json
 ├── pages/
 │   ├── menu/        # 点菜页：分类、购物车、随机帮选
 │   ├── checkout/    # 确认订单：数量、备注、点菜人
 │   ├── orders/      # 订单页：状态跟踪与推进
 │   └── dish-edit/   # 加菜 / 编辑 / 下架
 ├── utils/
-│   ├── cloud.js                       # 云客户端（endpoint + publishableKey）
-│   ├── constants.js                   # 分类 / 辣度 / 订单状态常量
-│   ├── store.js                       # 购物车与昵称（本地存储）
-│   ├── format.js                      # 时间格式化
-│   └── workbuddy-cloud-diagnostics.js # 云请求诊断日志
-├── miniprogram_npm/                 # 预构建云 SDK（克隆即用，无需再构建）
+│   ├── api.js       # 云函数调用封装（全应用唯一出口）
+│   ├── constants.js # 分类 / 辣度 / 订单状态常量
+│   ├── store.js     # 购物车与昵称（本地存储）
+│   └── format.js    # 时间格式化
 └── project.config.json
 ```
 
@@ -51,89 +58,79 @@ git clone https://github.com/wanshunzhong-ai/love-kitchen.git
 
 打开「微信开发者工具」→ 导入项目 → 选择仓库目录。AppID 填你自己的小程序 AppID（仓库中的 AppID 可直接替换）。
 
-### 2. 依赖说明
+### 2. 开通云开发并部署云函数
 
-云 SDK 构建产物已内置在 `miniprogram_npm/`，**克隆即可运行**，不需要 `npm install`。  
-如果产物被清理过：先 `npm install`，再在开发者工具点「工具 → 构建 npm」。
+1. 开发者工具顶部点「云开发」→ 开通（选**按量付费以外的免费额度**即可，个人测试够用）→ 记下**环境 ID**。
+2. 把环境 ID 填进 `app.js` 的 `wx.cloud.init({ env: '你的环境ID' })`。
+3. 右键 `cloudfunctions/lovekitchen` 目录 → **上传并部署：云端安装依赖**。
+4. 云开发控制台 → 数据库 → 新建两个集合：`dishes`、`orders`。
+5. 两个集合的**权限设置**都选「**仅创建者可读写**」下方的自定义，改为 **所有人不可读写**（因为读写全部走云函数，前端不需要直连权限）。
 
-### 3. 本地运行注意
+> 云函数以管理员身份访问数据库，不受集合权限限制，所以设成「谁都不可读写」最安全。
 
-- **域名校验**：开发阶段需勾选「详情 → 本地设置 → 不校验合法域名、web-view（业务域名）、TLS 版本以及 HTTPS 证书」。本项目已通过 `project.private.config.json` 预设 `urlCheck: false`，正常导入即生效。
+### 3. 导入菜单数据
+
+云开发控制台 → 数据库 → 选 `dishes` 集合 → 「导入」→ 选择项目根目录下的 `dishes.import.json`（101 道菜，JSON Lines 格式，冲突处理方式选「插入」）。导入后刷新即可看到全部菜品。
+
+### 4. 本地运行注意
+
+- **域名校验**：本项目已改用云函数，**不需要**勾选「不校验合法域名」，保持默认即可。
 - **真机调试**报 `800059 file not found` 时：工具内「清除缓存 → 重新编译」，或关闭项目重新打开（文件索引缓存问题）。
 
-## ☁️ 云端配置
+## ☁️ 数据模型
 
-`utils/cloud.js` 中的 `endpoint` 与 `publishableKey` 是应用级**公开配置**——它们不含任何密钥，服务端按请求来源校验，因此可以放进前端代码。当前连接的是作者的云端环境。
+**dishes（菜单）** — 云开发集合
 
-想换成自己的环境：开通 WorkBuddy 云服务后替换这两个值，并按下方 SQL 建表。
+| 字段          | 类型     | 说明                   |
+| ----------- | ------ | -------------------- |
+| _id         | string | 主键（云开发自动生成）          |
+| name        | string | 菜名                   |
+| category    | string | 分类，默认 '其他'           |
+| emoji       | string | 展示图标，默认 '🍴'         |
+| spice       | string | 辣度：不辣 / 微辣 / 中辣 / 特辣 |
+| description | string | 介绍                   |
+| created_at  | number | 创建时间（毫秒时间戳）          |
 
-### 数据模型
+**orders（订单）** — 云开发集合
 
-**dishes（菜单）**
+| 字段                  | 类型     | 说明                                         |
+| ------------------- | ------ | ------------------------------------------ |
+| _id                 | string | 主键（云开发自动生成）                                |
+| items               | array  | 菜品快照 `[{dishId, name, emoji, spice, qty}]` |
+| remark              | string | 订单备注                                       |
+| order_by            | string | 点菜人，默认 '宝贝'                                |
+| status              | string | pending（待开做）/ cooking（开做中）/ done（已上菜）      |
+| created_at / updated_at | number | 时间（毫秒时间戳）                                  |
 
-| 字段          | 类型              | 说明                   |
-| ----------- | --------------- | -------------------- |
-| id          | BIGINT IDENTITY | 主键                   |
-| name        | TEXT NOT NULL   | 菜名                   |
-| category    | TEXT，默认 '其他'    | 分类                   |
-| emoji       | TEXT，默认 '🍽️'   | 展示图标                 |
-| spice       | TEXT，默认 '不辣'    | 辣度：不辣 / 微辣 / 中辣 / 特辣 |
-| description | TEXT            | 介绍                   |
-| created_at  | TIMESTAMPTZ     | 创建时间                 |
+## 🔌 云函数接口
 
-**orders（订单）**
+所有前端调用都通过 `utils/api.js` 的 `call(action, payload)` 发出：
 
-| 字段                      | 类型                | 说明                                         |
-| ----------------------- | ----------------- | ------------------------------------------ |
-| id                      | BIGINT IDENTITY   | 主键                                         |
-| items                   | JSONB NOT NULL    | 菜品快照 `[{dishId, name, emoji, spice, qty}]` |
-| remark                  | TEXT              | 订单备注                                       |
-| order_by                | TEXT，默认 '宝贝'      | 点菜人                                        |
-| status                  | TEXT，默认 'pending' | pending（待开做）/ cooking（开做中）/ done（已上菜）      |
-| created_at / updated_at | TIMESTAMPTZ       | 时间                                         |
-
-**建表 SQL（含两人共享的 RLS 策略）**
-
-```sql
-CREATE TABLE dishes (
-  id          BIGINT      GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  name        TEXT        NOT NULL,
-  category    TEXT        NOT NULL DEFAULT '其他',
-  emoji       TEXT        NOT NULL DEFAULT '🍽️',
-  spice       TEXT        NOT NULL DEFAULT '不辣',
-  description TEXT,
-  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
-CREATE TABLE orders (
-  id         BIGINT      GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  items      JSONB       NOT NULL,
-  remark     TEXT,
-  order_by   TEXT        NOT NULL DEFAULT '宝贝',
-  status     TEXT        NOT NULL DEFAULT 'pending',
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
-ALTER TABLE dishes ENABLE ROW LEVEL SECURITY;
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.dishes TO authenticated, anon;
-CREATE POLICY dishes_couple_all ON dishes FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
-
-ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.orders TO authenticated, anon;
-CREATE POLICY orders_couple_all ON orders FOR ALL TO authenticated, anon USING (true) WITH CHECK (true);
-```
+| action             | 参数                                | 说明                        |
+| ------------------ | --------------------------------- | ------------------------- |
+| `listDishes`       | —                                 | 拉取全部菜品（自动分页，突破单次 100 条上限） |
+| `getDish`          | `{ id }`                          | 取单道菜                      |
+| `saveDish`         | `{ id?, payload }`                | 新增（无 id）或修改（有 id）         |
+| `deleteDish`       | `{ id }`                          | 下架菜品                      |
+| `listOrders`       | —                                 | 拉取全部订单（自动分页）              |
+| `createOrder`      | `{ payload: { items, remark, order_by } }` | 下单              |
+| `updateOrderStatus`| `{ id, status }`                  | 推进订单状态                    |
+| `deleteOrder`      | `{ id }`                          | 删除订单                      |
+| `stats`            | —                                 | 统计菜品 / 订单数量，用于自检连通性       |
 
 ## ❓ 常见问题
 
-**Q：模拟器提示「菜单没加载出来，网络可能开小差了」？**  
-开发阶段未走正式发布，接口域名不在微信白名单里，勾选「不校验合法域名」即可（见快速开始第 3 步）。正式发布时域名会自动注册。
+**Q：手机真机 / 体验版提示「菜单没加载出来」？**  
+本项目已改用云函数通道，正常情况下不会再出现。若仍报错，按顺序检查：① 云开发是否已开通、`app.js` 里的环境 ID 是否填对；② 云函数 `lovekitchen` 是否已「上传并部署（云端安装依赖）」；③ 云开发控制台里 `dishes` 集合是否存在、菜单数据是否已导入。
 
 **Q：真机调试报 800059 file not found？**  
 开发者工具的文件索引缓存问题：清除缓存 → 重新编译；无效则关闭项目重新打开。
 
-**Q：提示找不到模块 `@tencent-ai/workbuddy-cloud-sdk`？**  
-`npm install` 后在开发者工具点「工具 → 构建 npm」。
+**Q：云开发免费额度会过期吗？**  
+会。**小程序正式发布上线后**，免费环境会变成「上线后第 15 天到期」，到期后不转付费（约 19.9 元/月）环境会被回收、数据不可找回。只在开发者工具 / 体验版阶段使用通常不受影响，但建议在正式发布前评估。
+
+**Q：菜品超过 100 道还能拉全吗？**  
+可以。云函数 `listDishes` / `listOrders` 内部用 `skip + limit` 循环分页（服务端单次上限 100 条），自动拉全所有数据。
 
 ## 🗺 Roadmap
 

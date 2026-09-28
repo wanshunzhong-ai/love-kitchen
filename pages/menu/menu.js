@@ -1,5 +1,5 @@
 // 点菜页：菜单浏览 + 购物车 + 随机帮选
-const { cloud } = require('../../utils/cloud')
+const api = require('../../utils/api')
 const { CATEGORIES, SPICE_LEVELS } = require('../../utils/constants')
 const store = require('../../utils/store')
 
@@ -24,18 +24,15 @@ Page({
   async loadDishes() {
     this.setData({ loading: true, loadError: false })
     try {
-      const { data, error } = await cloud.database
-        .from('dishes')
-        .select('*')
-        .order('created_at', { ascending: true })
-        .limit(200)
-      if (error) throw error
-      const dishes = (data || []).map(function (d) {
+      const res = await api.call('listDishes')
+      const dishes = (res.dishes || []).map(function (d) {
         const hit = SPICE_LEVELS.find(function (s) {
           return s.key === d.spice
         })
         const level = hit ? hit.level : 0
         return Object.assign({}, d, {
+          // 兼容旧的 dish.id 用法：云开发主键是 _id（字符串）
+          id: d._id || d.id,
           spiceIdx: level,
           spiceText: level > 0 ? '🌶️'.repeat(level) : '不辣',
         })

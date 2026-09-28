@@ -1,5 +1,5 @@
 // 订单页：两个人都能看到全部订单，并推进状态（待开做 → 开做中 → 已上菜）
-const { cloud } = require('../../utils/cloud')
+const api = require('../../utils/api')
 const { ORDER_STATUS, SPICE_LEVELS } = require('../../utils/constants')
 const { formatTime } = require('../../utils/format')
 
@@ -26,13 +26,8 @@ Page({
   async loadOrders() {
     this.setData({ loading: true, loadError: false })
     try {
-      const { data, error } = await cloud.database
-        .from('orders')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(100)
-      if (error) throw error
-      const orders = (data || []).map(function (o) {
+      const res = await api.call('listOrders')
+      const orders = (res.orders || []).map(function (o) {
         const items = (Array.isArray(o.items) ? o.items : []).map(function (it) {
           const hit = SPICE_LEVELS.find(function (s) {
             return s.key === it.spice
@@ -43,7 +38,11 @@ Page({
             spiceText: level > 0 ? '🌶️'.repeat(level) : '不辣',
           })
         })
-        return Object.assign({}, o, { items: items, timeText: formatTime(o.created_at) })
+        return Object.assign({}, o, {
+          id: o._id || o.id,
+          items: items,
+          timeText: formatTime(o.created_at),
+        })
       })
       this.setData({ orders: orders, loading: false })
       this.applyFilter()
@@ -75,14 +74,12 @@ Page({
     if (!order) return
     wx.showLoading({ title: '处理中…', mask: true })
     try {
-      const { data, error } = await cloud.database
-        .from('orders')
-        .update({ status: nextStatus, updated_at: new Date().toISOString() })
-        .eq('id', order.id)
-        .select()
+      const res = await api.call('updateOrderStatus', {
+        id: order.id,
+        status: nextStatus,
+      })
       wx.hideLoading()
-      if (error) throw error
-      if (!Array.isArray(data) || data.length === 0) {
+      if (!res.updated) {
         wx.showToast({ title: '没更新成功，再试一次', icon: 'none' })
         return
       }
@@ -120,13 +117,8 @@ Page({
       success: async (res) => {
         if (!res.confirm) return
         try {
-          const { data, error } = await cloud.database
-            .from('orders')
-            .delete()
-            .eq('id', order.id)
-            .select()
-          if (error) throw error
-          if (!Array.isArray(data) || data.length === 0) {
+          const r = await api.call('deleteOrder', { id: order.id })
+          if (!r.removed) {
             wx.showToast({ title: '没删掉，再试一次', icon: 'none' })
             return
           }

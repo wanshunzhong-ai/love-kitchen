@@ -2,8 +2,6 @@
   "name": "love-kitchen-miniprogram",
   "version": "1.0.0",
   "private": true,
-  "description": "爱心小厨房 · 给女朋友点菜的微信小程序",
-  "dependencies": {
-    "@tencent-ai/workbuddy-cloud-sdk": "dev"
-  }
+  "description": "爱心小厨房 · 给女朋友点菜的微信小程序（数据走微信云开发云函数）",
+  "dependencies": {}
 }

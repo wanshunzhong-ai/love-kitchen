@@ -1,5 +1,5 @@
 // 加菜 / 编辑菜品页：新增、修改、下架菜品
-const { cloud } = require('../../utils/cloud')
+const api = require('../../utils/api')
 const { CATEGORIES, DISH_EMOJIS, SPICE_LEVELS } = require('../../utils/constants')
 
 Page({
@@ -19,20 +19,16 @@ Page({
 
   onLoad(options) {
     if (options && options.id) {
-      const id = Number(options.id)
-      this.setData({ id: id, loading: true })
-      this.loadDish(id)
+      // 云开发主键 _id 是字符串，不做 Number 转换
+      this.setData({ id: String(options.id), loading: true })
+      this.loadDish(String(options.id))
     }
   },
 
   async loadDish(id) {
     try {
-      const { data, error } = await cloud.database
-        .from('dishes')
-        .select('*')
-        .eq('id', id)
-        .maybeSingle()
-      if (error) throw error
+      const res = await api.call('getDish', { id: id })
+      const data = res.dish
       if (!data) {
         wx.showToast({ title: '这道菜不存在了', icon: 'none' })
         setTimeout(function () {
@@ -91,29 +87,11 @@ Page({
       category: this.data.category,
       emoji: this.data.emoji,
       spice: this.data.spice || '不辣',
-      description: (this.data.description || '').trim() || null,
+      description: (this.data.description || '').trim(),
     }
     try {
-      let error = null
-      if (this.data.id) {
-        const res = await cloud.database
-          .from('dishes')
-          .update(payload)
-          .eq('id', this.data.id)
-          .select()
-        error = res.error
-        if (!error && (!Array.isArray(res.data) || res.data.length === 0)) {
-          wx.hideLoading()
-          this.setData({ saving: false })
-          wx.showToast({ title: '这道菜可能已被下架', icon: 'none' })
-          return
-        }
-      } else {
-        const res = await cloud.database.from('dishes').insert(payload)
-        error = res.error
-      }
+      await api.call('saveDish', { id: this.data.id, payload: payload })
       wx.hideLoading()
-      if (error) throw error
       wx.showToast({ title: this.data.id ? '改好了 ✓' : '上新啦 ✓', icon: 'none' })
       setTimeout(function () {
         wx.navigateBack()
@@ -137,13 +115,8 @@ Page({
       success: async (res) => {
         if (!res.confirm) return
         try {
-          const { data, error } = await cloud.database
-            .from('dishes')
-            .delete()
-            .eq('id', id)
-            .select()
-          if (error) throw error
-          if (!Array.isArray(data) || data.length === 0) {
+          const r = await api.call('deleteDish', { id: id })
+          if (!r.removed) {
             wx.showToast({ title: '没删掉，再试一次', icon: 'none' })
             return
           }
