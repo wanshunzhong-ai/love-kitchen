@@ -52,10 +52,33 @@ let _db = null
 // 懒初始化：首次调用时才建立连接
 function getDB() {
   if (_db) return _db
-  if (!wx.cloud) {
-    throw new Error('当前微信基础库版本过低（需 2.2.3+），无法使用订单功能')
+
+  // wx.cloud 缺失有两种常见原因，必须区分清楚，否则会把人引向错误方向：
+  //   1) 基础库确实太老（< 2.2.3）——少见
+  //   2) 该 AppID 未开通/未关联云开发环境 —— 更常见，
+  //      表现为基础库版本明明很新，但 wx.cloud 依然是 undefined
+  if (typeof wx.cloud === 'undefined' || !wx.cloud) {
+    const ver = (wx.getAccountInfoSync && wx.getAccountInfoSync().miniProgram)
+      ? wx.getAccountInfoSync().miniProgram.envVersion
+      : ''
+    throw new Error(
+      '云开发未就绪（wx.cloud 不存在）。' +
+        '最常见原因是当前 AppID 没有开通云开发、或开发者工具里未关联云环境；' +
+        '也可能是基础库低于 2.2.3。' +
+        (ver ? '（当前环境：' + ver + '）' : '') +
+        ' 请在开发者工具「云开发」面板确认已开通并关联环境，然后重新编译。'
+    )
   }
-  _db = init(wx.cloud).rdb()
+
+  try {
+    _db = init(wx.cloud).rdb()
+  } catch (err) {
+    // 初始化失败不缓存，允许下次重试
+    _db = null
+    throw new Error(
+      '数据库连接初始化失败：' + ((err && (err.message || err.errMsg)) || err)
+    )
+  }
   return _db
 }
 
