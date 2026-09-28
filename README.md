@@ -76,19 +76,16 @@ git clone https://github.com/wanshunzhong-ai/love-kitchen.git
 
 打开「微信开发者工具」→ 导入项目 → 选择仓库目录。AppID 填你自己的小程序 AppID（仓库中的 AppID 可直接替换）。
 
-### 2. 构建 npm（订单功能需要，只需做一次）⚠️
+### 2. 直接编译，就能看到 101 道菜 ✅
 
-项目依赖 `@cloudbase/wx-cloud-client-sdk` 来连接数据库。微信小程序**不能直接用 `node_modules`**，必须让开发者工具把它编译一次，具体操作：
+**这一步不需要任何后台配置。** 菜单数据已内置在 `data/dishes.js`，点「编译」即可浏览菜单、加购物车。按「预览」扫码，手机也能看。
 
-1. 打开「微信开发者工具」，确认项目已加载；
-2. 先执行一次 **工具 → 构建 npm**（菜单栏「工具」下拉里找「构建 npm」）；
-3. 看到右下角提示「**构建 npm 成功**」即可；
-   - 若提示「未找到 node_modules 目录」，说明依赖没装，先在**项目根目录**打开终端执行 `npm install`，再重试；
-4. 构建成功后会多出一个 `miniprogram_npm/` 目录，这是正常产物（已在 `.gitignore` 中忽略）。
+订单功能依赖的 SDK（`@cloudbase/wx-cloud-client-sdk`）**已构建好放在仓库的 `miniprogram_npm/` 目录**，克隆下来即可用，**不需要执行 npm install / 构建 npm**。
 
-> 这一步只做一次。以后更新依赖（改 `package.json`）才需要重新构建。
+> 只有当你升级了 SDK 版本（改 `package.json` 后 `npm install`）才需要「工具 → 构建 npm」重新生成；
+> 若小程序报「暂不支持 npm 模块」，先重新编译，仍报错再检查 `miniprogram_npm/` 目录是否存在。
 
-### 3. 建数据库表（订单功能需要，只需做一次）
+### 3. 建数据库表（订单功能需要，换环境才要做）
 
 `cloudbase/migrations/` 下的两个 SQL 脚本已经在当前环境执行完毕。**如果你换了自己的云环境**，需要按顺序执行它们：
 
@@ -216,11 +213,11 @@ PostgreSQL 的权限是**两层**的，两层都通过才成功：
 2. RLS 策略（4 条：SELECT / INSERT / UPDATE / DELETE）都在；
 3. 你正处于**已登录**状态（`authenticated` 角色），而不是匿名。
 
-**Q：订单报「未找到 node_modules 目录」/ 找不到 SDK？**
-没构建 npm。回到「快速开始」第 2 步，先在项目根目录 `npm install`，再执行「工具 → 构建 npm」。
+**Q：小程序报「暂不支持 npm 模块：@cloudbase/wx-cloud-client-sdk」？**
+说明运行时找不到 `miniprogram_npm/`。依次试：① 重新点「编译」；② 「工具 → 清除缓存 → 清除全部缓存」后重新编译；③ 检查项目里 `miniprogram_npm/@cloudbase/wx-cloud-client-sdk/` 是否存在——被误删的话，在项目根目录 `npm install` 后执行「工具 → 构建 npm」重新生成。
 
 **Q：改完代码后订单功能突然不好用了？**
-先想想是不是刚改过 `package.json`。改动依赖后**必须重新构建 npm**。
+先想想是不是刚改过 `package.json`。改动依赖后要 `npm install` 并重新「构建 npm」。
 
 **Q：真机调试报 800059 file not found？**
 开发者工具的文件索引缓存问题：清除缓存 → 重新编译；无效则关闭项目重新打开。
