@@ -1,0 +1,117 @@
+/* 确认订单页 */
+.page {
+  padding: 24rpx 24rpx 80rpx;
+}
+
+.section {
+  padding: 28rpx;
+  margin-bottom: 24rpx;
+}
+
+.section-title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #4A3B38;
+  margin-bottom: 20rpx;
+}
+
+/* 菜品清单 */
+.cart-item {
+  display: flex;
+  align-items: center;
+  padding: 16rpx 0;
+  border-bottom: 2rpx solid #FFF2EC;
+}
+
+.cart-item:last-child {
+  border-bottom: none;
+}
+
+.ci-emoji {
+  font-size: 44rpx;
+  width: 72rpx;
+  text-align: center;
+}
+
+.ci-name {
+  flex: 1;
+  font-size: 28rpx;
+  color: #4A3B38;
+  padding: 0 12rpx;
+}
+
+.ci-spice {
+  font-size: 20rpx;
+  color: #C97B8E;
+  background: #FFF0F4;
+  padding: 4rpx 12rpx;
+  border-radius: 999rpx;
+  margin-right: 8rpx;
+  flex-shrink: 0;
+}
+
+.ci-stepper {
+  display: flex;
+  align-items: center;
+}
+
+.step {
+  width: 48rpx;
+  height: 48rpx;
+  line-height: 44rpx;
+  text-align: center;
+  border-radius: 50%;
+  border: 2rpx solid #EAD9D3;
+  color: #8A7772;
+  font-size: 30rpx;
+}
+
+.step-plus {
+  background: linear-gradient(135deg, #FF7A9E, #FF9F43);
+  border-color: transparent;
+  color: #ffffff;
+}
+
+.step-num {
+  min-width: 56rpx;
+  text-align: center;
+  font-size: 28rpx;
+  font-weight: 600;
+}
+
+.ci-remove {
+  width: 48rpx;
+  text-align: center;
+  color: #D8C7C1;
+  font-size: 26rpx;
+  margin-left: 8rpx;
+}
+
+/* 输入框 */
+.input {
+  background: #FFFBF9;
+  border-radius: 16rpx;
+  padding: 20rpx 24rpx;
+  font-size: 28rpx;
+}
+
+.textarea {
+  background: #FFFBF9;
+  border-radius: 16rpx;
+  padding: 20rpx 24rpx;
+  font-size: 28rpx;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 120rpx;
+}
+
+.ph {
+  color: #D8C7C1;
+}
+
+/* 提交 */
+.submit {
+  margin-top: 16rpx;
+  line-height: 96rpx;
+  font-size: 30rpx;
+}

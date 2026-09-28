@@ -1,0 +1,33 @@
+{
+  "pages": [
+    "pages/menu/menu",
+    "pages/orders/orders",
+    "pages/checkout/checkout",
+    "pages/dish-edit/dish-edit"
+  ],
+  "window": {
+    "navigationBarBackgroundColor": "#FF7A9E",
+    "navigationBarTextStyle": "white",
+    "navigationBarTitleText": "爱心小厨房"
+  },
+  "tabBar": {
+    "color": "#B9A29B",
+    "selectedColor": "#FF7A9E",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/menu/menu",
+        "text": "点菜"
+      },
+      {
+        "pagePath": "pages/orders/orders",
+        "text": "订单"
+      }
+    ]
+  },
+  "style": "v2",
+  "componentFramework": "glass-easel",
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents"
+}

@@ -1,0 +1,53 @@
+<view class="page">
+  <view wx:if="{{cart.length === 0}}" class="state">
+    <text class="state-emoji">🛒</text>
+    <text class="state-tip">购物车空空的，去挑点好吃的吧</text>
+    <button class="btn-retry" bindtap="goBackMenu">去点菜</button>
+  </view>
+
+  <block wx:else>
+    <!-- 菜品清单 -->
+    <view class="card section">
+      <view class="section-title">🧺 选好的菜</view>
+      <view class="cart-item" wx:for="{{cart}}" wx:key="dishId">
+        <text class="ci-emoji">{{item.emoji}}</text>
+        <text class="ci-name">{{item.name}}</text>
+        <text class="ci-spice">{{item.spice || '不辣'}}</text>
+        <view class="ci-stepper">
+          <view class="step" data-id="{{item.dishId}}" data-delta="-1" catchtap="onQtyChange">−</view>
+          <text class="step-num">{{item.qty}}</text>
+          <view class="step step-plus" data-id="{{item.dishId}}" data-delta="1" catchtap="onQtyChange">＋</view>
+        </view>
+        <text class="ci-remove" data-id="{{item.dishId}}" catchtap="onRemoveItem">✕</text>
+      </view>
+    </view>
+
+    <!-- 点菜人 -->
+    <view class="card section">
+      <view class="section-title">🙋 谁点的</view>
+      <input
+        class="input"
+        value="{{nickname}}"
+        placeholder="比如：宝贝"
+        placeholder-class="ph"
+        maxlength="12"
+        bindinput="onNickInput"
+      />
+    </view>
+
+    <!-- 备注 -->
+    <view class="card section">
+      <view class="section-title">💬 想对大厨说</view>
+      <textarea
+        class="textarea"
+        value="{{remark}}"
+        placeholder="辣度、忌口、想说的话…（可不填）"
+        placeholder-class="ph"
+        maxlength="100"
+        bindinput="onRemarkInput"
+      />
+    </view>
+
+    <button class="btn-main submit" disabled="{{submitting}}" bindtap="onSubmit">下单给大厨 👨‍🍳（{{totalCount}} 道菜）</button>
+  </block>
+</view>

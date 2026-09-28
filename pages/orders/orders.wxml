@@ -1,0 +1,60 @@
+<view class="page">
+  <!-- 状态筛选 -->
+  <scroll-view class="filters" scroll-x enhanced="{{true}}" show-scrollbar="{{false}}">
+    <view
+      class="fchip {{activeFilter === item.key ? 'fchip-active' : ''}}"
+      wx:for="{{filters}}"
+      wx:key="key"
+      data-key="{{item.key}}"
+      bindtap="onFilterTap"
+    >{{item.emoji}} {{item.key === '全部' ? '全部' : statusMap[item.key].text}}</view>
+  </scroll-view>
+
+  <!-- 订单列表 -->
+  <view wx:if="{{loading}}" class="state">
+    <text class="state-emoji">📋</text>
+    <text class="state-tip">正在看看厨房…</text>
+  </view>
+
+  <view wx:elif="{{loadError}}" class="state">
+    <text class="state-emoji">😵</text>
+    <text class="state-tip">订单没加载出来，网络可能开小差了</text>
+    <button class="btn-retry" bindtap="loadOrders">重试</button>
+  </view>
+
+  <view wx:elif="{{filteredOrders.length === 0}}" class="state">
+    <text class="state-emoji">🛎️</text>
+    <text class="state-tip">还没有订单，去点几个菜吧～</text>
+    <button class="btn-retry" bindtap="goMenu">去点菜</button>
+  </view>
+
+  <view wx:else class="order-list">
+    <view class="order card" wx:for="{{filteredOrders}}" wx:key="id">
+      <view class="order-head">
+        <text class="order-from">来自 {{item.order_by}}</text>
+        <text class="order-status s-{{item.status}}">{{statusMap[item.status].emoji}} {{statusMap[item.status].text}}</text>
+      </view>
+
+      <view class="order-items">
+        <view class="order-item" wx:for="{{item.items}}" wx:for-item="dish" wx:key="dishId">
+          <view class="oi-left">
+            <text>{{dish.emoji}} {{dish.name}}</text>
+            <text class="oi-spice spice-{{dish.spiceIdx}}">{{dish.spiceText}}</text>
+          </view>
+          <text class="order-qty">× {{dish.qty}}</text>
+        </view>
+      </view>
+
+      <view class="order-remark" wx:if="{{item.remark}}">💬 {{item.remark}}</view>
+
+      <view class="order-foot">
+        <text class="order-time">{{item.timeText}}</text>
+        <view class="order-actions">
+          <view wx:if="{{item.status === 'pending'}}" class="act act-ghost" data-idx="{{index}}" catchtap="onCancel">取消</view>
+          <view wx:if="{{item.status === 'pending'}}" class="act act-main" data-idx="{{index}}" catchtap="onStartCooking">开始做</view>
+          <view wx:if="{{item.status === 'cooking'}}" class="act act-main" data-idx="{{index}}" catchtap="onFinishCooking">做好了</view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

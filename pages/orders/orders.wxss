@@ -1,0 +1,167 @@
+/* 订单页 */
+.page {
+  padding: 24rpx 24rpx 60rpx;
+}
+
+.filters {
+  white-space: nowrap;
+  margin-bottom: 24rpx;
+}
+
+.fchip {
+  display: inline-block;
+  padding: 12rpx 30rpx;
+  margin-right: 16rpx;
+  background: #ffffff;
+  border-radius: 999rpx;
+  font-size: 26rpx;
+  color: #8A7772;
+  border: 2rpx solid #F6E3DC;
+}
+
+.fchip-active {
+  background: linear-gradient(135deg, #FF7A9E, #FF9F43);
+  color: #ffffff;
+  border-color: transparent;
+  font-weight: 600;
+}
+
+/* 订单卡片 */
+.order {
+  padding: 28rpx;
+  margin-bottom: 24rpx;
+}
+
+.order-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20rpx;
+}
+
+.order-from {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #4A3B38;
+}
+
+.order-status {
+  padding: 8rpx 20rpx;
+  border-radius: 999rpx;
+  font-size: 24rpx;
+  font-weight: 600;
+}
+
+.s-pending {
+  background: #FFF3E5;
+  color: #D9822B;
+}
+
+.s-cooking {
+  background: #FFE9EE;
+  color: #E85C8A;
+}
+
+.s-done {
+  background: #E8F9EE;
+  color: #1FA65A;
+}
+
+/* 菜品明细 */
+.order-items {
+  background: #FFFBF9;
+  border-radius: 16rpx;
+  padding: 16rpx 24rpx;
+}
+
+.order-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 10rpx 0;
+  font-size: 28rpx;
+  color: #6B5854;
+}
+
+.order-qty {
+  color: #B9A29B;
+}
+
+.oi-left {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+/* 辣度标签：与点菜页同配色 */
+.oi-spice {
+  margin-left: 12rpx;
+  padding: 2rpx 12rpx;
+  border-radius: 999rpx;
+  font-size: 20rpx;
+  line-height: 30rpx;
+  flex-shrink: 0;
+}
+
+.spice-0 {
+  background: #F4EDE9;
+  color: #A89690;
+}
+
+.spice-1 {
+  background: #FFE9E0;
+  color: #E07B4F;
+}
+
+.spice-2 {
+  background: #FFDCD6;
+  color: #E0533F;
+}
+
+.spice-3 {
+  background: #FFD0CC;
+  color: #D42B2B;
+}
+
+.order-remark {
+  margin-top: 16rpx;
+  font-size: 24rpx;
+  color: #C97B8E;
+  background: #FFF0F4;
+  border-radius: 12rpx;
+  padding: 14rpx 20rpx;
+}
+
+.order-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 20rpx;
+}
+
+.order-time {
+  font-size: 22rpx;
+  color: #B9A29B;
+}
+
+.order-actions {
+  display: flex;
+  align-items: center;
+}
+
+.act {
+  padding: 12rpx 30rpx;
+  border-radius: 999rpx;
+  font-size: 26rpx;
+  margin-left: 16rpx;
+}
+
+.act-ghost {
+  border: 2rpx solid #EAD9D3;
+  color: #8A7772;
+}
+
+.act-main {
+  background: linear-gradient(135deg, #FF7A9E, #FF9F43);
+  color: #ffffff;
+  font-weight: 600;
+}

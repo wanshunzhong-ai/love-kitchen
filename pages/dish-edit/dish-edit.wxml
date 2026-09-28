@@ -1,0 +1,74 @@
+<view class="page">
+  <view wx:if="{{loading}}" class="state">
+    <text class="state-emoji">📖</text>
+    <text class="state-tip">正在翻菜单…</text>
+  </view>
+
+  <block wx:else>
+    <view class="card section">
+      <view class="section-title">菜名</view>
+      <input
+        class="input"
+        value="{{name}}"
+        placeholder="比如：番茄炒蛋"
+        placeholder-class="ph"
+        maxlength="20"
+        bindinput="onNameInput"
+      />
+    </view>
+
+    <view class="card section">
+      <view class="section-title">分类</view>
+      <view class="chip-row">
+        <view
+          class="chip {{category === item.key ? 'chip-active' : ''}}"
+          wx:for="{{categories}}"
+          wx:key="key"
+          data-cat="{{item.key}}"
+          bindtap="onTapCategory"
+        >{{item.emoji}} {{item.key}}</view>
+      </view>
+    </view>
+
+    <view class="card section">
+      <view class="section-title">辣度</view>
+      <view class="chip-row">
+        <view
+          class="chip {{spice === item.key ? 'chip-active' : ''}}"
+          wx:for="{{spiceLevels}}"
+          wx:key="key"
+          data-spice="{{item.key}}"
+          bindtap="onTapSpice"
+        >{{item.key}}</view>
+      </view>
+    </view>
+
+    <view class="card section">
+      <view class="section-title">图标</view>
+      <view class="emoji-grid">
+        <view
+          class="emoji {{emoji === item ? 'emoji-active' : ''}}"
+          wx:for="{{emojis}}"
+          wx:key="*this"
+          data-emoji="{{item}}"
+          bindtap="onTapEmoji"
+        >{{item}}</view>
+      </view>
+    </view>
+
+    <view class="card section">
+      <view class="section-title">介绍（可不填）</view>
+      <textarea
+        class="textarea"
+        value="{{description}}"
+        placeholder="比如：微辣、多放葱花"
+        placeholder-class="ph"
+        maxlength="60"
+        bindinput="onDescInput"
+      />
+    </view>
+
+    <button class="btn-main save" disabled="{{saving}}" bindtap="onSave">{{id ? '保存修改' : '加入菜单'}}</button>
+    <view wx:if="{{id}}" class="delete-link" bindtap="onDelete">下架这道菜</view>
+  </block>
+</view>

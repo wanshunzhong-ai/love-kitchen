@@ -1,0 +1,99 @@
+/* 加菜 / 编辑菜品页 */
+.page {
+  padding: 24rpx 24rpx 80rpx;
+}
+
+.section {
+  padding: 28rpx;
+  margin-bottom: 24rpx;
+}
+
+.section-title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #4A3B38;
+  margin-bottom: 20rpx;
+}
+
+.input {
+  background: #FFFBF9;
+  border-radius: 16rpx;
+  padding: 20rpx 24rpx;
+  font-size: 28rpx;
+}
+
+.textarea {
+  background: #FFFBF9;
+  border-radius: 16rpx;
+  padding: 20rpx 24rpx;
+  font-size: 28rpx;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 120rpx;
+}
+
+.ph {
+  color: #D8C7C1;
+}
+
+/* 分类 chips */
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.chip {
+  padding: 12rpx 30rpx;
+  margin: 0 16rpx 16rpx 0;
+  background: #FFFBF9;
+  border-radius: 999rpx;
+  font-size: 26rpx;
+  color: #8A7772;
+  border: 2rpx solid #F6E3DC;
+}
+
+.chip-active {
+  background: linear-gradient(135deg, #FF7A9E, #FF9F43);
+  color: #ffffff;
+  border-color: transparent;
+  font-weight: 600;
+}
+
+/* 图标选择 */
+.emoji-grid {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.emoji {
+  width: 88rpx;
+  height: 88rpx;
+  line-height: 88rpx;
+  text-align: center;
+  font-size: 44rpx;
+  margin: 0 12rpx 12rpx 0;
+  border-radius: 20rpx;
+  background: #FFFBF9;
+  border: 2rpx solid #FFF2EC;
+}
+
+.emoji-active {
+  background: #FFE9EE;
+  border-color: #FF7A9E;
+}
+
+/* 保存 */
+.save {
+  margin-top: 16rpx;
+  line-height: 96rpx;
+  font-size: 30rpx;
+}
+
+.delete-link {
+  margin-top: 32rpx;
+  text-align: center;
+  font-size: 26rpx;
+  color: #C97B8E;
+  text-decoration: underline;
+  padding: 16rpx;
+}

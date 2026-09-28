@@ -1,0 +1,63 @@
+<view class="page">
+  <!-- 顶部问候 -->
+  <view class="hero">
+    <view class="hero-text">
+      <view class="hero-title">今天想吃点什么？</view>
+      <view class="hero-sub">选好后交给大厨吧 💕</view>
+    </view>
+    <view class="hero-add" bindtap="goAddDish">＋ 加菜</view>
+  </view>
+
+  <!-- 分类 -->
+  <scroll-view class="cats" scroll-x enhanced="{{true}}" show-scrollbar="{{false}}">
+    <view
+      class="cat {{activeCategory === item.key ? 'cat-active' : ''}}"
+      wx:for="{{categories}}"
+      wx:key="key"
+      data-cat="{{item.key}}"
+      bindtap="onTapCategory"
+    >{{item.emoji}} {{item.key}}</view>
+  </scroll-view>
+
+  <!-- 菜品列表 -->
+  <view wx:if="{{loading}}" class="state">
+    <text class="state-emoji">🍽️</text>
+    <text class="state-tip">正在摆盘…</text>
+  </view>
+
+  <view wx:elif="{{loadError}}" class="state">
+    <text class="state-emoji">😵</text>
+    <text class="state-tip">菜单没加载出来，网络可能开小差了</text>
+    <button class="btn-retry" bindtap="loadDishes">重试</button>
+  </view>
+
+  <view wx:elif="{{filteredDishes.length === 0}}" class="state">
+    <text class="state-emoji">🍳</text>
+    <text class="state-tip">菜单还是空的，点「加菜」放第一道菜进来吧</text>
+    <button class="btn-retry" bindtap="goAddDish">去加菜</button>
+  </view>
+
+  <view wx:else class="dish-list">
+    <view class="dish card" wx:for="{{filteredDishes}}" wx:key="id">
+      <view class="dish-emoji">{{item.emoji}}</view>
+      <view class="dish-info" data-idx="{{index}}" bindtap="onDishTap">
+        <view class="dish-name-row">
+          <view class="dish-name">{{item.name}}</view>
+          <text class="dish-spice spice-{{item.spiceIdx}}">{{item.spiceText}}</text>
+        </view>
+        <view class="dish-desc" wx:if="{{item.description}}">{{item.description}}</view>
+      </view>
+      <view class="dish-add" data-idx="{{index}}" catchtap="onAddTap">＋</view>
+    </view>
+  </view>
+
+  <!-- 随机帮选 -->
+  <view class="lucky" bindtap="onRandom">🎲 今天吃什么</view>
+
+  <!-- 购物车栏 -->
+  <view class="cart-bar" wx:if="{{cartCount > 0}}" bindtap="goCart">
+    <view class="cart-badge">{{cartCount}}</view>
+    <text class="cart-label">已选好菜</text>
+    <view class="cart-go">去下单</view>
+  </view>
+</view>
