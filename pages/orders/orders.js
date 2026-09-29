@@ -412,12 +412,17 @@ Page({
     wx.navigateTo({ url: '/pages/review/review?id=' + order.id })
   },
 
-  // 删除整单：干饭人删自己点的单（掌勺人不删 TA 点的单，他只能驳回）
+  // 删除整单：干饭人删自己点的单（掌勺人不删 TA 点的单，他只能驳回）。
+  // 开做中的单删不得 —— 掌勺人正在做，等上菜之后随删。
   onDeleteOrder(e) {
     const order = this.data.filteredOrders[e.currentTarget.dataset.idx]
     if (!order) return
     if (this.data.isCook) {
       ui.toast('这一单是 TA 点的，你只能驳回哦')
+      return
+    }
+    if (order.status === 'cooking') {
+      ui.toast('这一单正在做，等做完再删吧')
       return
     }
     const self = this

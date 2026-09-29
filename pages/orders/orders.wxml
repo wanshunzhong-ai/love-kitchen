@@ -121,7 +121,13 @@
               data-idx="{{index}}"
               catchtap="onEditOrder"
             >{{item.status === 'rejected' ? '✏️ 改好重交' : '✏️ 编辑'}}</view>
-            <view class="act act-danger" data-idx="{{index}}" catchtap="onDeleteOrder">🗑️ 删掉</view>
+            <!-- 开做中 = 掌勺人正在做这顿饭：不能改也不能删，等做完再说 -->
+            <view
+              wx:if="{{item.status !== 'cooking'}}"
+              class="act act-danger"
+              data-idx="{{index}}"
+              catchtap="onDeleteOrder"
+            >🗑️ 删掉</view>
           </block>
         </view>
       </view>

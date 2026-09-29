@@ -70,8 +70,8 @@
       <!-- 已驳回的单：掌勺人可以把驳回收回来（手滑了有路可退） -->
       <view wx:if="{{status === 'rejected'}}" class="btn-reject" bindtap="onWithdrawReject">↩️ 收回这次驳回</view>
 
-      <!-- 干饭人：已上菜是终态，只剩删除 -->
-      <view wx:if="{{!isCook}}" class="btn-delete" bindtap="onDelete">🗑 删掉这一单</view>
+      <!-- 干饭人：已上菜是终态只删不评之外的事；开做中的单删不得 -->
+      <view wx:if="{{!isCook && status !== 'cooking'}}" class="btn-delete" bindtap="onDelete">🗑 删掉这一单</view>
     </block>
 
     <!-- ===== 干饭人：正常编辑（改内容，改不了状态） ===== -->

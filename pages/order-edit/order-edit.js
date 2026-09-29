@@ -681,12 +681,17 @@ Page({
     })
   },
 
-  // 删除整单：只有干饭人能删自己点的单（掌勺人只能驳回）
+  // 删除整单：只有干饭人能删自己点的单（掌勺人只能驳回）。
+  // 开做中的单删不得（掌勺人正在做这顿饭），与服务端拦截一致。
   onDelete() {
     const id = this.data.id
     if (!id) return
     if (this.data.isCook) {
       ui.toast('这一单是 TA 点的，你只能驳回哦')
+      return
+    }
+    if (this.data.status === 'cooking') {
+      ui.toast('这一单正在做，等做完再删吧')
       return
     }
     wx.showModal({

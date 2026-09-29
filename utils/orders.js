@@ -383,6 +383,15 @@ async function deleteOrder(event) {
   const id = event && event.id
   if (id === undefined || id === null || id === '') throw new Error('缺少订单 id')
 
+  // 先看状态：开做中的单不能删 —— 掌勺人正在做这顿饭，删了就白做了，
+  // 等上菜之后随删。待开做 / 已驳回照常能删（还没开火，删了就是不想吃了）。
+  const cur = unwrap(await getDB().from(TABLE).select('id, status').eq('id', id).limit(1))
+  const curRows = Array.isArray(cur.data) ? cur.data : []
+  if (!curRows.length) throw new Error('这一单不存在了')
+  if ((curRows[0].status || 'pending') === 'cooking') {
+    throw new Error('这一单正在做，等做完再删吧')
+  }
+
   const rows = affectedRows(await getDB().from(TABLE).delete().eq('id', id).select())
   if (!rows.length) throw new Error('这一单没能删除，可能已经被删掉了')
   return { removed: rows.length }
