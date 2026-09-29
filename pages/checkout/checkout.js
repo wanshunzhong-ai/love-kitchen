@@ -3,7 +3,7 @@ const api = require('../../utils/api')
 const store = require('../../utils/store')
 const ui = require('../../utils/ui')
 const dine = require('../../utils/dine')
-const { SPICE_LEVELS } = require('../../utils/constants')
+const { SPICE_LEVELS, DISH_NOTE_MAX } = require('../../utils/constants')
 
 Page({
   data: {
@@ -95,6 +95,34 @@ Page({
     // 面板正开着这一行时，把它一起关掉
     if (this.data.editorOpen && this.data.editorUid === uid) this.closeEditor()
     this.refreshCart()
+  },
+
+  // 单道菜的备注：点列表里那一行备注就能直接写，不必打开面板。
+  // 用 wx.showModal 的输入模式，而不是行内 input —— 本页每次改动都会 refreshCart 刷新列表，
+  // 行内受控 input 回写 value 会把光标顶到末尾，弹窗输入没有这个毛病。
+  onTapNote(e) {
+    const uid = e.currentTarget.dataset.uid
+    const row = this.data.cart.find(function (it) {
+      return it.uid === uid
+    })
+    if (!row) return
+    const self = this
+    wx.showModal({
+      title: '「' + row.name + '」单独说一句',
+      editable: true,
+      placeholderText: '比如：不放葱（最多 ' + DISH_NOTE_MAX + ' 字）',
+      content: row.note || '',
+      confirmText: '写好了',
+      cancelText: '不改了',
+      success: function (res) {
+        if (!res.confirm) return
+        const raw = String(res.content === null || res.content === undefined ? '' : res.content)
+        // setItemNote 内部已经做了 trim + 限长，这里不用再处理
+        store.setItemNote(uid, raw)
+        self.refreshCart()
+        ui.toast(raw.trim() ? '记下来了 📝' : '已清空')
+      },
+    })
   },
 
   // 辣度：列表里点一下就能改（更细的修改在「改这道菜」面板里）

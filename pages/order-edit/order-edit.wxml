@@ -75,8 +75,12 @@
                   catchtap="onTapSpice"
                 >{{sp.key}}</text>
               </view>
-              <!-- 这一道菜的备注 -->
-              <view class="ci-note" wx:if="{{item.note}}">📝 {{item.note}}</view>
+              <!-- 这一道菜的备注：点一下就写，不用打开面板 -->
+              <view
+                class="ci-note {{item.note ? '' : 'ci-note-empty'}}"
+                data-key="{{item.key}}"
+                catchtap="onTapNote"
+              >{{item.note ? '📝 ' + item.note : '＋ 写一句这道菜的备注'}}</view>
             </view>
           </view>
 

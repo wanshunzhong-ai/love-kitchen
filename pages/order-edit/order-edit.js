@@ -2,7 +2,7 @@
 const api = require('../../utils/api')
 const ui = require('../../utils/ui')
 const dine = require('../../utils/dine')
-const { CATEGORIES, ORDER_STATUS_OPTIONS, SPICE_LEVELS } = require('../../utils/constants')
+const { CATEGORIES, ORDER_STATUS_OPTIONS, SPICE_LEVELS, DISH_NOTE_MAX } = require('../../utils/constants')
 
 /** 订单内条目的唯一键：同一道菜的不同辣度算两条 */
 function itemKey(it) {
@@ -241,6 +241,47 @@ Page({
     if (this.data.editorOpen && this.data.editorKey === key) {
       this.setData({ editorKey: r.key })
     }
+  },
+
+  // 单道菜的备注：点备注行直接写，不必打开面板（与确认订单页同一套交互）
+  // 用弹窗输入而非行内 input —— 本页改动都会重设 items，行内受控 input 会把光标顶到末尾
+  onTapNote(e) {
+    const key = e.currentTarget.dataset.key
+    const row = this.data.items.find(function (it) {
+      return it.key === key
+    })
+    if (!row) return
+    const self = this
+    wx.showModal({
+      title: '「' + row.name + '」单独说一句',
+      editable: true,
+      placeholderText: '比如：不放葱（最多 ' + DISH_NOTE_MAX + ' 字）',
+      content: row.note || '',
+      confirmText: '写好了',
+      cancelText: '不改了',
+      success: function (res) {
+        if (!res.confirm) return
+        const note = String(res.content || '')
+          .trim()
+          .slice(0, DISH_NOTE_MAX)
+        const r = applyRowChange(self.data.items, key, { note: note })
+        if (!r.found) return
+        self.setData({ items: r.items, totalCount: self.countOf(r.items) })
+        // 面板正开着这一行时，把面板里的草稿一起刷新，避免两边不一致
+        if (self.data.editorOpen && self.data.editorKey === key) {
+          const cur = r.items.find(function (it) {
+            return it.key === r.key
+          })
+          self.setData({
+            editorKey: r.key,
+            editorItem: cur
+              ? { name: cur.name, emoji: cur.emoji, spice: cur.spice, note: cur.note }
+              : null,
+          })
+        }
+        ui.toast(note ? '记下来了 📝' : '已清空')
+      },
+    })
   },
 
   // ---------- 逐道菜修改面板 ----------

@@ -78,13 +78,19 @@
   font-weight: 600;
 }
 
-/* 这一道菜的备注 */
+/* 这一道菜的备注：整行可点，点一下就能写 */
 .ci-note {
   margin-top: 8rpx;
+  padding: 4rpx 0;
   font-size: 22rpx;
   line-height: 1.4;
   color: #C08A7A;
   word-break: break-all;
+}
+
+/* 还没写时的占位引导（浅色，点进去写） */
+.ci-note-empty {
+  color: #CDBDB7;
 }
 
 .ci-actions {

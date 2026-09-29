@@ -8,7 +8,7 @@
   <block wx:else>
     <!-- 菜品清单 -->
     <view class="card section">
-      <view class="section-title">🧺 选好的菜<text class="section-hint">（辣度、备注、换菜都能改）</text></view>
+      <view class="section-title">🧺 选好的菜<text class="section-hint">（辣度点一下就能改，备注点一下就能写）</text></view>
 
       <view class="cart-item" wx:for="{{cart}}" wx:key="uid">
         <view class="ci-main">
@@ -31,8 +31,12 @@
                 catchtap="onTapSpice"
               >{{sp.key}}</text>
             </view>
-            <!-- 这一道菜的备注 -->
-            <view class="ci-note" wx:if="{{item.note}}">📝 {{item.note}}</view>
+            <!-- 这一道菜的备注：点一下就写，不用打开面板 -->
+            <view
+              class="ci-note {{item.note ? '' : 'ci-note-empty'}}"
+              data-uid="{{item.uid}}"
+              catchtap="onTapNote"
+            >{{item.note ? '📝 ' + item.note : '＋ 写一句这道菜的备注'}}</view>
           </view>
         </view>
 
