@@ -51,6 +51,13 @@ Page({
     this.loadDishes()
   },
 
+  onHide() {
+    // 离开页面（切 tab / 跳走）时复位：弹层关掉、底栏收回来，
+    // 否则下次回来 tabBar 会一直是隐藏的
+    this.setTabBarHidden(false)
+    if (this.data.spicePicker.open) this.setData({ 'spicePicker.open': false })
+  },
+
   // 头像/身份胶囊：进「我的」tab（基本资料）
   goProfile() {
     wx.switchTab({ url: '/pages/profile/profile' })
@@ -145,6 +152,17 @@ Page({
     this.openSpicePicker(dish)
   },
 
+  /**
+   * 底部弹层打开时把 tabBar 藏起来。
+   * 自定义 tabBar 是页面级原生层，页面里的 fixed + z-index 盖不住它，
+   * 不藏的话弹层底部的「加入购物车」会被压掉一截。
+   */
+  setTabBarHidden(hidden) {
+    if (typeof this.getTabBar === 'function' && this.getTabBar()) {
+      this.getTabBar().setHidden(hidden)
+    }
+  },
+
   openSpicePicker(dish) {
     this.setData({
       spicePicker: {
@@ -154,10 +172,12 @@ Page({
         levels: SPICE_LEVELS,
       },
     })
+    this.setTabBarHidden(true)
   },
 
   closeSpicePicker() {
     this.setData({ 'spicePicker.open': false })
+    this.setTabBarHidden(false)
   },
 
   onPickSpice(e) {
@@ -173,6 +193,7 @@ Page({
     if (!dish) return
     if (this.data.isCook) {
       this.setData({ 'spicePicker.open': false })
+      this.setTabBarHidden(false)
       ui.toast('掌勺人不点单哦，等TA来点单 💕')
       return
     }
@@ -181,6 +202,7 @@ Page({
       cartCount: store.cartCount(),
       'spicePicker.open': false,
     })
+    this.setTabBarHidden(false)
     ui.toast('已加入购物车', 'success')
   },
 

@@ -1,12 +1,15 @@
 /* 待做页：掌勺人的厨房看板 */
 .todo {
-  padding: 24rpx 24rpx 200rpx;
+  padding: 24rpx 24rpx 24rpx;
+  /* 底部留白让开自定义 tabBar（110rpx + 安全区）+ 余量 */
+  padding-bottom: 200rpx;
+  padding-bottom: calc(150rpx + env(safe-area-inset-bottom));
 }
 
 /* 顶部概览 */
 .hero {
   background: linear-gradient(135deg, #FFD3E0, #FFE9C7);
-  border-radius: 28rpx;
+  border-radius: 24rpx;
   padding: 32rpx;
   margin-bottom: 24rpx;
 }
@@ -125,7 +128,8 @@
 
 .oi-spice {
   margin-left: 12rpx;
-  font-size: 20rpx;
+  font-size: 22rpx;
+  line-height: 32rpx;
   border-radius: 999rpx;
   padding: 2rpx 12rpx;
   color: #ffffff;
@@ -206,7 +210,7 @@
 .later {
   background: #FFF9F6;
   border: 2rpx solid #F6E3DC;
-  border-radius: 22rpx;
+  border-radius: 24rpx;
   padding: 20rpx 22rpx 8rpx;
   margin-bottom: 18rpx;
 }

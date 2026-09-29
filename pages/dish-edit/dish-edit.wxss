@@ -1,6 +1,9 @@
 /* 加菜 / 编辑菜品页 */
 .page {
   padding: 24rpx 24rpx 80rpx;
+  /* 底部安全区：不是 tab 页，只需避开全面屏手势条 */
+  padding-bottom: 80rpx;
+  padding-bottom: calc(40rpx + env(safe-area-inset-bottom));
 }
 
 .section {

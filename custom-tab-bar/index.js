@@ -24,6 +24,8 @@ Component({
     tabs: [],
     // 当前选中的 tab key，由各 tab 页 onShow 同步进来
     selected: '',
+    // 页面打开底部弹层时置 true 让位（tabBar 是原生层，弹层盖不住它）
+    hidden: false,
   },
 
   lifetimes: {
@@ -44,6 +46,15 @@ Component({
       const role = store.getRole() || 'orderer'
       const tabs = TABS[role] || TABS.orderer
       this.setData({ role: role, tabs: tabs })
+    },
+
+    /**
+     * 隐藏 / 显示底栏。页面里弹出底部浮层时调 setHidden(true) 让位，
+     * 关闭时记得 setHidden(false) 收回来。
+     */
+    setHidden(hidden) {
+      const next = !!hidden
+      if (this.data.hidden !== next) this.setData({ hidden: next })
     },
 
     onTap(e) {

@@ -1,4 +1,7 @@
-<view class="tabbar">
+<!-- hidden：页面里有底部弹层/大浮层时把它藏起来。
+     tabBar 是页面级原生层，页面内的 fixed + z-index 盖不住它，
+     弹层要铺满底部就只能先让位（见 pages/menu 的辣度选择弹层）。 -->
+<view class="tabbar" wx:if="{{!hidden}}">
   <view
     class="tab {{selected === item.key ? 'tab-on' : ''}}"
     wx:for="{{tabs}}"

@@ -12,7 +12,9 @@
   "window": {
     "navigationBarBackgroundColor": "#FF7A9E",
     "navigationBarTextStyle": "white",
-    "navigationBarTitleText": "爱心小厨房"
+    "navigationBarTitleText": "爱心小厨房",
+    "backgroundColor": "#FFF7F3",
+    "backgroundTextStyle": "dark"
   },
   "tabBar": {
     "custom": true,
@@ -40,7 +42,6 @@
     ]
   },
   "style": "v2",
-  "componentFramework": "glass-easel",
   "sitemapLocation": "sitemap.json",
   "lazyCodeLoading": "requiredComponents"
 }

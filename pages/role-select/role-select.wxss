@@ -3,8 +3,9 @@ page {
   height: 100%;
 }
 
+/* 用 100% 而不是 100vh：iOS 的 100vh 含地址栏，会让整屏多出一截空白 */
 .welcome {
-  min-height: 100vh;
+  min-height: 100%;
   box-sizing: border-box;
   padding: 0 48rpx 60rpx;
   display: flex;
@@ -44,8 +45,8 @@ page {
   align-items: center;
   background: #ffffff;
   border: 3rpx solid #F6E3DC;
-  border-radius: 28rpx;
-  padding: 40rpx 36rpx;
+  border-radius: 24rpx;
+  padding: 36rpx 32rpx;
   margin-bottom: 28rpx;
   box-shadow: 0 8rpx 28rpx rgba(255, 122, 158, 0.08);
 }
@@ -77,12 +78,14 @@ page {
 
 .wc-now {
   margin-left: 14rpx;
-  font-size: 20rpx;
+  font-size: 22rpx;
+  line-height: 32rpx;
   font-weight: 600;
   color: #FF7A9E;
   background: #FFE9EE;
   border-radius: 999rpx;
-  padding: 4rpx 16rpx;
+  padding: 0 16rpx;
+  flex-shrink: 0;
 }
 
 .wc-desc {

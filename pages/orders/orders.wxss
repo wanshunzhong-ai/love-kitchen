@@ -1,6 +1,9 @@
 /* 订单页 */
 .page {
-  padding: 24rpx 24rpx 200rpx;
+  padding: 24rpx 24rpx 24rpx;
+  /* 底部留白让开自定义 tabBar（110rpx + 安全区）+ 余量 */
+  padding-bottom: 200rpx;
+  padding-bottom: calc(150rpx + env(safe-area-inset-bottom));
 }
 
 /* 身份胶囊 + 筛选行 */
@@ -148,13 +151,13 @@
   word-break: break-all;
 }
 
-/* 辣度标签：与点菜页同配色 */
+/* 辣度标签：与点单页同配色；字号下限 22rpx */
 .oi-spice {
   margin-left: 12rpx;
   padding: 2rpx 12rpx;
   border-radius: 999rpx;
-  font-size: 20rpx;
-  line-height: 30rpx;
+  font-size: 22rpx;
+  line-height: 32rpx;
   flex-shrink: 0;
 }
 

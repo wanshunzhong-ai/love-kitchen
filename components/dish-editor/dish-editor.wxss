@@ -18,6 +18,9 @@
   background: #FFF7F3;
   border-radius: 32rpx 32rpx 0 0;
   padding: 28rpx 24rpx 44rpx;
+  /* 安全区双写：全面屏底部横条上按钮不会被压 */
+  padding-bottom: 44rpx;
+  padding-bottom: calc(44rpx + env(safe-area-inset-bottom));
   box-sizing: border-box;
   max-height: 80vh;
   display: flex;
@@ -105,14 +108,16 @@
   color: #C4B2AC;
 }
 
+/* 负外边距做间距：不用 flex gap（安卓部分内核不支持，会全粘一起） */
 .de-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 14rpx;
-  margin-top: 14rpx;
+  margin: -7rpx;
+  margin-top: 7rpx;
 }
 
 .de-chip {
+  margin: 7rpx;
   font-size: 24rpx;
   line-height: 56rpx;
   padding: 0 26rpx;
@@ -243,7 +248,7 @@
 }
 
 .de-pick-spice {
-  font-size: 20rpx;
+  font-size: 22rpx;
   color: #C97B8E;
   background: #FFF0F4;
   padding: 4rpx 14rpx;

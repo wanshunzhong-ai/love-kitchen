@@ -1,9 +1,28 @@
 /**爱心小厨房 · 全局样式**/
+
+/* ============================================================
+   兼容性约定（改样式前先读这段）
+   ------------------------------------------------------------
+   1) 间距一律用 margin，**不要用 flex gap**
+      部分 Android 微信内核（XWeb 低版本）不支持 flex 的 gap 属性，
+      真机上会直接退化成 0 间距 —— 标签、按钮全粘成一坨。
+      需要「自动换行 + 等距」时用「负外边距容器 + 子项外边距」：
+        .tags   { display: flex; flex-wrap: wrap; margin: -7rpx; }
+        .tags > { margin: 7rpx; }            → 实际间距 14rpx
+   2) 安全区一律「常量兜底 + calc(env())」双写
+      不写兜底时，一旦运行环境不认 env() 整条声明会失效（归零）。
+   3) 字号下限 22rpx（≈11px），再小的字在真机上基本看不清。
+   4) 自定义 tabBar 是页面级原生层，页面内元素（含 z-index）盖不住它，
+      浮层要么避让它的高度，要么打开时把它藏起来。
+   ============================================================ */
+
 page {
   background: #FFF7F3;
   font-size: 28rpx;
   color: #4A3B38;
-  font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  /* 补 system-ui，安卓端走系统字体（Roboto / 思源黑体），字形更统一 */
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', 'Source Han Sans SC', 'Noto Sans CJK SC', sans-serif;
 }
 
 /* 通用卡片 */
@@ -93,13 +112,15 @@ page {
   transition: all 0.15s;
 }
 
+/* 负外边距容器：等价于 gap 14rpx，但不依赖 flex gap（见文件头兼容性约定） */
 .dine-slots {
   display: flex;
   flex-wrap: wrap;
-  gap: 14rpx;
+  margin: -7rpx;
 }
 
 .dine-slots .dine-chip {
+  margin: 7rpx;
   padding: 14rpx 30rpx;
   border-radius: 999rpx;
   background: #FFF3EE;

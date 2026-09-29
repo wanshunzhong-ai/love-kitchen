@@ -4,13 +4,16 @@ page {
 }
 
 .me {
-  padding: 32rpx 32rpx 200rpx;
+  padding: 32rpx 32rpx 32rpx;
+  /* 让开自定义 tabBar（110rpx + 安全区） */
+  padding-bottom: 200rpx;
+  padding-bottom: calc(150rpx + env(safe-area-inset-bottom));
 }
 
 .me-card {
   background: #ffffff;
   border: 3rpx solid #F6E3DC;
-  border-radius: 28rpx;
+  border-radius: 24rpx;
   padding: 36rpx 32rpx;
   margin-bottom: 28rpx;
   box-shadow: 0 8rpx 28rpx rgba(255, 122, 158, 0.08);
@@ -102,12 +105,14 @@ page {
 
 .me-badge {
   margin-left: 14rpx;
-  font-size: 21rpx;
+  font-size: 22rpx;
+  line-height: 32rpx;
   font-weight: 600;
   color: #FF7A9E;
   background: #FFE9EE;
   border-radius: 999rpx;
-  padding: 4rpx 16rpx;
+  padding: 0 16rpx;
+  flex-shrink: 0;
 }
 
 .me-clear {
@@ -124,14 +129,15 @@ page {
   margin: 4rpx 0 16rpx;
 }
 
-/* 当前状态 */
+/* 当前状态：负外边距做间距，不用 flex gap（安卓部分内核不支持） */
 .me-moods {
   display: flex;
   flex-wrap: wrap;
-  gap: 16rpx;
+  margin: -8rpx;
 }
 
 .me-mood {
+  margin: 8rpx;
   background: #FFF7F2;
   border: 2rpx solid #F6E3DC;
   border-radius: 999rpx;
@@ -151,10 +157,11 @@ page {
 .me-picked {
   display: flex;
   flex-wrap: wrap;
-  gap: 14rpx;
+  margin: -7rpx;
 }
 
 .me-avoid {
+  margin: 7rpx;
   display: flex;
   align-items: center;
   background: linear-gradient(135deg, #FFF0F4, #FFE6EE);
@@ -175,14 +182,15 @@ page {
 
 .me-avoid-del {
   margin-left: 10rpx;
-  width: 34rpx;
-  height: 34rpx;
-  line-height: 34rpx;
+  width: 36rpx;
+  height: 36rpx;
+  line-height: 36rpx;
   text-align: center;
   border-radius: 50%;
   background: #FFC2D5;
   color: #ffffff;
-  font-size: 20rpx;
+  font-size: 22rpx;
+  flex-shrink: 0;
 }
 
 /* 清单为空：虚线口袋，和三餐空档同款语气 */
@@ -190,7 +198,6 @@ page {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12rpx;
   background: #FFFDFC;
   border: 2rpx dashed #F3E4DD;
   border-radius: 18rpx;
@@ -203,6 +210,7 @@ page {
 }
 
 .me-empty-tip {
+  margin-left: 12rpx;
   font-size: 23rpx;
   color: #C9B6AF;
 }
@@ -211,11 +219,12 @@ page {
 .me-tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 14rpx;
-  margin-bottom: 4rpx;
+  margin: -7rpx;
+  margin-bottom: -3rpx;
 }
 
 .me-tag {
+  margin: 7rpx;
   background: #FFF7F2;
   border: 2rpx dashed #F0CFC6;
   border-radius: 999rpx;

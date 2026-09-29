@@ -1,6 +1,9 @@
-/* 点菜页 */
+/* 点单页（掌勺人进来是「菜单管理」，同一页面） */
 .page {
-  padding: 24rpx 24rpx 220rpx;
+  padding: 24rpx 24rpx 24rpx;
+  /* 底部留白让开自定义 tabBar（110rpx + 安全区）+ 余量，全面屏上最后一张卡片不会被压住 */
+  padding-bottom: 200rpx;
+  padding-bottom: calc(150rpx + env(safe-area-inset-bottom));
 }
 
 .hero {
@@ -8,7 +11,7 @@
   align-items: center;
   justify-content: space-between;
   background: linear-gradient(135deg, #FFD3E0, #FFE9C7);
-  border-radius: 28rpx;
+  border-radius: 24rpx;
   padding: 32rpx;
   margin-bottom: 24rpx;
 }
@@ -25,12 +28,17 @@
   color: #C97B8E;
 }
 
+/* 不用 flex gap：安卓部分内核不支持，改为子项 margin-top */
 .hero-right {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 14rpx;
   flex-shrink: 0;
+  padding-left: 20rpx;
+}
+
+.hero-right .hero-add {
+  margin-top: 14rpx;
 }
 
 .hero-role {
@@ -165,13 +173,13 @@
   min-width: 0;
 }
 
-/* 辣度标签：0 不辣(灰) → 3 特辣(红) */
+/* 辣度标签：0 不辣(灰) → 3 特辣(红)；字号下限 22rpx，再小真机上看不清 */
 .dish-spice {
   margin-left: 12rpx;
   padding: 2rpx 14rpx;
   border-radius: 999rpx;
-  font-size: 20rpx;
-  line-height: 32rpx;
+  font-size: 22rpx;
+  line-height: 34rpx;
   flex-shrink: 0;
 }
 
@@ -217,11 +225,12 @@
   box-shadow: 0 4rpx 12rpx rgba(255, 122, 158, 0.35);
 }
 
-/* 随机帮选 */
+/* 随机帮选：固定在右下，要叠在 tabBar（110rpx）和购物车栏之上 */
 .lucky {
   position: fixed;
   right: 32rpx;
-  bottom: 190rpx;
+  bottom: 230rpx;
+  bottom: calc(230rpx + env(safe-area-inset-bottom));
   background: #ffffff;
   color: #FF5C8A;
   font-size: 26rpx;
@@ -232,12 +241,14 @@
   border: 2rpx solid #FFE3EA;
 }
 
-/* 购物车栏 */
+/* 购物车栏：原来贴在 bottom 40rpx，被自定义 tabBar（110rpx + 安全区）整个盖住，
+   加完菜根本看不到「去下单」——现在贴着 tabBar 上沿放。 */
 .cart-bar {
   position: fixed;
   left: 32rpx;
   right: 32rpx;
-  bottom: 40rpx;
+  bottom: 126rpx;
+  bottom: calc(126rpx + env(safe-area-inset-bottom));
   display: flex;
   align-items: center;
   background: #3F2F2C;
@@ -292,6 +303,9 @@
   background: #FFFCFB;
   border-radius: 32rpx 32rpx 0 0;
   padding: 32rpx 32rpx 48rpx;
+  /* 全面屏底部横条要留位，否则「加入购物车」按钮贴在手势区上 */
+  padding-bottom: 48rpx;
+  padding-bottom: calc(48rpx + env(safe-area-inset-bottom));
   box-sizing: border-box;
   animation: sheet-up 0.22s ease-out;
 }

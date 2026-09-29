@@ -1,11 +1,14 @@
-/* 自定义 tabBar：白底圆角浮起，粉色选中态 */
+/* 自定义 tabBar：白底圆角浮起，粉色选中态
+   实测高度 = 内容 100rpx（14 + 44 + 4 + 32 + 6）+ 底部 10rpx ≈ 110rpx
+   页面里要避让它的浮层，按「110rpx + safe-area-inset-bottom」算。 */
 .tabbar {
   position: fixed;
   left: 24rpx;
   right: 24rpx;
   bottom: 0;
-  /* 底部安全区之上 */
-  padding-bottom: calc(env(safe-area-inset-bottom) + 10rpx);
+  /* 安全区双写：先给常量兜底，再让 env() 覆盖（环境不认 env 时不会归零） */
+  padding-bottom: 10rpx;
+  padding-bottom: calc(10rpx + env(safe-area-inset-bottom));
   margin-bottom: 0;
   display: flex;
   background: #ffffff;
@@ -19,19 +22,24 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: flex-end;
   padding: 14rpx 0 6rpx;
   color: #B9A29B;
   transition: color 0.15s;
 }
 
+/* 固定盒高：不同机型 emoji 字形高低不一，不锁死会把 tabBar 撑得一高一低 */
 .tab-emoji {
   font-size: 40rpx;
-  line-height: 1.2;
+  line-height: 44rpx;
+  height: 44rpx;
 }
 
 .tab-text {
   margin-top: 4rpx;
   font-size: 22rpx;
+  line-height: 32rpx;
+  height: 32rpx;
   font-weight: 600;
   /* 「我的资料」四个字也保证不折行 */
   white-space: nowrap;

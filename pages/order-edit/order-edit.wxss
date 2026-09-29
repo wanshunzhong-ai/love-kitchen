@@ -1,6 +1,9 @@
 /* 编辑订单页 */
 .page {
   padding: 24rpx 24rpx 80rpx;
+  /* 底部安全区：不是 tab 页，只需避开全面屏手势条 */
+  padding-bottom: 80rpx;
+  padding-bottom: calc(40rpx + env(safe-area-inset-bottom));
 }
 
 .section {
@@ -66,9 +69,9 @@
 .ci-spice-cur {
   display: inline-flex;
   align-items: center;
-  font-size: 20rpx;
-  line-height: 40rpx;
-  padding: 0 16rpx;
+  font-size: 22rpx;
+  line-height: 44rpx;
+  padding: 0 18rpx;
   border-radius: 999rpx;
   color: #A89690;
   background: #F8F3F1;
@@ -77,7 +80,7 @@
 
 .csc-caret {
   margin-left: 8rpx;
-  font-size: 18rpx;
+  font-size: 22rpx;
   opacity: 0.65;
 }
 
@@ -106,9 +109,9 @@
 }
 
 .ci-chip {
-  font-size: 20rpx;
-  line-height: 34rpx;
-  padding: 0 14rpx;
+  font-size: 22rpx;
+  line-height: 38rpx;
+  padding: 0 16rpx;
   margin-right: 10rpx;
   border-radius: 999rpx;
   color: #A89690;
@@ -300,8 +303,8 @@
   flex-shrink: 0;
   margin-left: 10rpx;
   padding: 0 12rpx;
-  font-size: 20rpx;
-  line-height: 32rpx;
+  font-size: 22rpx;
+  line-height: 34rpx;
   border-radius: 999rpx;
   color: #A89690;
   background: #F4EDE9;
@@ -378,10 +381,13 @@
   color: #D8C7C1;
 }
 
-/* 状态 */
+/* 状态：三项等分，间距用相邻兄弟 margin（不用 flex gap，安卓部分内核不支持） */
 .status-row {
   display: flex;
-  gap: 16rpx;
+}
+
+.status-row .schip + .schip {
+  margin-left: 16rpx;
 }
 
 .schip {
@@ -437,6 +443,9 @@
   background: #FFF7F3;
   border-radius: 32rpx 32rpx 0 0;
   padding: 28rpx 24rpx 40rpx;
+  /* 安全区双写：全面屏底部横条不压内容 */
+  padding-bottom: 40rpx;
+  padding-bottom: calc(40rpx + env(safe-area-inset-bottom));
   box-sizing: border-box;
   max-height: 78vh;
   display: flex;
@@ -521,7 +530,7 @@
 }
 
 .pick-spice {
-  font-size: 20rpx;
+  font-size: 22rpx;
   color: #C97B8E;
   background: #FFF0F4;
   padding: 4rpx 14rpx;
