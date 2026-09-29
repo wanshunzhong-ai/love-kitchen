@@ -28,8 +28,8 @@
 
   <view wx:elif="{{filteredOrders.length === 0}}" class="state">
     <text class="state-emoji">🛎️</text>
-    <text class="state-tip">还没有订单，去点几个菜吧～</text>
-    <button class="btn-retry" bindtap="goMenu">去点单</button>
+    <text class="state-tip">{{isCook ? '还没有订单，等TA来点单～' : '还没有订单，去点几个菜吧～'}}</text>
+    <button wx:if="{{!isCook}}" class="btn-retry" bindtap="goMenu">去点单</button>
   </view>
 
   <view wx:else class="order-list">

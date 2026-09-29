@@ -42,6 +42,8 @@ Page({
       roleInfo: store.getRoleInfo(),
       isCook: role === 'cook',
     })
+    // 同一个页面两种身份标题不同：点餐人看的是「我的订单」，做饭人看的是厨房「订单」
+    wx.setNavigationBarTitle({ title: role === 'cook' ? '订单' : '我的订单' })
     this.loadOrders()
   },
 

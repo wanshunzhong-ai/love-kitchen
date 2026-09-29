@@ -51,11 +51,6 @@ Page({
     wx.switchTab({ url: '/pages/profile/profile' })
   },
 
-  // 点餐人的底栏只有「点单 / 我的」：订单从这里进（看状态、改单、删单）
-  goOrders() {
-    wx.switchTab({ url: '/pages/orders/orders' })
-  },
-
   async loadDishes() {
     this.setData({ loading: true, loadError: false })
     try {

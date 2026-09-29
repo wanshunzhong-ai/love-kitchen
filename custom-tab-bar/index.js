@@ -1,5 +1,5 @@
 // 自定义 tabBar：按身份出不同的 tab ——
-//   点餐人：点单 / 我的资料（两个入口；订单从点单页的「我的订单」进）
+//   点餐人：点单 / 我的订单 / 我的资料（订单就是底栏第二个 tab，看状态 / 改单 / 删单）
 //   做饭人：待做 / 订单 / 我的资料（待做 = 按日期看的厨房清单，没有点餐入口）
 // 官方 custom-tab-bar 约定：tab 页在 onShow 里 getTabBar().setData({ selected }) 同步选中态
 const store = require('../utils/store')
@@ -7,6 +7,7 @@ const store = require('../utils/store')
 const TABS = {
   orderer: [
     { key: 'menu', path: '/pages/menu/menu', text: '点单', emoji: '🍽️' },
+    { key: 'orders', path: '/pages/orders/orders', text: '我的订单', emoji: '📋' },
     { key: 'profile', path: '/pages/profile/profile', text: '我的资料', emoji: '💕' },
   ],
   cook: [

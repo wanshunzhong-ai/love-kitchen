@@ -7,7 +7,6 @@
     </view>
     <view class="hero-right">
       <view class="hero-role" bindtap="goProfile">{{roleInfo.emoji}} {{roleInfo.text}}</view>
-      <view class="hero-orders" bindtap="goOrders">📋 我的订单</view>
       <view class="hero-add" bindtap="goAddDish">＋ 加菜</view>
     </view>
   </view>
