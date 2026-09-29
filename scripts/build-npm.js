@@ -28,8 +28,14 @@ const ROOT = path.resolve(__dirname, '..')
 const PACKAGES = [
   {
     name: '@tencent-ai/workbuddy-cloud-sdk',
-    // 小程序必须用 /miniprogram 子路径（浏览器版在无 fetch 的环境下不可用）
-    entryFile: 'lib/miniprogram.cjs',
+    // 必须用官方 miniprogram_dist 产物（自带头部 URL/URLSearchParams polyfill）。
+    // 不能用 lib/miniprogram.cjs：它裸用全局 new URL()，而微信小程序运行时
+    // 没有 WHATWG URL，初始化会报「endpoint must be an absolute URL」直接崩。
+    // （node_modules 的 package.json 是 type:module，官方产物内含
+    //   module.exports，小程序按 CJS 语义加载不受影响。）
+    entryFile: 'miniprogram_dist/miniprogram.js',
+    // 自检标记：官方小程序产物才有的导出，防止误用通用构建
+    mustContain: 'ensureMiniProgramPolyfills',
   },
 ]
 
@@ -59,6 +65,15 @@ PACKAGES.forEach(function (pkg) {
   }
 
   const code = fs.readFileSync(srcEntryPath, 'utf8')
+
+  // 标记自检：确认拿到的确实是目标产物（防止包结构变化后静默复制错文件）
+  if (pkg.mustContain && code.indexOf(pkg.mustContain) === -1) {
+    fail(
+      pkg.name +
+        ' 的入口缺少预期标记「' + pkg.mustContain + '」，可能不是小程序专用构建，' +
+        '请核对 node_modules/' + pkg.name + ' 的目录结构。'
+    )
+  }
 
   // 自检：入口里若还有 require('xxx') 形式的「非相对路径」依赖，
   // 说明它不再自包含，需要改走真正的打包流程（开发者工具「构建 npm」）。
