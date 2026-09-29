@@ -23,27 +23,42 @@
   color: #C97B8E;
 }
 
-/* 日期分组头 */
-.date-group {
+/* 一天里的三餐分格（早餐 / 午餐 / 晚餐 / 夜宵） */
+.meal {
   margin-bottom: 30rpx;
 }
 
-.date-head {
+.meal-head {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   padding: 0 8rpx 14rpx;
 }
 
-.date-text {
+.meal-text {
   font-size: 32rpx;
   font-weight: 700;
   color: #4A3B38;
 }
 
-.date-stat {
+.meal-stat {
   font-size: 22rpx;
   color: #B9A29B;
+}
+
+/* 这一餐还没单子时的灰字占位（保持三餐一眼可见） */
+.meal-empty {
+  font-size: 24rpx;
+  color: #C9B6AF;
+  background: #FFFDFC;
+  border: 2rpx dashed #F3E4DD;
+  border-radius: 18rpx;
+  padding: 20rpx 24rpx;
+}
+
+/* 今天完全没单子时的占位（下面可能还有「后面几天」） */
+.meal-empty-top {
+  margin-bottom: 24rpx;
 }
 
 /* 订单卡片（与订单页同风格） */
@@ -146,6 +161,12 @@
   color: #FF7A9E;
 }
 
+.order-dine {
+  font-size: 22rpx;
+  color: #B9A29B;
+  margin-bottom: 10rpx;
+}
+
 .order-remark {
   margin-top: 14rpx;
   font-size: 23rpx;
@@ -155,16 +176,71 @@
   padding: 12rpx 18rpx;
 }
 
-.order-foot {
-  margin-top: 14rpx;
+/* 卡片上的状态推进按钮 */
+.order-acts {
+  margin-top: 18rpx;
   display: flex;
   justify-content: flex-end;
 }
 
-.order-goto {
+.act {
+  font-size: 25rpx;
+  font-weight: 600;
+  border-radius: 999rpx;
+  padding: 14rpx 34rpx;
+}
+
+.act-go {
+  color: #ffffff;
+  background: linear-gradient(135deg, #FF7A9E, #FF9F43);
+  box-shadow: 0 6rpx 16rpx rgba(255, 122, 158, 0.28);
+}
+
+.act-done {
+  color: #ffffff;
+  background: linear-gradient(135deg, #52C9A2, #7ED0A0);
+  box-shadow: 0 6rpx 16rpx rgba(82, 201, 162, 0.25);
+}
+
+/* 后面几天的摘要 */
+.later {
+  background: #FFF9F6;
+  border: 2rpx solid #F6E3DC;
+  border-radius: 22rpx;
+  padding: 20rpx 22rpx 8rpx;
+  margin-bottom: 18rpx;
+}
+
+.later-title {
   font-size: 24rpx;
   font-weight: 600;
-  color: #FF7A9E;
+  color: #8A7772;
+  padding-bottom: 12rpx;
+}
+
+.later-row {
+  display: flex;
+  align-items: center;
+  padding: 16rpx 0;
+  border-top: 2rpx dashed #F6E3DC;
+}
+
+.later-date {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #4A3B38;
+}
+
+.later-stat {
+  margin-left: auto;
+  font-size: 22rpx;
+  color: #B9A29B;
+}
+
+.later-go {
+  margin-left: 12rpx;
+  font-size: 28rpx;
+  color: #FFB3C7;
 }
 
 /* 空态 / 加载态 */

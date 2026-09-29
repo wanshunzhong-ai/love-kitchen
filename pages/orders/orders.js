@@ -137,8 +137,20 @@ Page({
     this.updateStatus(e.currentTarget.dataset.idx, 'cooking')
   },
 
+  // 「已上菜」是终态（之后只能删单）→ 与待做页一致，二次确认防误点
   onFinishCooking(e) {
-    this.updateStatus(e.currentTarget.dataset.idx, 'done')
+    const idx = e.currentTarget.dataset.idx
+    const self = this
+    wx.showModal({
+      title: '这一单都上菜啦？',
+      content: '标记「已上菜」后就不能再改了哦',
+      confirmText: '上菜咯',
+      confirmColor: '#FF7A9E',
+      cancelText: '再做会儿',
+      success: function (res) {
+        if (res.confirm) self.updateStatus(idx, 'done')
+      },
+    })
   },
 
   // 编辑这一单：改菜、改备注、改点菜人、改状态，或整单删除
