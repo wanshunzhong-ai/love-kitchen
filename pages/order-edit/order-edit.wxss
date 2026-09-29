@@ -182,6 +182,113 @@
   flex-shrink: 0;
 }
 
+/* ===== 终态：已上菜的订单在本页只读 ===== */
+.final-badge {
+  display: flex;
+  align-items: center;
+}
+
+.fb-emoji {
+  font-size: 52rpx;
+  width: 78rpx;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.fb-text {
+  flex: 1;
+  min-width: 0;
+  padding-left: 8rpx;
+  display: flex;
+  flex-direction: column;
+}
+
+.fb-title {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #4A3B38;
+}
+
+.fb-sub {
+  margin-top: 6rpx;
+  font-size: 24rpx;
+  color: #B9A29B;
+}
+
+/* 只读菜品行（无辣度条、无加减、无 ✏️） */
+.ro-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18rpx 0;
+  border-bottom: 2rpx solid #FFF2EC;
+}
+
+.ro-item:last-child {
+  border-bottom: none;
+}
+
+.ro-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.ro-line {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.ro-name {
+  font-size: 28rpx;
+  color: #4A3B38;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ro-spice {
+  flex-shrink: 0;
+  margin-left: 10rpx;
+  padding: 0 12rpx;
+  font-size: 20rpx;
+  line-height: 32rpx;
+  border-radius: 999rpx;
+  color: #A89690;
+  background: #F4EDE9;
+}
+
+.ro-note {
+  margin-top: 8rpx;
+  font-size: 22rpx;
+  line-height: 1.4;
+  color: #C08A7A;
+  word-break: break-all;
+}
+
+.ro-qty {
+  flex-shrink: 0;
+  margin-left: 16rpx;
+  font-size: 26rpx;
+  color: #B9A29B;
+}
+
+.ro-meta {
+  margin-top: 20rpx;
+  padding-top: 20rpx;
+  border-top: 2rpx solid #FFF2EC;
+  display: flex;
+  flex-direction: column;
+}
+
+.ro-meta-line {
+  font-size: 26rpx;
+  line-height: 1.8;
+  color: #6B5854;
+  word-break: break-all;
+}
+
 .empty-hint {
   padding: 32rpx 0;
   text-align: center;

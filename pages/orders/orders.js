@@ -115,9 +115,14 @@ Page({
   },
 
   // 编辑这一单：改菜、改备注、改点菜人、改状态，或整单删除
+  // 已上菜 = 终态：不给编辑（列表里也不渲染入口，这里是兜底防误入）
   onEditOrder(e) {
     const order = this.data.filteredOrders[e.currentTarget.dataset.idx]
     if (!order) return
+    if (order.status === 'done') {
+      ui.toast('这一单已上菜，只能删掉')
+      return
+    }
     wx.navigateTo({ url: '/pages/order-edit/order-edit?id=' + order.id })
   },
 

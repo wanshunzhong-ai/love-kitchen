@@ -66,6 +66,9 @@ Page({
     totalCount: 0,
     loading: true,
     saving: false,
+    // 已上菜 = 终态：本页退化成只读（只展示 + 删除），不能保存修改
+    finalized: false,
+    dineText: '',
     // 逐道菜修改面板（辣度 / 备注 / 换菜）
     editorOpen: false,
     editorKey: '',
@@ -142,12 +145,16 @@ Page({
         return s.key === savedSlot
       })
       const slot = slotHit && !slotHit.disabled ? savedSlot : dine.defaultSlot(now, date)
+      const status = order.status || 'pending'
       this.setData({
         items: items,
         remark: order.remark || '',
         orderBy: order.order_by || '',
-        status: order.status || 'pending',
+        status: status,
+        finalized: status === 'done',
         totalCount: this.countOf(items),
+        // 「周三 10/1 · 午餐」；老订单没填 → 「尽快」
+        dineText: dine.formatDine(order.dine_date, order.dine_slot),
         dineDates: dates,
         dineDate: date,
         dineSlots: slots,
@@ -382,6 +389,11 @@ Page({
 
   async onSave() {
     if (this.data.saving) return
+    // 终态兜底：已上菜的订单即使绕过入口进到本页，也不允许保存
+    if (this.data.finalized) {
+      ui.toast('这一单已上菜，不能再改了')
+      return
+    }
     if (!this.data.items.length) {
       ui.toast('这一单至少要留一道菜')
       return

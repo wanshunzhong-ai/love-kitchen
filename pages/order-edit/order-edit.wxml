@@ -5,126 +5,169 @@
   </view>
 
   <block wx:else>
-    <!-- 菜品清单 -->
-    <view class="card section">
-      <view class="section-title">
-        🧺 这一单的菜
-        <text class="title-count">共 {{totalCount}} 道</text>
+    <!-- ===== 已上菜＝终态：只读展示 + 只能删掉，不给任何修改入口 ===== -->
+    <block wx:if="{{finalized}}">
+      <view class="card section">
+        <view class="final-badge">
+          <text class="fb-emoji">🎉</text>
+          <view class="fb-text">
+            <text class="fb-title">这一单已经上菜啦</text>
+            <text class="fb-sub">完成后的订单不再支持修改，只能删掉</text>
+          </view>
+        </view>
       </view>
 
-      <view class="cart-item" wx:for="{{items}}" wx:key="key">
-        <view class="ci-main">
-          <text class="ci-emoji">{{item.emoji}}</text>
-          <view class="ci-info">
-            <view class="ci-name-row">
-              <text class="ci-name">{{item.name}}</text>
-              <!-- 打开「改这道菜」面板：辣度 / 备注 / 换菜 -->
-              <text class="ci-edit" data-key="{{item.key}}" catchtap="openEditor">✏️</text>
+      <view class="card section">
+        <view class="section-title">
+          🧺 这一单的菜
+          <text class="title-count">共 {{totalCount}} 道</text>
+        </view>
+
+        <view class="ro-item" wx:for="{{items}}" wx:key="key">
+          <view class="ro-info">
+            <view class="ro-line">
+              <text class="ro-name">{{item.emoji}} {{item.name}}</text>
+              <text class="ro-spice">{{item.spice}}</text>
             </view>
-            <!-- 辣度可改：点一下直接切换 -->
-            <view class="ci-spices">
-              <text
-                class="ci-chip {{item.spice === sp ? 'ci-chip-on' : ''}}"
-                wx:for="{{spiceLevels}}"
-                wx:for-item="sp"
-                wx:key="key"
-                data-key="{{item.key}}"
-                data-spice="{{sp.key}}"
-                catchtap="onTapSpice"
-              >{{sp.key}}</text>
+            <!-- 这一道菜的单独备注 -->
+            <view class="ro-note" wx:if="{{item.note}}">📝 {{item.note}}</view>
+          </view>
+          <text class="ro-qty">× {{item.qty}}</text>
+        </view>
+
+        <view class="ro-meta">
+          <text class="ro-meta-line">📅 {{dineText}}</text>
+          <text class="ro-meta-line">🙋 {{orderBy || '宝贝'}}</text>
+          <text class="ro-meta-line" wx:if="{{remark}}">💬 {{remark}}</text>
+        </view>
+      </view>
+
+      <view class="btn-delete" bindtap="onDelete">🗑 删掉这一单</view>
+    </block>
+
+    <!-- ===== 未完成：正常编辑 ===== -->
+    <block wx:else>
+      <!-- 菜品清单 -->
+      <view class="card section">
+        <view class="section-title">
+          🧺 这一单的菜
+          <text class="title-count">共 {{totalCount}} 道</text>
+        </view>
+
+        <view class="cart-item" wx:for="{{items}}" wx:key="key">
+          <view class="ci-main">
+            <text class="ci-emoji">{{item.emoji}}</text>
+            <view class="ci-info">
+              <view class="ci-name-row">
+                <text class="ci-name">{{item.name}}</text>
+                <!-- 打开「改这道菜」面板：辣度 / 备注 / 换菜 -->
+                <text class="ci-edit" data-key="{{item.key}}" catchtap="openEditor">✏️</text>
+              </view>
+              <!-- 辣度可改：点一下直接切换 -->
+              <view class="ci-spices">
+                <text
+                  class="ci-chip {{item.spice === sp ? 'ci-chip-on' : ''}}"
+                  wx:for="{{spiceLevels}}"
+                  wx:for-item="sp"
+                  wx:key="key"
+                  data-key="{{item.key}}"
+                  data-spice="{{sp.key}}"
+                  catchtap="onTapSpice"
+                >{{sp.key}}</text>
+              </view>
+              <!-- 这一道菜的备注 -->
+              <view class="ci-note" wx:if="{{item.note}}">📝 {{item.note}}</view>
             </view>
-            <!-- 这一道菜的备注 -->
-            <view class="ci-note" wx:if="{{item.note}}">📝 {{item.note}}</view>
+          </view>
+
+          <view class="ci-actions">
+            <view class="ci-stepper">
+              <view class="step" data-key="{{item.key}}" data-delta="-1" catchtap="onQtyChange">−</view>
+              <text class="step-num">{{item.qty}}</text>
+              <view class="step step-plus" data-key="{{item.key}}" data-delta="1" catchtap="onQtyChange">＋</view>
+            </view>
+            <text class="ci-remove" data-key="{{item.key}}" catchtap="onRemoveItem">✕</text>
           </view>
         </view>
 
-        <view class="ci-actions">
-          <view class="ci-stepper">
-            <view class="step" data-key="{{item.key}}" data-delta="-1" catchtap="onQtyChange">−</view>
-            <text class="step-num">{{item.qty}}</text>
-            <view class="step step-plus" data-key="{{item.key}}" data-delta="1" catchtap="onQtyChange">＋</view>
+        <view wx:if="{{items.length === 0}}" class="empty-hint">这一单已经空了，从下面加几道菜吧</view>
+
+        <view class="add-dish" bindtap="openPicker">＋ 从菜单加菜</view>
+      </view>
+
+      <!-- 用餐时间 -->
+      <view class="card section">
+        <view class="section-title">📅 什么时候吃<text class="section-hint">（最多提前一周定）</text></view>
+
+        <scroll-view class="dine-dates" scroll-x enhanced="{{true}}" show-scrollbar="{{false}}">
+          <view
+            class="dine-chip {{dineDate === d.value ? 'dine-chip-on' : ''}}"
+            wx:for="{{dineDates}}"
+            wx:for-item="d"
+            wx:key="value"
+            data-value="{{d.value}}"
+            bindtap="onPickDineDate"
+          >
+            <text class="dc-label">{{d.label}}</text>
+            <text class="dc-sub">{{d.sub}}</text>
           </view>
-          <text class="ci-remove" data-key="{{item.key}}" catchtap="onRemoveItem">✕</text>
+        </scroll-view>
+
+        <view class="dine-slots">
+          <view
+            class="dine-chip dine-chip-wide {{dineSlot === s.key ? 'dine-chip-on' : ''}} {{s.disabled ? 'dine-chip-off' : ''}}"
+            wx:for="{{dineSlots}}"
+            wx:for-item="s"
+            wx:key="key"
+            data-key="{{s.key}}"
+            bindtap="onPickDineSlot"
+          >{{s.emoji}} {{s.text}}</view>
         </view>
       </view>
 
-      <view wx:if="{{items.length === 0}}" class="empty-hint">这一单已经空了，从下面加几道菜吧</view>
+      <!-- 点菜人 -->
+      <view class="card section">
+        <view class="section-title">🙋 谁点的</view>
+        <input
+          class="input"
+          value="{{orderBy}}"
+          placeholder="比如：宝贝"
+          placeholder-class="ph"
+          maxlength="12"
+          bindinput="onNickInput"
+        />
+      </view>
 
-      <view class="add-dish" bindtap="openPicker">＋ 从菜单加菜</view>
-    </view>
+      <!-- 备注 -->
+      <view class="card section">
+        <view class="section-title">💬 想对大厨说</view>
+        <textarea
+          class="textarea"
+          value="{{remark}}"
+          placeholder="辣度、忌口、想说的话…（可不填）"
+          placeholder-class="ph"
+          maxlength="100"
+          bindinput="onRemarkInput"
+        />
+      </view>
 
-    <!-- 用餐时间 -->
-    <view class="card section">
-      <view class="section-title">📅 什么时候吃<text class="section-hint">（最多提前一周定）</text></view>
-
-      <scroll-view class="dine-dates" scroll-x enhanced="{{true}}" show-scrollbar="{{false}}">
-        <view
-          class="dine-chip {{dineDate === d.value ? 'dine-chip-on' : ''}}"
-          wx:for="{{dineDates}}"
-          wx:for-item="d"
-          wx:key="value"
-          data-value="{{d.value}}"
-          bindtap="onPickDineDate"
-        >
-          <text class="dc-label">{{d.label}}</text>
-          <text class="dc-sub">{{d.sub}}</text>
+      <!-- 状态 -->
+      <view class="card section">
+        <view class="section-title">📌 这一单到哪一步了</view>
+        <view class="status-row">
+          <view
+            class="schip {{status === item.key ? 'schip-active' : ''}}"
+            wx:for="{{statusOptions}}"
+            wx:key="key"
+            data-status="{{item.key}}"
+            bindtap="onTapStatus"
+          >{{item.emoji}} {{item.text}}</view>
         </view>
-      </scroll-view>
-
-      <view class="dine-slots">
-        <view
-          class="dine-chip dine-chip-wide {{dineSlot === s.key ? 'dine-chip-on' : ''}} {{s.disabled ? 'dine-chip-off' : ''}}"
-          wx:for="{{dineSlots}}"
-          wx:for-item="s"
-          wx:key="key"
-          data-key="{{s.key}}"
-          bindtap="onPickDineSlot"
-        >{{s.emoji}} {{s.text}}</view>
       </view>
-    </view>
 
-    <!-- 点菜人 -->
-    <view class="card section">
-      <view class="section-title">🙋 谁点的</view>
-      <input
-        class="input"
-        value="{{orderBy}}"
-        placeholder="比如：宝贝"
-        placeholder-class="ph"
-        maxlength="12"
-        bindinput="onNickInput"
-      />
-    </view>
-
-    <!-- 备注 -->
-    <view class="card section">
-      <view class="section-title">💬 想对大厨说</view>
-      <textarea
-        class="textarea"
-        value="{{remark}}"
-        placeholder="辣度、忌口、想说的话…（可不填）"
-        placeholder-class="ph"
-        maxlength="100"
-        bindinput="onRemarkInput"
-      />
-    </view>
-
-    <!-- 状态 -->
-    <view class="card section">
-      <view class="section-title">📌 这一单到哪一步了</view>
-      <view class="status-row">
-        <view
-          class="schip {{status === item.key ? 'schip-active' : ''}}"
-          wx:for="{{statusOptions}}"
-          wx:key="key"
-          data-status="{{item.key}}"
-          bindtap="onTapStatus"
-        >{{item.emoji}} {{item.text}}</view>
-      </view>
-    </view>
-
-    <button class="btn-main submit" disabled="{{saving}}" bindtap="onSave">保存修改 ✓</button>
-    <view class="btn-delete" bindtap="onDelete">🗑 删掉这一单</view>
+      <button class="btn-main submit" disabled="{{saving}}" bindtap="onSave">保存修改 ✓</button>
+      <view class="btn-delete" bindtap="onDelete">🗑 删掉这一单</view>
+    </block>
   </block>
 
   <!-- 加菜弹层 -->
