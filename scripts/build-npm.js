@@ -1,6 +1,10 @@
-#!/usr/bin/env node
 /**
  * 生成 miniprogram_npm 构建产物（等价于开发者工具的「构建 npm」）
+ *
+ * 注意：本文件第一行禁止写 shebang（#!/usr/bin/env node）。
+ *   小程序项目的上传包可能整目录打包，shebang 是 Node 专用语法，
+ *   微信打包器会报 SyntaxError: Invalid or unexpected token 导致上传失败。
+ *   本脚本用 `node scripts/build-npm.js` 运行，无需 shebang。
  *
  * 为什么需要这个脚本：
  *   微信小程序不能直接 require node_modules，必须经过「构建 npm」得到
