@@ -15,7 +15,7 @@
 const { CATEGORIES, SPICE_LEVELS } = require('./constants')
 
 // 一次最多导入多少道（防手滑把几万行粘进来把本地存储写爆）
-const IMPORT_MAX = 300
+const IMPORT_MAX = 500 // 菜单已有 300+ 道，整份「当前菜单」导回也不能被截断
 // 与 pages/dish-edit 的输入框上限保持一致
 const NAME_MAX = 20
 const DESC_MAX = 60
