@@ -8,7 +8,7 @@
   <block wx:else>
     <!-- 菜品清单 -->
     <view class="card section">
-      <view class="section-title">🧺 选好的菜<text class="section-hint">（辣度点一下就能改，备注点一下就能写）</text></view>
+      <view class="section-title">🧺 选好的菜<text class="section-hint">（点辣度改口味，点备注写要求）</text></view>
 
       <view class="cart-item" wx:for="{{cart}}" wx:key="uid">
         <view class="ci-main">
@@ -19,17 +19,28 @@
               <!-- 打开「改这道菜」面板：辣度 / 备注 / 换菜 -->
               <text class="ci-edit" data-uid="{{item.uid}}" catchtap="openEditor">✏️</text>
             </view>
-            <!-- 辣度选择：点一下直接切换 -->
-            <view class="ci-spices">
-              <text
-                class="ci-chip {{item.spice === sp ? 'ci-chip-on' : ''}}"
-                wx:for="{{spiceLevels}}"
-                wx:for-item="sp"
-                wx:key="key"
+            <!-- 辣度：平时只显示当前选定的那一档，点一下就地展开四档重选 -->
+            <view class="ci-spice">
+              <view
+                wx:if="{{spiceOpenUid !== item.uid}}"
+                class="ci-spice-cur splv-{{item.spiceLevel}}"
                 data-uid="{{item.uid}}"
-                data-spice="{{sp.key}}"
-                catchtap="onTapSpice"
-              >{{sp.key}}</text>
+                catchtap="onOpenSpice"
+              >
+                <text>{{item.spiceLabel}}</text>
+                <text class="csc-caret">▾</text>
+              </view>
+              <view wx:else class="ci-spices">
+                <text
+                  class="ci-chip {{item.spice === sp ? 'ci-chip-on' : ''}}"
+                  wx:for="{{spiceLevels}}"
+                  wx:for-item="sp"
+                  wx:key="key"
+                  data-uid="{{item.uid}}"
+                  data-spice="{{sp.key}}"
+                  catchtap="onTapSpice"
+                >{{sp.key}}</text>
+              </view>
             </view>
             <!-- 这一道菜的备注：点一下就写，不用打开面板 -->
             <view

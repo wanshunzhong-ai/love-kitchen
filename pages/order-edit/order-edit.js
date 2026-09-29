@@ -2,19 +2,11 @@
 const api = require('../../utils/api')
 const ui = require('../../utils/ui')
 const dine = require('../../utils/dine')
-const { CATEGORIES, ORDER_STATUS_OPTIONS, SPICE_LEVELS, DISH_NOTE_MAX } = require('../../utils/constants')
+const { CATEGORIES, ORDER_STATUS_OPTIONS, SPICE_LEVELS, spiceInfo, DISH_NOTE_MAX } = require('../../utils/constants')
 
 /** 订单内条目的唯一键：同一道菜的不同辣度算两条 */
 function itemKey(it) {
   return String(it.dishId != null ? it.dishId : it.name) + '|' + (it.spice || '不辣')
-}
-
-/** 辣度 → 档位（0~3），用于配色 */
-function spiceIdxOf(spice) {
-  const hit = SPICE_LEVELS.find(function (s) {
-    return s.key === spice
-  })
-  return hit ? hit.level : 0
 }
 
 /**
@@ -33,7 +25,9 @@ function applyRowChange(items, key, patch) {
 
   const row = out[idx]
   Object.assign(row, patch)
-  row.spiceIdx = spiceIdxOf(row.spice)
+  const info = spiceInfo(row.spice)
+  row.spiceIdx = info.level
+  row.spiceLabel = info.label
   row.key = itemKey(row)
 
   const dupIdx = out.findIndex(function (it, i) {
@@ -57,6 +51,8 @@ Page({
     status: 'pending',
     statusOptions: ORDER_STATUS_OPTIONS,
     spiceLevels: SPICE_LEVELS,
+    // 辣度平时只显示「当前选的那一档」；这一条是正在展开重选的那道菜
+    spiceOpenKey: '',
     categories: [{ key: '全部', emoji: '📜' }].concat(CATEGORIES),
     activeCategory: '全部',
     allDishes: [],
@@ -93,16 +89,18 @@ Page({
     this.loadOrder(id)
   },
 
-  // 给每条补 key / spiceIdx / note，供 wxml 使用
+  // 给每条补 key / spiceIdx / spiceLabel / note，供 wxml 使用
   decorate(items) {
     return (Array.isArray(items) ? items : []).map(function (it) {
       const spice = it.spice || '不辣'
+      const info = spiceInfo(spice)
       const row = {
         dishId: it.dishId,
         name: it.name,
         emoji: it.emoji || '🍴',
         spice: spice,
-        spiceIdx: spiceIdxOf(spice),
+        spiceIdx: info.level,
+        spiceLabel: info.label,
         note: it.note || '',
         qty: Number(it.qty) || 1,
       }
@@ -227,16 +225,26 @@ Page({
       return it.key !== key
     })
     if (this.data.editorOpen && this.data.editorKey === key) this.closeEditor()
-    this.setData({ items: items, totalCount: this.countOf(items) })
+    // 正在展开辣度的那一条被删了，收起展开态
+    const patch = { items: items, totalCount: this.countOf(items) }
+    if (this.data.spiceOpenKey === key) patch.spiceOpenKey = ''
+    this.setData(patch)
   },
 
-  // 列表里直接改辣度
+  // 辣度：平时只显示选定的那一档，点一下才就地展开四档重选
+  onOpenSpice(e) {
+    const key = e.currentTarget.dataset.key
+    if (!key) return
+    this.setData({ spiceOpenKey: key })
+  },
+
+  // 列表里直接改辣度：选中即收起，回到「只显示选定的辣度」
   onTapSpice(e) {
     const key = e.currentTarget.dataset.key
     const spice = e.currentTarget.dataset.spice
     const r = applyRowChange(this.data.items, key, { spice: spice })
     if (!r.found) return
-    this.setData({ items: r.items, totalCount: this.countOf(r.items) })
+    this.setData({ items: r.items, totalCount: this.countOf(r.items), spiceOpenKey: '' })
     // 合并到别条时，面板要跟着换到活下来那条
     if (this.data.editorOpen && this.data.editorKey === key) {
       this.setData({ editorKey: r.key })
@@ -402,12 +410,14 @@ Page({
     const spice = dish.spice || '不辣'
 
     const items = this.data.items.slice()
+    const info = spiceInfo(spice)
     const row = {
       dishId: dish._id || dish.id,
       name: dish.name,
       emoji: dish.emoji || '🍴',
       spice: spice,
-      spiceIdx: spiceIdxOf(spice),
+      spiceIdx: info.level,
+      spiceLabel: info.label,
       note: '',
       qty: 1,
     }

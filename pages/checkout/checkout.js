@@ -3,7 +3,7 @@ const api = require('../../utils/api')
 const store = require('../../utils/store')
 const ui = require('../../utils/ui')
 const dine = require('../../utils/dine')
-const { SPICE_LEVELS, DISH_NOTE_MAX } = require('../../utils/constants')
+const { SPICE_LEVELS, spiceInfo, DISH_NOTE_MAX } = require('../../utils/constants')
 
 Page({
   data: {
@@ -13,6 +13,8 @@ Page({
     nickname: '',
     submitting: false,
     spiceLevels: SPICE_LEVELS,
+    // 辣度平时只显示「当前选的那一档」；这一行是正在展开重选的那道菜
+    spiceOpenUid: '',
     // 逐道菜修改面板（辣度 / 备注 / 换菜）
     editorOpen: false,
     editorUid: '',
@@ -25,6 +27,8 @@ Page({
   },
 
   onShow() {
+    // 每次进来都收起辣度展开态：列表默认只显示选定的那一档
+    this.setData({ spiceOpenUid: '' })
     this.refreshCart()
     this.refreshDine()
   },
@@ -74,10 +78,27 @@ Page({
   },
 
   refreshCart() {
+    // 每行补上辣度展示信息：列表里只渲染「选定的那一档」
+    const cart = store.getCart().map(function (it) {
+      const info = spiceInfo(it.spice)
+      return Object.assign({}, it, {
+        spiceLevel: info.level,
+        spiceLabel: info.label,
+      })
+    })
+    // 展开中的那一行如果被删掉 / 被合并走了，顺手收起，别留下展开态
+    let spiceOpenUid = this.data.spiceOpenUid
+    if (spiceOpenUid) {
+      const alive = cart.some(function (it) {
+        return it.uid === spiceOpenUid
+      })
+      if (!alive) spiceOpenUid = ''
+    }
     this.setData({
-      cart: store.getCart(),
+      cart: cart,
       totalCount: store.cartCount(),
       nickname: store.getNickname(),
+      spiceOpenUid: spiceOpenUid,
     })
   },
 
@@ -125,11 +146,20 @@ Page({
     })
   },
 
-  // 辣度：列表里点一下就能改（更细的修改在「改这道菜」面板里）
+  // 辣度：平时只显示选定的那一档，点一下才就地展开四档重选
+  onOpenSpice(e) {
+    const uid = e.currentTarget.dataset.uid
+    if (!uid) return
+    this.setData({ spiceOpenUid: uid })
+  },
+
+  // 选中某一档：落库后立刻收起，回到「只显示选定的辣度」
   onTapSpice(e) {
     const uid = e.currentTarget.dataset.uid
     const spice = e.currentTarget.dataset.spice
     const newUid = store.changeSpice(uid, spice)
+    // 先收起再刷新，refreshCart 会保留当前值
+    this.setData({ spiceOpenUid: '' })
     this.refreshCart()
     // 改辣度可能撞上已有条目而合并，面板跟着换到活下来那一行
     if (this.data.editorOpen && this.data.editorUid === uid && newUid) {

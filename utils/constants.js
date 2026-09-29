@@ -39,6 +39,26 @@ const SPICE_LEVELS = [
   { key: '特辣', level: 3 },
 ]
 
+/**
+ * 辣度 → 展示信息。列表里「只显示选定的那一档」用它出文案与配色。
+ * 纯函数，非法 / 空值一律按「不辣」处理（老数据里可能没有 spice 字段）。
+ * @param {string} spice 辣度名
+ * @returns {{ key: string, level: number, label: string }} level 用于配色（0~3）
+ */
+function spiceInfo(spice) {
+  const key = String(spice || '不辣')
+  const hit = SPICE_LEVELS.find(function (s) {
+    return s.key === key
+  })
+  const level = hit ? hit.level : 0
+  // 「不辣」不画辣椒，其余按档位画几颗
+  return {
+    key: key,
+    level: level,
+    label: level > 0 ? '🌶️'.repeat(level) + ' ' + key : key,
+  }
+}
+
 // 用餐时段。endHour 是该时段的截止时刻（24 = 当天结束），
 // 用于判断「今天」还剩哪些时段可以订：当前小时 < endHour 即可订。
 const DINE_SLOTS = [
@@ -70,6 +90,7 @@ module.exports = {
   ORDER_STATUS,
   ORDER_STATUS_OPTIONS,
   SPICE_LEVELS,
+  spiceInfo,
   DINE_SLOTS,
   DINE_MAX_AHEAD_DAYS,
   DISH_NOTE_MAX,

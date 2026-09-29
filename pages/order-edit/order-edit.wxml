@@ -63,17 +63,28 @@
                 <!-- 打开「改这道菜」面板：辣度 / 备注 / 换菜 -->
                 <text class="ci-edit" data-key="{{item.key}}" catchtap="openEditor">✏️</text>
               </view>
-              <!-- 辣度可改：点一下直接切换 -->
-              <view class="ci-spices">
-                <text
-                  class="ci-chip {{item.spice === sp ? 'ci-chip-on' : ''}}"
-                  wx:for="{{spiceLevels}}"
-                  wx:for-item="sp"
-                  wx:key="key"
+              <!-- 辣度：平时只显示当前选定的那一档，点一下就地展开四档重选 -->
+              <view class="ci-spice">
+                <view
+                  wx:if="{{spiceOpenKey !== item.key}}"
+                  class="ci-spice-cur splv-{{item.spiceIdx}}"
                   data-key="{{item.key}}"
-                  data-spice="{{sp.key}}"
-                  catchtap="onTapSpice"
-                >{{sp.key}}</text>
+                  catchtap="onOpenSpice"
+                >
+                  <text>{{item.spiceLabel}}</text>
+                  <text class="csc-caret">▾</text>
+                </view>
+                <view wx:else class="ci-spices">
+                  <text
+                    class="ci-chip {{item.spice === sp ? 'ci-chip-on' : ''}}"
+                    wx:for="{{spiceLevels}}"
+                    wx:for-item="sp"
+                    wx:key="key"
+                    data-key="{{item.key}}"
+                    data-spice="{{sp.key}}"
+                    catchtap="onTapSpice"
+                  >{{sp.key}}</text>
+                </view>
               </view>
               <!-- 这一道菜的备注：点一下就写，不用打开面板 -->
               <view
