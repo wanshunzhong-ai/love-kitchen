@@ -151,6 +151,89 @@
   word-break: break-all;
 }
 
+/* 干饭人对这一道菜的评价：浅绿底，和「已上菜」同色系，一眼认出是反馈 */
+.oi-review {
+  width: 100%;
+  margin-top: 8rpx;
+  background: #F1FAF4;
+  border-left: 6rpx solid #A8E0BF;
+  border-radius: 10rpx;
+  padding: 10rpx 16rpx;
+  box-sizing: border-box;
+}
+
+.oir-top {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.oir-stars {
+  font-size: 26rpx;
+  line-height: 1.2;
+  color: #FFB300;
+  letter-spacing: 2rpx;
+}
+
+.oir-dim {
+  font-size: 26rpx;
+  line-height: 1.2;
+  color: #DCE8E0;
+  letter-spacing: 2rpx;
+}
+
+.oir-label {
+  margin-left: 12rpx;
+  font-size: 22rpx;
+  font-weight: 600;
+  color: #1FA65A;
+}
+
+.oir-tags {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 4rpx -5rpx -5rpx;
+}
+
+.oir-tag {
+  margin: 5rpx;
+  font-size: 22rpx;
+  line-height: 34rpx;
+  color: #1FA65A;
+  background: #E2F5E9;
+  border-radius: 999rpx;
+  padding: 0 14rpx;
+}
+
+.oir-text {
+  margin-top: 6rpx;
+  font-size: 23rpx;
+  line-height: 1.5;
+  color: #3E7A57;
+  word-break: break-all;
+}
+
+/* 已上菜单的评价进度条 */
+.order-review-bar {
+  display: flex;
+  align-items: center;
+  margin-top: 16rpx;
+  background: #F1FAF4;
+  border-radius: 12rpx;
+  padding: 12rpx 20rpx;
+}
+
+.orb-emoji {
+  font-size: 24rpx;
+  margin-right: 10rpx;
+}
+
+.orb-text {
+  font-size: 23rpx;
+  font-weight: 600;
+  color: #1FA65A;
+}
+
 /* 辣度标签：与点单页同配色；字号下限 22rpx */
 .oi-spice {
   margin-left: 12rpx;

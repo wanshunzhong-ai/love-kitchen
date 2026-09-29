@@ -7,6 +7,7 @@
     "pages/checkout/checkout",
     "pages/dish-edit/dish-edit",
     "pages/order-edit/order-edit",
+    "pages/review/review",
     "pages/profile/profile"
   ],
   "window": {

@@ -1,0 +1,125 @@
+<view class="page">
+  <!-- 顶部：这一单的概况 + 评价进度 -->
+  <view class="rv-hero card">
+    <view class="rv-hero-top">
+      <text class="rv-hero-title">{{readonly ? 'TA 的评价' : '给这一单打个分'}}</text>
+      <text class="rv-progress {{summary.allDone ? 'rv-progress-done' : ''}}">{{summary.rated}}/{{summary.total}} 道</text>
+    </view>
+
+    <view class="rv-meta">
+      <text class="rv-meta-chip">🍚 {{orderBy}}</text>
+      <text class="rv-meta-chip" wx:if="{{dineText}}">📅 {{dineText}}</text>
+      <text class="rv-meta-chip">🕒 {{timeText}}</text>
+    </view>
+
+    <view class="rv-avg" wx:if="{{summary.any}}">
+      <text class="rv-avg-num">⭐ {{summary.avgText}}</text>
+      <text class="rv-avg-sub">按已评的 {{summary.rated}} 道算</text>
+    </view>
+    <view class="rv-sub" wx:elif="{{readonly}}">TA 还没评价这一单～</view>
+    <view class="rv-sub" wx:else>一道一道来，想说什么都可以 💕</view>
+  </view>
+
+  <view class="rv-remark" wx:if="{{remark}}">💬 {{remark}}</view>
+
+  <!-- 加载 / 失败 -->
+  <view wx:if="{{loading}}" class="state">
+    <text class="state-emoji">🍽️</text>
+    <text class="state-tip">正在端上来…</text>
+  </view>
+
+  <view wx:elif="{{loadError}}" class="state">
+    <text class="state-emoji">😵</text>
+    <text class="state-tip">这一单没加载出来</text>
+    <text class="state-sub">评价存在云数据库里，网络恢复后下拉刷新即可</text>
+  </view>
+
+  <view wx:else class="rv-list">
+    <view class="rv-card card" wx:for="{{items}}" wx:key="key">
+      <!-- 菜品头 -->
+      <view class="rv-dish">
+        <view class="rv-dish-left">
+          <view class="rv-dish-line">
+            <text class="rv-dish-name">{{item.emoji}} {{item.name}}</text>
+            <text class="rv-spice spice-{{item.spiceIdx}}">{{item.spice}}</text>
+          </view>
+          <view class="rv-note" wx:if="{{item.note}}">📝 {{item.note}}</view>
+        </view>
+        <text class="rv-qty">× {{item.qty}}</text>
+      </view>
+
+      <!-- 星级：再点同一颗星 = 取消 -->
+      <view class="rv-stars-row">
+        <view class="rv-stars">
+          <text
+            class="rv-star {{item.draft.rating >= s ? 'rv-star-on' : ''}}"
+            wx:for="{{starSlots}}"
+            wx:for-item="s"
+            wx:key="*this"
+            data-key="{{item.key}}"
+            data-star="{{s}}"
+            catchtap="onTapStar"
+          >★</text>
+        </view>
+        <text class="rv-rating-label">{{item.draftLabel}}</text>
+      </view>
+
+      <!-- 快捷标签：最多 3 个 -->
+      <view class="rv-tags">
+        <view
+          class="rv-tag {{item.tagOn[t.text] ? 'rv-tag-on' : ''}}"
+          wx:for="{{allTags}}"
+          wx:for-item="t"
+          wx:key="text"
+          data-key="{{item.key}}"
+          data-text="{{t.text}}"
+          catchtap="onToggleTag"
+        >{{t.emoji}} {{t.text}}</view>
+      </view>
+
+      <!-- 一句话 -->
+      <view class="rv-text-row">
+        <input
+          class="rv-text"
+          value="{{item.draft.text}}"
+          placeholder="{{readonly ? '（没写什么）' : '想对这道菜说点什么（可不写）'}}"
+          placeholder-class="rv-ph"
+          maxlength="{{textMax}}"
+          disabled="{{readonly}}"
+          data-key="{{item.key}}"
+          bindinput="onTextInput"
+        />
+        <text class="rv-text-count">{{item.draft.text.length}}/{{textMax}}</text>
+      </view>
+
+      <!-- 这一条的底部：状态 + 存/撤 -->
+      <view class="rv-foot">
+        <text class="rv-state-on" wx:if="{{item.review}}">已评 ✓</text>
+        <text class="rv-state-off" wx:else>{{readonly ? '还没评价' : '这道还没评'}}</text>
+
+        <view class="rv-acts" wx:if="{{!readonly}}">
+          <view
+            class="rv-act-ghost"
+            wx:if="{{item.review}}"
+            data-key="{{item.key}}"
+            catchtap="onClear"
+          >撤销</view>
+          <view
+            class="rv-save"
+            wx:if="{{item.dirty}}"
+            data-key="{{item.key}}"
+            catchtap="onSave"
+          >{{savingKey === item.key ? '存…' : '存下这一条'}}</view>
+          <text class="rv-saved-tip" wx:else>{{item.draft.rating ? '已是最新' : '选个星吧'}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 收尾：进度 + 回订单页（非固定定位，跟着列表滚，省得挡内容） -->
+  <view class="rv-bottom" wx:if="{{!loading && !loadError}}">
+    <view class="rv-bottom-tip" wx:if="{{summary.allDone}}">🎉 {{summary.total}} 道菜全评完啦，TA 看到会很开心的</view>
+    <view class="rv-bottom-tip rv-bottom-off" wx:else>还有 {{summary.total - summary.rated}} 道没评，随时可以回来补</view>
+    <view class="rv-back" bindtap="goOrders">回到我的订单</view>
+  </view>
+</view>

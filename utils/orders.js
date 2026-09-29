@@ -21,6 +21,9 @@ const ORDER_STATUSES = ['pending', 'cooking', 'done']
 // 用餐时间校验（日期范围 / 时段合法性）
 const dine = require('./dine')
 
+// 评价的收敛与合并规则（纯函数，与页面层共用同一套判定）
+const reviewLib = require('./review')
+
 // 每道菜备注的长度上限（与前端输入框保持一致）
 const { DISH_NOTE_MAX } = require('./constants')
 
@@ -129,6 +132,20 @@ function parseItems(raw) {
   return []
 }
 
+// reviews 同样用 jsonb 存（键 = 菜品行标识），兜底成「空对象」
+function parseReviews(raw) {
+  if (raw && typeof raw === 'object' && !Array.isArray(raw)) return raw
+  if (typeof raw === 'string') {
+    try {
+      const parsed = JSON.parse(raw)
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) return parsed
+    } catch (e) {
+      return {}
+    }
+  }
+  return {}
+}
+
 // 数据库行 → 页面层期望的结构
 function rowToOrder(row) {
   const id = String(row.id)
@@ -142,6 +159,8 @@ function rowToOrder(row) {
     // 用餐时间：老订单可能没有（NULL → 空串），页面层自行兜底
     dine_date: row.dine_date || '',
     dine_slot: row.dine_slot || '',
+    // 逐道菜的评价：{ "dishId|辣度": { rating, tags, text, by, at } }
+    reviews: parseReviews(row.reviews),
     created_at: toMillis(row.created_at),
     updated_at: toMillis(row.updated_at),
   }
@@ -300,6 +319,65 @@ async function deleteOrder(event) {
   return { removed: rows.length }
 }
 
+// 保存一道菜的评价（单条 upsert / 删除）
+//
+// 为什么是「单条」而不是「整表覆盖」：
+//   评价是一道一道说的，一次只改一行；服务端按 key 合并现有 JSONB，
+//   两个人（或两台设备）同时评价不同的菜时不会互相覆盖。
+//
+// review 传 null / 星级为 0 → 视为「撤销这一条评价」。
+async function saveReview(event) {
+  const id = event && event.id
+  if (id === undefined || id === null || id === '') throw new Error('缺少订单 id')
+
+  const key = String((event && event.key) || '')
+  if (!key) throw new Error('缺少菜品标识')
+
+  const cur = unwrap(await getDB().from(TABLE).select('id, status, items, reviews').eq('id', id).limit(1))
+  const rows = Array.isArray(cur.data) ? cur.data : []
+  if (!rows.length) throw new Error('这一单不存在了')
+
+  // 服务端也拦一道：只有「已上菜」的单能评，别指望前端自觉
+  if ((rows[0].status || '') !== 'done') throw new Error('这一单还没上菜，先等掌勺人做完哦')
+
+  const input = (event && event.review) || null
+  const rating = input ? reviewLib.normalizeRating(input.rating) : 0
+
+  // 打分时校验「这道菜确实在这一单里」：前端键规则一旦和这里漂移，
+  // 就会写出一堆永远显示不出来的孤儿评价 —— 宁可当场报错，也别默默存脏数据。
+  // 撤销（rating 为 0）不校验，方便清掉历史遗留的孤儿条目。
+  if (rating > 0) {
+    const items = parseItems(rows[0].items)
+    const exists = items.some(function (it) {
+      return reviewLib.itemKey(it) === key
+    })
+    if (!exists) throw new Error('这道菜不在这一单里')
+  }
+
+  const before = reviewLib.normalizeReviews(rows[0].reviews)
+
+  const after =
+    rating > 0
+      ? reviewLib.putReview(before, key, {
+          rating: rating,
+          tags: input.tags,
+          text: input.text,
+          by: input.by || '',
+          at: input.at || new Date().toISOString(),
+        })
+      : reviewLib.dropReview(before, key)
+
+  const out = affectedRows(
+    await getDB()
+      .from(TABLE)
+      .update({ reviews: after, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select()
+  )
+  if (!out.length) throw new Error('评价没能保存，可能这一单已经被删掉了')
+  return { reviews: after }
+}
+
 async function stats() {
   const res = unwrap(await getDB().from(TABLE).select('*', { count: 'exact', head: true }))
   return { orders: typeof res.count === 'number' ? res.count : 0 }
@@ -313,6 +391,7 @@ const ACTIONS = {
   updateOrder: updateOrder,
   updateOrderStatus: updateOrderStatus,
   deleteOrder: deleteOrder,
+  saveReview: saveReview,
   stats: stats,
 }
 

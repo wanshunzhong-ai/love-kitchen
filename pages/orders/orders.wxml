@@ -1,4 +1,11 @@
 <view class="page">
+  <!-- 轮询发现变化时浮出来的一句话（6 秒后自己消失，点一下去对应页面） -->
+  <view class="notice" wx:if="{{notice}}" bindtap="onTapNotice">
+    <text class="notice-emoji">{{notice.emoji}}</text>
+    <text class="notice-text">{{notice.text}}</text>
+    <text class="notice-go" wx:if="{{notice.path !== '/pages/orders/orders'}}">去看看 ›</text>
+  </view>
+
   <!-- 身份胶囊 + 状态筛选 -->
   <view class="filters-row">
     <scroll-view class="filters" scroll-x enhanced="{{true}}" show-scrollbar="{{false}}">
@@ -23,7 +30,7 @@
     <text class="state-emoji">🍽️</text>
     <text class="state-tip">订单没加载出来</text>
     <text class="state-sub">菜单已经可以正常用了；订单走的是云数据库，网络恢复后点「重试」即可</text>
-    <button class="btn-retry" bindtap="loadOrders">重试</button>
+    <button class="btn-retry" bindtap="onRetry">重试</button>
   </view>
 
   <view wx:elif="{{filteredOrders.length === 0}}" class="state">
@@ -50,12 +57,30 @@
             </view>
             <!-- 这一道菜的单独备注 -->
             <view class="oi-note" wx:if="{{dish.note}}">📝 {{dish.note}}</view>
+            <!-- 干饭人对这一道菜的评价（掌勺人在这里看到 TA 的反馈） -->
+            <view class="oi-review" wx:if="{{dish.review}}">
+              <view class="oir-top">
+                <text class="oir-stars">{{dish.starFull}}</text>
+                <text class="oir-dim">{{dish.starDim}}</text>
+                <text class="oir-label">{{dish.ratingLabel}}</text>
+              </view>
+              <view class="oir-tags" wx:if="{{dish.review.tags.length}}">
+                <text class="oir-tag" wx:for="{{dish.review.tags}}" wx:for-item="tg" wx:key="*this">{{tg}}</text>
+              </view>
+              <view class="oir-text" wx:if="{{dish.review.text}}">「{{dish.review.text}}」</view>
+            </view>
           </view>
           <text class="order-qty">× {{dish.qty}}</text>
         </view>
       </view>
 
       <view class="order-remark" wx:if="{{item.remark}}">💬 {{item.remark}}</view>
+
+      <!-- 已上菜的单：评价进度一览 -->
+      <view class="order-review-bar" wx:if="{{item.status === 'done' && item.reviewSummary.any}}">
+        <text class="orb-emoji">⭐</text>
+        <text class="orb-text">平均 {{item.reviewSummary.avgText}} 分 · 已评 {{item.reviewSummary.rated}}/{{item.reviewSummary.total}} 道</text>
+      </view>
 
       <view class="order-foot">
         <text class="order-time">{{item.timeText}}</text>
@@ -66,6 +91,13 @@
             <view wx:if="{{item.status === 'cooking'}}" class="act act-main" data-idx="{{index}}" catchtap="onFinishCooking">做好了</view>
           </block>
           <text wx:elif="{{item.status !== 'done'}}" class="order-wait">等掌勺人开做哦</text>
+          <!-- 已上菜 = 干饭人给每道菜打分的入口 -->
+          <view
+            wx:if="{{!isCook && item.status === 'done'}}"
+            class="act act-main"
+            data-idx="{{index}}"
+            catchtap="onReview"
+          >{{item.reviewSummary.any ? '✏️ 改评价' : '🍽️ 去评价'}}</view>
           <!-- 已上菜的订单是终态：只留「删掉」，不给编辑入口 -->
           <view wx:if="{{item.status !== 'done'}}" class="act act-ghost" data-idx="{{index}}" catchtap="onEditOrder">✏️ 编辑</view>
           <view class="act act-danger" data-idx="{{index}}" catchtap="onDeleteOrder">🗑️ 删掉</view>

@@ -29,6 +29,7 @@ const ORDER_ACTIONS = [
   'updateOrder',
   'updateOrderStatus',
   'deleteOrder',
+  'saveReview',
 ]
 
 /**
