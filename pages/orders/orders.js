@@ -1,6 +1,8 @@
 // 订单页：全部订单都能看到，但操作按身份分工——
-//   掌勺人：推进状态（待开做 → 开始做 → 做好了标记已上菜）
-//   干饭人：下单 / 改单 / 评价，等掌勺人开做
+//   掌勺人：**只能**推进状态（待开做 → 开做中 → 已上菜）或驳回（必须写理由）；
+//           干饭人发起的这一单，他不改内容（不给编辑入口，编辑页也退化成只读）。
+//   干饭人：下单 / 改单 / 删单 / 评价，**不碰状态** —— 被驳回的单改完重新提交，
+//           状态由服务端自动退回「待开做」。
 //
 // 实时性：
 //   轮询器是 App 级的（app.js 里起，见 utils/live.js），本页只订阅数据 ——
@@ -11,6 +13,7 @@ const ui = require('../../utils/ui')
 const dine = require('../../utils/dine')
 const store = require('../../utils/store')
 const review = require('../../utils/review')
+const rejectLib = require('../../utils/reject')
 const live = require('../../utils/live')
 const { ORDER_STATUS, spiceInfo } = require('../../utils/constants')
 const { formatTime } = require('../../utils/format')
@@ -24,6 +27,7 @@ Page({
       { key: 'pending', emoji: '📝' },
       { key: 'cooking', emoji: '🧑‍🍳' },
       { key: 'done', emoji: '🎉' },
+      { key: 'rejected', emoji: '🙅' },
     ],
     activeFilter: '全部',
     statusMap: ORDER_STATUS,
@@ -133,14 +137,22 @@ Page({
           starDim: rating > 0 ? '☆'.repeat(review.RATING_MAX - rating) : '',
         })
       })
+      const status = o.status || 'pending'
+      const rejected = status === 'rejected'
       return Object.assign({}, o, {
         id: o._id || o.id,
+        status: status,
         items: items,
         timeText: formatTime(o.created_at),
         // 「周三 9/30 · 午餐」；老订单没填 → 「尽快」
         dineText: dine.formatDine(o.dine_date, o.dine_slot),
         // 这一单的评价进度，给卡片上那行小字用
         reviewSummary: review.summarize(o.items, reviews),
+        // 驳回：理由只在「已驳回」时露出来；顺手算一封能渲染的兜底文案
+        rejectText: rejected ? o.reject_reason || '没写理由' : '',
+        rejectTimeText: rejected && o.rejected_at ? formatTime(o.rejected_at) : '',
+        // 按钮显隐交给数据算，wxml 里只读布尔值（模板里堆逻辑最难查）
+        canReject: rejectLib.canReject(status),
       })
     })
     this.setData({ orders: orders, loading: false, loadError: false })
@@ -205,6 +217,11 @@ Page({
   async updateStatus(idx, nextStatus) {
     const order = this.data.filteredOrders[idx]
     if (!order) return
+    // 兜底：状态是掌勺人的活，干饭人的界面不该出现这条路径
+    if (!this.data.isCook) {
+      ui.toast('订单状态由掌勺人更新哦')
+      return
+    }
     ui.showLoading('处理中…')
     try {
       const res = await api.call('updateOrderStatus', {
@@ -254,12 +271,125 @@ Page({
     })
   },
 
-  // 编辑这一单：改菜、改备注、改署名、改状态，或整单删除
-  // 已上菜 = 终态：不给编辑（列表里也不渲染入口，这里是兜底防误入）
+  // ---------- 驳回（掌勺人专属） ----------
+  //
+  // 驳回不是「第四个状态按钮」，它必须说一句为什么：
+  // 先给一排快捷说法（手机上一键选），想写别的就选「自己写一句」。
+  // 驳回后球回到干饭人那边，他改完重新提交，状态自动回到「待开做」。
+  async onReject(e) {
+    const order = this.data.filteredOrders[e.currentTarget.dataset.idx]
+    if (!order) return
+    if (!this.data.isCook) {
+      ui.toast('驳回是掌勺人的活哦')
+      return
+    }
+    if (!rejectLib.canReject(order.status)) {
+      ui.toast(order.status === 'done' ? '已经上菜啦，没法驳回' : '这一单已经驳回了')
+      return
+    }
+
+    // 弹窗期间暂停轮询：列表在对话框底下自己变了，用户会以为点错了
+    live.pause()
+    let input = null
+    try {
+      input = await ui.askReason(rejectLib.QUICK_REASONS, {
+        title: '为什么先不做这一单？',
+        placeholder: '比如：今天没买到排骨',
+        confirmText: '就这么说',
+      })
+    } finally {
+      live.resume()
+    }
+    if (input === null) return // 取消 = 什么都不做
+
+    const reason = rejectLib.normalizeReason(input)
+    if (!reason) {
+      ui.toast('还是说一句理由吧')
+      return
+    }
+    await this.doReject(order, reason)
+  },
+
+  async doReject(order, reason) {
+    ui.showLoading('正在驳回…')
+    try {
+      const res = await api.call('rejectOrder', { id: order.id, reason: reason })
+      ui.hideLoading()
+      if (!res.updated) {
+        ui.toast('没驳回成功，再试一次')
+        return
+      }
+      // 本地先改一份，不必等下一轮轮询
+      const orders = this.data.orders.map(function (o) {
+        return o.id === order.id
+          ? Object.assign({}, o, { status: 'rejected', reject_reason: reason })
+          : o
+      })
+      this.setData({ orders: orders })
+      this.applyFilter()
+      ui.toast('已经告诉 TA 了 🙅')
+    } catch (err) {
+      ui.hideLoading()
+      console.error('[orders] 驳回失败', err)
+      ui.toast('网络开小差了，稍后再试')
+    }
+  },
+
+  // 手滑驳错了 → 收回来（状态退回待开做，理由留着当历史，不再展示）
+  onWithdrawReject(e) {
+    const order = this.data.filteredOrders[e.currentTarget.dataset.idx]
+    if (!order || order.status !== 'rejected') return
+    const self = this
+    live.pause()
+    wx.showModal({
+      title: '收回这次驳回？',
+      content: '这一单会回到「待开做」，TA 那边也会看到',
+      confirmText: '收回来',
+      confirmColor: '#FF7A9E',
+      cancelText: '算了',
+      complete: function () {
+        live.resume()
+      },
+      success: function (res) {
+        if (res.confirm) self.updateStatusByOrder(order, 'pending')
+      },
+    })
+  },
+
+  // 与 updateStatus 同一套写库逻辑，区别是手里拿着订单对象而不是列表下标
+  async updateStatusByOrder(order, nextStatus) {
+    if (!order) return
+    if (!this.data.isCook) {
+      ui.toast('订单状态由掌勺人更新哦')
+      return
+    }
+    ui.showLoading('处理中…')
+    try {
+      const res = await api.call('updateOrderStatus', { id: order.id, status: nextStatus })
+      ui.hideLoading()
+      if (!res.updated) {
+        ui.toast('没更新成功，再试一次')
+        return
+      }
+      const orders = this.data.orders.map(function (o) {
+        return o.id === order.id ? Object.assign({}, o, { status: nextStatus }) : o
+      })
+      this.setData({ orders: orders })
+      this.applyFilter()
+      ui.toast('已经收回啦 ↩️')
+    } catch (err) {
+      ui.hideLoading()
+      console.error('[orders] 收回驳回失败', err)
+      ui.toast('网络开小差了，稍后再试')
+    }
+  },
+
+  // 打开这一单：干饭人进编辑态，掌勺人进只读详情（他只能推进状态 / 驳回）。
+  // 已上菜 = 终态，两边都不给编辑入口（列表里也不渲染，这里是兜底防误入）
   onEditOrder(e) {
     const order = this.data.filteredOrders[e.currentTarget.dataset.idx]
     if (!order) return
-    if (order.status === 'done') {
+    if (!this.data.isCook && order.status === 'done') {
       ui.toast('这一单已上菜，只能删掉')
       return
     }
@@ -277,10 +407,14 @@ Page({
     wx.navigateTo({ url: '/pages/review/review?id=' + order.id })
   },
 
-  // 删除整单：二次确认后从云端删除，再刷新列表
+  // 删除整单：干饭人删自己点的单（掌勺人不删 TA 点的单，他只能驳回）
   onDeleteOrder(e) {
     const order = this.data.filteredOrders[e.currentTarget.dataset.idx]
     if (!order) return
+    if (this.data.isCook) {
+      ui.toast('这一单是 TA 点的，你只能驳回哦')
+      return
+    }
     const self = this
     live.pause()
     wx.showModal({

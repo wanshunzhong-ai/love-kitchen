@@ -63,10 +63,11 @@
 
           <view class="order-remark" wx:if="{{order.remark}}">💬 {{order.remark}}</view>
 
-          <!-- 直接在这里推进状态：待开做 → 开做中 → 已上菜 -->
+          <!-- 直接在这里推进状态：待开做 → 开做中 → 已上菜；做不了就驳回（要写理由） -->
           <view class="order-acts" wx:if="{{isCook}}">
             <view class="act act-go" wx:if="{{order.status === 'pending'}}" data-id="{{order.id}}" catchtap="onStartCooking">🔥 开始做</view>
-            <view class="act act-done" wx:else data-id="{{order.id}}" catchtap="onFinishCooking">✅ 做好了</view>
+            <view class="act act-done" wx:if="{{order.status === 'cooking'}}" data-id="{{order.id}}" catchtap="onFinishCooking">✅ 做好了</view>
+            <view class="act act-reject" data-id="{{order.id}}" catchtap="onReject">🙅 驳回</view>
           </view>
         </view>
       </view>
@@ -84,6 +85,6 @@
       </view>
     </view>
 
-    <view class="todo-tip">点「开始做 / 做好了」直接推进；加菜改菜单去「菜单」页，全部订单在「订单」页</view>
+    <view class="todo-tip">点「开始做 / 做好了」直接推进；做不了就点「驳回」说一句理由。加菜改菜单去「菜单」页，全部订单在「订单」页</view>
   </view>
 </view>

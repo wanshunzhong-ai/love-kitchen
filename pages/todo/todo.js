@@ -12,6 +12,7 @@ const ui = require('../../utils/ui')
 const store = require('../../utils/store')
 const dine = require('../../utils/dine')
 const board = require('../../utils/todo')
+const rejectLib = require('../../utils/reject')
 const live = require('../../utils/live')
 const { ORDER_STATUS } = require('../../utils/constants')
 
@@ -200,6 +201,50 @@ Page({
         if (res.confirm) self.advance(id, 'done')
       },
     })
+  },
+
+  // 驳回：手头这一单做不了（食材不够 / 来不及 / 太难），点这里说一句理由。
+  // 与「开始做 / 做好了」同级放在卡片上 —— 做不了要说一声，比默默挂在那里强。
+  async onReject(e) {
+    const id = e.currentTarget.dataset.id
+    if (!id) return
+
+    // 弹窗期间暂停轮询：看板在对话框底下自己重画，用户会以为点错了
+    live.pause()
+    let input = null
+    try {
+      input = await ui.askReason(rejectLib.QUICK_REASONS, {
+        title: '为什么先不做这一单？',
+        placeholder: '比如：今天没买到排骨',
+        confirmText: '就这么说',
+      })
+    } finally {
+      live.resume()
+    }
+    if (input === null) return // 取消 = 什么都不做
+
+    const reason = rejectLib.normalizeReason(input)
+    if (!reason) {
+      ui.toast('还是说一句理由吧')
+      return
+    }
+
+    ui.showLoading('正在驳回…')
+    try {
+      const res = await api.call('rejectOrder', { id: id, reason: reason })
+      ui.hideLoading()
+      if (!res || !res.updated) {
+        ui.toast('没驳回成功，再试一次')
+        return
+      }
+      // 这一单会自己从看板上消失（已驳回不在待做范围），补一轮让效果立刻到位
+      ui.toast('已经告诉 TA 了 🙅')
+      live.refreshNow()
+    } catch (err) {
+      ui.hideLoading()
+      console.error('[todo] 驳回失败', err)
+      ui.toast('网络开小差了，稍后再试')
+    }
   },
 
   goOrders() {

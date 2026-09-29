@@ -184,6 +184,7 @@
 .order-acts {
   margin-top: 18rpx;
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
 }
 
@@ -204,6 +205,15 @@
   color: #ffffff;
   background: linear-gradient(135deg, #52C9A2, #7ED0A0);
   box-shadow: 0 6rpx 16rpx rgba(82, 201, 162, 0.25);
+}
+
+/* 驳回：描边弱化，跟「开始做 / 做好了」拉开主次 ——
+   它不是主路径，而且点了还要写理由，多一道确认，误触代价高 */
+.act-reject {
+  margin-left: 16rpx;
+  color: #6B7B95;
+  background: #F5F7FB;
+  border: 2rpx solid #E3E8F1;
 }
 
 /* 后面几天的摘要 */

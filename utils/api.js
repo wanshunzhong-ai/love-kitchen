@@ -26,8 +26,12 @@ const ORDER_ACTIONS = [
   'listOrders',
   'getOrder',
   'createOrder',
+  // 改内容：只有干饭人（下单的人）能调；状态改了也不认
   'updateOrder',
+  // 推进状态 / 收回驳回：只有掌勺人能调
   'updateOrderStatus',
+  // 驳回：掌勺人，必须带理由
+  'rejectOrder',
   'deleteOrder',
   'saveReview',
 ]

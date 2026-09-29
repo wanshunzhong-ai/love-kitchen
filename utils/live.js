@@ -22,6 +22,7 @@
 // 本文件的纯函数部分不碰 wx，可被 node 直接跑契约测试；
 // 只有 createWatcher 会用到计时器。
 const review = require('./review')
+const rejectLib = require('./reject')
 
 // 轮询节奏（毫秒）。数字调大更省电，调小更灵敏，这三档是「手感」和「耗电」的折中。
 const INTERVALS = {
@@ -109,7 +110,8 @@ function diff(prior, next) {
 
 /**
  * 当前「有多急」——决定下一次隔多久轮询，以及底栏角标显示几。
- * 掌勺人的急事是「有单等着开做」，干饭人的急事是「有菜正在做」。
+ * 掌勺人的急事是「有单等着开做」，干饭人的急事是「有菜正在做 / 单被驳回了」。
+ * 注意 rejected 是单独一档：被驳回的单球已经回到干饭人那边，不算掌勺人的待做。
  * @param {Array} orders
  * @param {string} role 'cook' | 'orderer'
  */
@@ -118,12 +120,15 @@ function urgency(orders, role) {
   let pending = 0
   let cooking = 0
   let done = 0
+  let rejected = 0
   list.forEach(function (o) {
     const s = (o && o.status) || 'pending'
     if (s === 'done') done += 1
     else if (s === 'cooking') cooking += 1
+    else if (s === 'rejected') rejected += 1
     else pending += 1
   })
+  // 「手上有活」= 有待开做 / 正在做；已驳回的不算（那是等 TA 改单的）
   const active = pending + cooking > 0
 
   if (role === 'cook') {
@@ -131,6 +136,7 @@ function urgency(orders, role) {
       pending: pending,
       cooking: cooking,
       done: done,
+      rejected: rejected,
       active: active,
       // 角标 = 有几单等着开做（「该我动手了」的量）
       badge: pending,
@@ -140,16 +146,19 @@ function urgency(orders, role) {
     }
   }
 
+  // 干饭人关心的两件事：菜在锅里 + 单被退回来了（后者要动手指改单）
+  const mine = cooking + rejected
   return {
     pending: pending,
     cooking: cooking,
     done: done,
+    rejected: rejected,
     active: active,
-    // 角标 = 有几单正在做（「我的菜在锅里」的量）
-    badge: cooking,
+    // 角标 = 有几单正在做 + 有几单被驳回
+    badge: mine,
     badgeTab: 'orders',
-    urgent: cooking > 0,
-    warm: active && cooking === 0,
+    urgent: mine > 0,
+    warm: active && mine === 0,
   }
 }
 
@@ -219,6 +228,18 @@ function notice(d, orders, role) {
         path: '/pages/todo/todo',
       }
     }
+    // 被自己驳回的单，TA 改好又交回来了（已驳回 → 待开做）
+    const back = d.statusChanged.filter(function (c) {
+      return c.from === 'rejected' && c.to === 'pending'
+    })
+    if (back.length) {
+      return {
+        key: 'resubmitted',
+        emoji: '🔄',
+        text: back.length > 1 ? 'TA 改好重新提交了 ' + back.length + ' 单' : 'TA 改好重新提交啦，再看看',
+        path: '/pages/todo/todo',
+      }
+    }
     if (d.reviewsAdded.length) {
       return {
         key: 'reviewed',
@@ -232,7 +253,22 @@ function notice(d, orders, role) {
     return null
   }
 
-  // 干饭人：只关心掌勺人的动作
+  // 干饭人：只关心掌勺人的动作。
+  // 驳回排在最前 —— 这是要 TA 动手的事（改菜重新提交，或者干脆删掉），
+  // 而且顺手把理由带出来，省得再点进去找。
+  const backChange = d.statusChanged.filter(function (c) {
+    return c.to === 'rejected'
+  })[0]
+  if (backChange) {
+    const why = rejectLib.shortReason((findOrder(orders, backChange.id) || {}).reject_reason, 10)
+    return {
+      key: 'rejected',
+      emoji: '🙅',
+      text: why ? '这一单被退回啦：' + why : '有一单被退回来啦，去看看',
+      path: '/pages/orders/orders',
+    }
+  }
+
   let toCooking = 0
   let toDone = 0
   d.statusChanged.forEach(function (c) {

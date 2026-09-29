@@ -106,6 +106,12 @@
   color: #1FA65A;
 }
 
+/* 已驳回：灰蓝一点，跟「做完了」的绿区分开，一眼看出这不是进行中的单 */
+.s-rejected {
+  background: #EEF1F6;
+  color: #6B7B95;
+}
+
 /* 菜品明细 */
 .order-items {
   background: #FFFBF9;
@@ -271,6 +277,50 @@
   background: #FFF0F4;
   border-radius: 12rpx;
   padding: 14rpx 20rpx;
+}
+
+/* 驳回提示：理由要看得见，所以给它一块比备注更重的底 */
+.order-reject {
+  display: flex;
+  align-items: flex-start;
+  margin-top: 16rpx;
+  padding: 18rpx 22rpx;
+  background: #F5F7FB;
+  border: 2rpx solid #E3E8F1;
+  border-radius: 16rpx;
+}
+
+.orj-emoji {
+  font-size: 34rpx;
+  line-height: 42rpx;
+  padding-right: 16rpx;
+  flex-shrink: 0;
+}
+
+.orj-main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.orj-title {
+  font-size: 24rpx;
+  color: #6B7B95;
+}
+
+.orj-reason {
+  margin-top: 6rpx;
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #46536B;
+  word-break: break-all;
+}
+
+.orj-hint {
+  margin-top: 8rpx;
+  font-size: 22rpx;
+  color: #9AA6B8;
 }
 
 .order-foot {

@@ -1,8 +1,20 @@
-// 编辑订单页：改菜品、逐道改辣度 / 备注 / 换菜、从菜单加菜、选用餐时间、改备注、改署名、改状态，或整单删除
+// 订单详情页：同一个页面，两种身份两副面孔
+//
+//   干饭人（下单的人）→ 编辑态：改菜、改辣度 / 备注、换菜、改用餐时间、改署名，
+//                        被驳回时看到理由，改完点「改好重新提交」。
+//                        **没有状态开关** —— 状态是掌勺人的事。
+//   掌勺人            → 只读态：菜品 / 备注 / 用餐时间都只看不改，
+//                        底部只有「开始做 / 做好了」和「驳回（要写理由）」。
+//
+// 为什么用同一个页面而不是两个：读的部分完全一样，只有底部那排按钮不同；
+// 拆两个页面会让「已上菜只读」这套逻辑要维护两遍（另见 pages/orders 的入口分工）。
 const api = require('../../utils/api')
 const ui = require('../../utils/ui')
 const dine = require('../../utils/dine')
-const { CATEGORIES, ORDER_STATUS_OPTIONS, SPICE_LEVELS, spiceInfo, DISH_NOTE_MAX } = require('../../utils/constants')
+const store = require('../../utils/store')
+const rejectLib = require('../../utils/reject')
+const live = require('../../utils/live')
+const { CATEGORIES, ORDER_STATUS, SPICE_LEVELS, spiceInfo, DISH_NOTE_MAX } = require('../../utils/constants')
 
 /** 订单内条目的唯一键：同一道菜的不同辣度算两条 */
 function itemKey(it) {
@@ -49,7 +61,9 @@ Page({
     remark: '',
     orderBy: '',
     status: 'pending',
-    statusOptions: ORDER_STATUS_OPTIONS,
+    // 状态只做展示（干饭人看），推不推进由掌勺人在订单页 / 待做页做
+    statusEmoji: ORDER_STATUS.pending.emoji,
+    statusText: ORDER_STATUS.pending.text,
     spiceLevels: SPICE_LEVELS,
     // 辣度平时只显示「当前选的那一档」；这一条是正在展开重选的那道菜
     spiceOpenKey: '',
@@ -62,8 +76,22 @@ Page({
     totalCount: 0,
     loading: true,
     saving: false,
-    // 已上菜 = 终态：本页退化成只读（只展示 + 删除），不能保存修改
+    // 身份与视图形态
+    isCook: false,
+    // 只读：掌勺人（不是他点的单）、已上菜的终态
+    readonly: false,
+    // 已上菜 = 终态（对干饭人也是）：本页退化成只读展示
     finalized: false,
+    // 掌勺人才能推进状态 / 驳回（已上菜之后就没了）
+    showStatusActions: false,
+    canReject: false,
+    // 被驳回：掌勺人写了理由，干饭人改完可以重新提交
+    rejected: false,
+    rejectReason: '',
+    // 只读态顶部那张说明卡
+    readonlyEmoji: '',
+    readonlyTitle: '',
+    readonlySub: '',
     dineText: '',
     // 逐道菜修改面板（辣度 / 备注 / 换菜）
     editorOpen: false,
@@ -85,7 +113,12 @@ Page({
       }, 800)
       return
     }
-    this.setData({ id: id })
+    // 身份：本页两个身份都能进 —— 干饭人改内容、掌勺人只读推进状态，
+    // 所以这里不做「没选身份就弹回去」的门槛判断（与 checkout 一致）。
+    // 真没选过身份时按干饭人渲染；实际上从订单页进来时身份一定已经有了。
+    const isCook = store.getRole() === 'cook'
+    this.setData({ id: id, isCook: isCook })
+    wx.setNavigationBarTitle({ title: isCook ? '这一单' : '改改这一单' })
     this.loadOrder(id)
   },
 
@@ -144,12 +177,29 @@ Page({
       })
       const slot = slotHit && !slotHit.disabled ? savedSlot : dine.defaultSlot(now, date)
       const status = order.status || 'pending'
+      const done = status === 'done'
+      const rejected = status === 'rejected'
+      const isCook = this.data.isCook
+      // 只读的两种情况不一样，文案也就不一样（同一个页面两种身份 + 终态）
+      const badge = this.readonlyBadge(isCook, done, rejected)
+      const info = ORDER_STATUS[status] || ORDER_STATUS.pending
       this.setData({
         items: items,
         remark: order.remark || '',
         orderBy: order.order_by || '',
         status: status,
-        finalized: status === 'done',
+        statusEmoji: info.emoji,
+        statusText: info.text,
+        isCook: isCook,
+        readonly: isCook || done,
+        finalized: done,
+        showStatusActions: isCook && !done,
+        canReject: isCook && !done && rejectLib.canReject(status),
+        rejected: rejected,
+        rejectReason: order.reject_reason || '',
+        readonlyEmoji: badge.emoji,
+        readonlyTitle: badge.title,
+        readonlySub: badge.sub,
         totalCount: this.countOf(items),
         // 「周三 10/1 · 午餐」；老订单没填 → 「尽快」
         dineText: dine.formatDine(order.dine_date, order.dine_slot),
@@ -168,6 +218,32 @@ Page({
     }
   },
 
+  /**
+   * 只读态顶部那句说明：掌勺人（不是他点的单）/ 已上菜（对谁都是终态）。
+   * 抽出来是为了「同一个页面两种身份」的文案不会写歪在模板里。
+   */
+  readonlyBadge(isCook, done, rejected) {
+    if (done) {
+      return {
+        emoji: '🎉',
+        title: '这一单已经上菜啦',
+        sub: isCook ? '完成后的订单不再支持修改' : '完成后的订单不再支持修改，只能删掉',
+      }
+    }
+    if (rejected) {
+      return {
+        emoji: '🙅',
+        title: '这一单你已经驳回了',
+        sub: '等 TA 改好重新提交，或者把驳回收回来',
+      }
+    }
+    return {
+      emoji: '🧑‍🍳',
+      title: '这一单是 TA 点的',
+      sub: '你只能更新状态或驳回，菜品内容不能改',
+    }
+  },
+
   // ---------- 同步编辑 ----------
 
   onNickInput(e) {
@@ -178,9 +254,8 @@ Page({
     this.setData({ remark: e.detail.value })
   },
 
-  onTapStatus(e) {
-    this.setData({ status: e.currentTarget.dataset.status })
-  },
+  // 注意：本页**没有**改状态的入口。状态由掌勺人在订单页 / 待做页推进，
+  // 干饭人这边连控件都不给（原来那排可选状态的小胶囊已随之删掉）。
 
   // ---------- 用餐时间 ----------
 
@@ -436,11 +511,16 @@ Page({
     ui.toast('已加入这一单（' + spice + '）')
   },
 
-  // ---------- 保存 / 删除 ----------
+  // ---------- 保存 / 删除 / 掌勺人的状态动作 ----------
 
   async onSave() {
     if (this.data.saving) return
-    // 终态兜底：已上菜的订单即使绕过入口进到本页，也不允许保存
+    // 只读兜底：掌勺人绕过入口进到本页也不允许保存（他只推进状态 / 驳回），
+    // 已上菜的终态同理 —— 两处都在写库调用之前拦住
+    if (this.data.isCook) {
+      ui.toast('这一单是 TA 点的，你只能更新状态或驳回')
+      return
+    }
     if (this.data.finalized) {
       ui.toast('这一单已上菜，不能再改了')
       return
@@ -467,7 +547,8 @@ Page({
           }),
           remark: (this.data.remark || '').trim(),
           order_by: (this.data.orderBy || '').trim() || '宝贝',
-          status: this.data.status,
+          // 刻意不传 status：状态是掌勺人的事。被驳回的单改完后，
+          // 服务端会把它自动退回「待开做」—— 这一次保存就等于「重新提交」。
           dine_date: this.data.dineDate,
           dine_slot: this.data.dineSlot,
         },
@@ -478,21 +559,120 @@ Page({
         this.setData({ saving: false })
         return
       }
-      ui.toast('改好了 ✓')
+      ui.toast(this.data.rejected ? '改好重新提交啦 ✓' : '改好了 ✓')
       setTimeout(function () {
         wx.navigateBack()
       }, 800)
     } catch (err) {
       ui.hideLoading()
       console.error('[order-edit] 保存订单失败', err)
-      ui.toast('没保存成功，再试一次')
+      ui.toast((err && err.message) || '没保存成功，再试一次')
       this.setData({ saving: false })
     }
   },
 
+  // ---------- 掌勺人的三个动作（只读态底部那排按钮） ----------
+
+  // 状态推进与订单页共用同一个 action，两处手感保持一致
+  async setStatus(nextStatus) {
+    ui.showLoading('处理中…')
+    try {
+      const res = await api.call('updateOrderStatus', { id: this.data.id, status: nextStatus })
+      ui.hideLoading()
+      if (!res || !res.updated) {
+        ui.toast('没更新成功，再试一次')
+        return
+      }
+      ui.toast(nextStatus === 'cooking' ? '开做啦，加油 💪' : '上菜咯，开饭 🎉')
+      setTimeout(function () {
+        wx.navigateBack()
+      }, 800)
+    } catch (err) {
+      ui.hideLoading()
+      console.error('[order-edit] 状态更新失败', err)
+      ui.toast('网络开小差了，稍后再试')
+    }
+  },
+
+  onStartCooking() {
+    this.setStatus('cooking')
+  },
+
+  // 「已上菜」是终态（之后只能删单）→ 二次确认防误点
+  onFinishCooking() {
+    const self = this
+    wx.showModal({
+      title: '这一单都上菜啦？',
+      content: '标记「已上菜」后就不能再改了哦',
+      confirmText: '上菜咯',
+      confirmColor: '#FF7A9E',
+      cancelText: '再做会儿',
+      success: function (res) {
+        if (res.confirm) self.setStatus('done')
+      },
+    })
+  },
+
+  // 驳回：做不了就直说，理由必填（快捷说法一键选）
+  async onReject() {
+    if (!this.data.canReject) {
+      ui.toast('这一单现在没法驳回')
+      return
+    }
+    const input = await ui.askReason(rejectLib.QUICK_REASONS, {
+      title: '为什么先不做这一单？',
+      placeholder: '比如：今天没买到排骨',
+      confirmText: '就这么说',
+    })
+    if (input === null) return
+
+    const reason = rejectLib.normalizeReason(input)
+    if (!reason) {
+      ui.toast('还是说一句理由吧')
+      return
+    }
+    ui.showLoading('正在驳回…')
+    try {
+      const res = await api.call('rejectOrder', { id: this.data.id, reason: reason })
+      ui.hideLoading()
+      if (!res || !res.updated) {
+        ui.toast('没驳回成功，再试一次')
+        return
+      }
+      ui.toast('已经告诉 TA 了 🙅')
+      setTimeout(function () {
+        wx.navigateBack()
+      }, 800)
+    } catch (err) {
+      ui.hideLoading()
+      console.error('[order-edit] 驳回失败', err)
+      ui.toast('网络开小差了，稍后再试')
+    }
+  },
+
+  // 手滑驳错了 → 收回来（状态退回待开做）
+  onWithdrawReject() {
+    const self = this
+    wx.showModal({
+      title: '收回这次驳回？',
+      content: '这一单会回到「待开做」，TA 那边也会看到',
+      confirmText: '收回来',
+      confirmColor: '#FF7A9E',
+      cancelText: '算了',
+      success: function (res) {
+        if (res.confirm) self.setStatus('pending')
+      },
+    })
+  },
+
+  // 删除整单：只有干饭人能删自己点的单（掌勺人只能驳回）
   onDelete() {
     const id = this.data.id
     if (!id) return
+    if (this.data.isCook) {
+      ui.toast('这一单是 TA 点的，你只能驳回哦')
+      return
+    }
     wx.showModal({
       title: '删掉这一单？',
       content: '「' + (this.data.orderBy || '宝贝') + '」的这单会被删掉，删了就找不回来了',
@@ -519,5 +699,11 @@ Page({
         }
       },
     })
+  },
+
+  // 本页不轮询订单（要点进来才能改，改动自己走保存按钮）。
+  // onUnload 里恢复 App 级轮询：弹窗期间可能暂停过它。
+  onUnload() {
+    live.resume()
   },
 })

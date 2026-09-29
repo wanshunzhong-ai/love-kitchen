@@ -32,18 +32,23 @@ const DISH_EMOJIS = [
 ]
 
 // 订单状态
+//
+// 谁改状态（这条是权限边界，改代码前先看这里）：
+//   pending → cooking → done 只有掌勺人能推；rejected（驳回）也只有掌勺人能做，
+//   而且必须带一句理由。干饭人从头到尾不碰状态 —— 改完菜重新提交时由服务端
+//   自动把「已驳回」退回「待开做」，页面层不给状态开关。
+//
+// 这里只有「展示信息」：状态怎么改由 utils/orders.js 的
+// ORDER_STATUSES（可推进）与 utils/reject.js 的 canReject（可驳回）分别界定。
 const ORDER_STATUS = {
   pending: { text: '待开做', emoji: '📝' },
   cooking: { text: '开做中', emoji: '🧑‍🍳' },
   done: { text: '已上菜', emoji: '🎉' },
+  rejected: { text: '已驳回', emoji: '🙅' },
 }
 
-// 订单状态下拉选项（编辑订单时用）
-const ORDER_STATUS_OPTIONS = [
-  { key: 'pending', text: '待开做', emoji: '📝' },
-  { key: 'cooking', text: '开做中', emoji: '🧑‍🍳' },
-  { key: 'done', text: '已上菜', emoji: '🎉' },
-]
+// 驳回理由的字数上限（掌勺人驳回时必填，与 utils/reject.js 共用）
+const REJECT_MAX = 60
 
 // 辣度档位（level 决定 🌶️ 数量与标签配色）
 const SPICE_LEVELS = [
@@ -140,7 +145,7 @@ module.exports = {
   roleInfo,
   DISH_EMOJIS,
   ORDER_STATUS,
-  ORDER_STATUS_OPTIONS,
+  REJECT_MAX,
   SPICE_LEVELS,
   spiceInfo,
   DINE_SLOTS,

@@ -5,14 +5,14 @@
   </view>
 
   <block wx:else>
-    <!-- ===== 已上菜＝终态：只读展示 + 只能删掉，不给任何修改入口 ===== -->
-    <block wx:if="{{finalized}}">
+    <!-- ===== 只读态：掌勺人（这一单不是他点的）+ 已上菜的终态 ===== -->
+    <block wx:if="{{readonly}}">
       <view class="card section">
         <view class="final-badge">
-          <text class="fb-emoji">🎉</text>
+          <text class="fb-emoji">{{readonlyEmoji}}</text>
           <view class="fb-text">
-            <text class="fb-title">这一单已经上菜啦</text>
-            <text class="fb-sub">完成后的订单不再支持修改，只能删掉</text>
+            <text class="fb-title">{{readonlyTitle}}</text>
+            <text class="fb-sub">{{readonlySub}}</text>
           </view>
         </view>
       </view>
@@ -40,13 +40,52 @@
           <text class="ro-meta-line">🙋 {{orderBy || '宝贝'}}</text>
           <text class="ro-meta-line" wx:if="{{remark}}">💬 {{remark}}</text>
         </view>
+
+        <!-- 被驳回的单：理由要摆在详情里，掌勺人自己也能回看当时说了什么 -->
+        <view class="ro-reject" wx:if="{{rejected}}">
+          <text class="rr-label">🙅 驳回理由</text>
+          <text class="rr-text">「{{rejectReason || '没写理由'}}」</text>
+        </view>
       </view>
 
-      <view class="btn-delete" bindtap="onDelete">🗑 删掉这一单</view>
+      <!-- 掌勺人的全部权力：推进状态 / 驳回（都写不了一点内容） -->
+      <block wx:if="{{showStatusActions && !rejected}}">
+        <view class="card section">
+          <view class="section-title">🍳 接下来怎么办</view>
+          <button
+            wx:if="{{status === 'pending'}}"
+            class="btn-main cook-act"
+            bindtap="onStartCooking"
+          >🔥 开始做</button>
+          <button
+            wx:elif="{{status === 'cooking'}}"
+            class="btn-main cook-act"
+            bindtap="onFinishCooking"
+          >✅ 做好了，上菜</button>
+          <view wx:if="{{canReject}}" class="btn-reject" bindtap="onReject">🙅 这一单先不做，说一句理由</view>
+          <view class="cook-tip">你做不了的话就驳回，TA 会看到理由</view>
+        </view>
+      </block>
+
+      <!-- 已驳回的单：掌勺人可以把驳回收回来（手滑了有路可退） -->
+      <view wx:if="{{status === 'rejected'}}" class="btn-reject" bindtap="onWithdrawReject">↩️ 收回这次驳回</view>
+
+      <!-- 干饭人：已上菜是终态，只剩删除 -->
+      <view wx:if="{{!isCook}}" class="btn-delete" bindtap="onDelete">🗑 删掉这一单</view>
     </block>
 
-    <!-- ===== 未完成：正常编辑 ===== -->
+    <!-- ===== 干饭人：正常编辑（改内容，改不了状态） ===== -->
     <block wx:else>
+      <!-- 被驳回：理由放最上面 —— 先看清为什么，再动手改 -->
+      <view class="card section reject-card" wx:if="{{rejected}}">
+        <view class="rc-head">
+          <text class="rc-emoji">🙅</text>
+          <text class="rc-title">掌勺人说先不做这一单</text>
+        </view>
+        <text class="rc-reason">「{{rejectReason || '没写理由'}}」</text>
+        <text class="rc-hint">改一改再交回去就好，也可以删掉它</text>
+      </view>
+
       <!-- 菜品清单 -->
       <view class="card section">
         <view class="section-title">
@@ -166,21 +205,16 @@
         />
       </view>
 
-      <!-- 状态 -->
+      <!-- 状态：只给看，不给点（改状态是掌勺人的事，这里连控件都不给） -->
       <view class="card section">
         <view class="section-title">📌 这一单到哪一步了</view>
-        <view class="status-row">
-          <view
-            class="schip {{status === item.key ? 'schip-active' : ''}}"
-            wx:for="{{statusOptions}}"
-            wx:key="key"
-            data-status="{{item.key}}"
-            bindtap="onTapStatus"
-          >{{item.emoji}} {{item.text}}</view>
+        <view class="status-ro">
+          <text class="sro-chip s-{{status}}">{{statusEmoji}} {{statusText}}</text>
         </view>
+        <text class="sro-hint">状态由掌勺人更新，你只能改菜和备注</text>
       </view>
 
-      <button class="btn-main submit" disabled="{{saving}}" bindtap="onSave">保存修改 ✓</button>
+      <button class="btn-main submit" disabled="{{saving}}" bindtap="onSave">{{rejected ? '改好重新提交 ✓' : '保存修改 ✓'}}</button>
       <view class="btn-delete" bindtap="onDelete">🗑 删掉这一单</view>
     </block>
   </block>

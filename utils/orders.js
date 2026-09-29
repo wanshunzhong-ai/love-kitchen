@@ -16,6 +16,7 @@
 const TABLE = 'orders'
 
 // 允许的订单状态（与 utils/constants.js 保持一致）
+// rejected = 掌勺人驳回，必须带理由；它不是「推进」出来的，走 rejectOrder
 const ORDER_STATUSES = ['pending', 'cooking', 'done']
 
 // 用餐时间校验（日期范围 / 时段合法性）
@@ -23,6 +24,9 @@ const dine = require('./dine')
 
 // 评价的收敛与合并规则（纯函数，与页面层共用同一套判定）
 const reviewLib = require('./review')
+
+// 驳回的判定与理由收敛（纯函数，与服务端共用同一份）
+const rejectLib = require('./reject')
 
 // 每道菜备注的长度上限（与前端输入框保持一致）
 const { DISH_NOTE_MAX } = require('./constants')
@@ -159,6 +163,9 @@ function rowToOrder(row) {
     // 用餐时间：老订单可能没有（NULL → 空串），页面层自行兜底
     dine_date: row.dine_date || '',
     dine_slot: row.dine_slot || '',
+    // 驳回：reason 只在 status === 'rejected' 时展示，at 是驳回时刻（毫秒，老订单为 0）
+    reject_reason: row.reject_reason || '',
+    rejected_at: toMillis(row.rejected_at),
     // 逐道菜的评价：{ "dishId|辣度": { rating, tags, text, by, at } }
     reviews: parseReviews(row.reviews),
     created_at: toMillis(row.created_at),
@@ -260,7 +267,16 @@ async function createOrder(event) {
   return { id: String(inserted.id) }
 }
 
-// 编辑订单：菜品清单全量替换（页面每次提交完整清单）
+// 编辑订单：菜品清单全量替换（页面每次提交完整清单）+ 备注 / 署名 / 用餐时间
+//
+// 谁能改：只有下单的人（干饭人）。掌勺人只推进状态或驳回，改内容一律不认 ——
+// 这条规则由页面层拦（订单页不给入口、编辑页对掌勺人退化成只读），
+// 服务端再兜一道状态机，两头都不会漏。
+//
+// 服务端的两个兜底：
+//   · 已上菜（done）的单不能再改 —— 菜都端上桌了；
+//   · **不接受 status 字段**。状态是掌勺人的事，页面传了也不认；
+//     若这一单原本是「已驳回」，改完内容自动退回「待开做」= 重新提交。
 async function updateOrder(event) {
   const id = event && event.id
   const payload = (event && event.payload) || {}
@@ -269,6 +285,13 @@ async function updateOrder(event) {
   const items = normalizeItems(payload.items)
   if (!items.length) throw new Error('订单里没有菜品')
 
+  // 先读现状：既用来拦「已上菜」，也用来判断这次改动算不算「重新提交」
+  const cur = unwrap(await getDB().from(TABLE).select('id, status').eq('id', id).limit(1))
+  const curRows = Array.isArray(cur.data) ? cur.data : []
+  if (!curRows.length) throw new Error('这一单不存在了')
+  const status = curRows[0].status || 'pending'
+  if (status === 'done') throw new Error('这一单已经上菜了，不能再改')
+
   const patch = {
     items: items,
     remark: payload.remark || '',
@@ -276,9 +299,12 @@ async function updateOrder(event) {
     updated_at: new Date().toISOString(),
   }
 
-  if (payload.status !== undefined) {
-    if (ORDER_STATUSES.indexOf(payload.status) < 0) throw new Error('订单状态不合法')
-    patch.status = payload.status
+  // 被驳回的单改完就是重新提交：状态回到待开做，并把上一次的驳回理由清掉
+  // （理由留着会让人以为「又驳回了」，而这一单其实已经在等掌勺人开做）
+  if (status === 'rejected') {
+    patch.status = 'pending'
+    patch.reject_reason = ''
+    patch.rejected_at = null
   }
 
   // 用餐时间：传了才改（保持与编辑页的字段一致）；undefined 表示这次不动它
@@ -290,14 +316,22 @@ async function updateOrder(event) {
 
   const rows = affectedRows(await getDB().from(TABLE).update(patch).eq('id', id).select())
   if (!rows.length) throw new Error('这一单没能保存，可能已经被删掉了')
-  return { updated: rows.length }
+  return { updated: rows.length, status: patch.status || status }
 }
 
+// 推进订单状态（只有掌勺人的活）：待开做 → 开做中 → 已上菜，
+// 或者把误驳回的单「收回」回到待开做。
+//
+// 驳回不从这里走：驳回必须带一句理由，走 rejectOrder。
+// 干饭人没有任何一条路径能到这个 action —— 页面层不给状态开关，这里也不认 rejected。
 async function updateOrderStatus(event) {
   const id = event && event.id
   const status = event && event.status
   if (id === undefined || id === null || id === '') throw new Error('缺少订单 id')
-  if (ORDER_STATUSES.indexOf(status) < 0) throw new Error('订单状态不合法')
+  if (ORDER_STATUSES.indexOf(status) < 0) {
+    if (status === 'rejected') throw new Error('驳回要写一句理由，请用「驳回」按钮')
+    throw new Error('订单状态不合法')
+  }
 
   const rows = affectedRows(
     await getDB()
@@ -308,6 +342,39 @@ async function updateOrderStatus(event) {
   )
   if (!rows.length) throw new Error('这一单没能更新，可能已经被删掉了')
   return { updated: rows.length }
+}
+
+// 驳回（只有掌勺人能做，且必须写理由）
+//
+// 状态机：待开做 / 开做中 → 已驳回。已上菜不能驳（菜都端上桌了），
+// 已驳回不用再驳一次。驳回后球回到干饭人那边：他改完菜重新提交
+// （updateOrder）就自动回到「待开做」。
+async function rejectOrder(event) {
+  const id = event && event.id
+  if (id === undefined || id === null || id === '') throw new Error('缺少订单 id')
+
+  const reason = rejectLib.normalizeReason(event && event.reason)
+  if (!reason) throw new Error('驳回要写一句理由哦')
+
+  const cur = unwrap(await getDB().from(TABLE).select('id, status').eq('id', id).limit(1))
+  const curRows = Array.isArray(cur.data) ? cur.data : []
+  if (!curRows.length) throw new Error('这一单不存在了')
+
+  const status = curRows[0].status || 'pending'
+  if (!rejectLib.canReject(status)) {
+    throw new Error(status === 'done' ? '这一单已经上菜了，没法驳回' : '这一单已经是驳回状态了')
+  }
+
+  const now = new Date().toISOString()
+  const rows = affectedRows(
+    await getDB()
+      .from(TABLE)
+      .update({ status: 'rejected', reject_reason: reason, rejected_at: now, updated_at: now })
+      .eq('id', id)
+      .select()
+  )
+  if (!rows.length) throw new Error('这一单没能驳回，可能已经被删掉了')
+  return { updated: rows.length, reason: reason }
 }
 
 async function deleteOrder(event) {
@@ -390,6 +457,7 @@ const ACTIONS = {
   createOrder: createOrder,
   updateOrder: updateOrder,
   updateOrderStatus: updateOrderStatus,
+  rejectOrder: rejectOrder,
   deleteOrder: deleteOrder,
   saveReview: saveReview,
   stats: stats,

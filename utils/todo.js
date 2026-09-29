@@ -92,7 +92,9 @@ function buildBoard(orders, todayKey) {
   const later = {}
 
   ;(Array.isArray(orders) ? orders : []).forEach(function (o) {
-    if (!o || o.status === 'done') return // 已上菜的不在待做范围
+    // 已上菜的不在待做范围；已驳回的也不在 —— 那一单球已经回到干饭人那边，
+    // 等他改完重新提交才会以「待开做」的身份重新出现
+    if (!o || o.status === 'done' || o.status === 'rejected') return
     const card = toCard(o)
     const date = card.dine_date || ''
 

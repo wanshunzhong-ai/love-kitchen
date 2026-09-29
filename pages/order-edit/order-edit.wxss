@@ -381,31 +381,131 @@
   color: #D8C7C1;
 }
 
-/* 状态：三项等分，间距用相邻兄弟 margin（不用 flex gap，安卓部分内核不支持） */
-.status-row {
+/* 状态：只读一格 —— 改状态是掌勺人的事，这里只有一个胶囊 + 一句说明 */
+.status-ro {
   display: flex;
+  align-items: center;
 }
 
-.status-row .schip + .schip {
-  margin-left: 16rpx;
-}
-
-.schip {
-  flex: 1;
-  text-align: center;
-  padding: 16rpx 0;
+.sro-chip {
+  padding: 10rpx 28rpx;
   border-radius: 999rpx;
-  font-size: 24rpx;
-  color: #8A7772;
-  background: #FFFBF9;
-  border: 2rpx solid #F6E3DC;
+  font-size: 26rpx;
+  font-weight: 600;
 }
 
-.schip-active {
-  background: linear-gradient(135deg, #FF7A9E, #FF9F43);
-  color: #ffffff;
-  border-color: transparent;
+.s-pending {
+  background: #FFF3E5;
+  color: #D9822B;
+}
+
+.s-cooking {
+  background: #FFE9EE;
+  color: #E85C8A;
+}
+
+.s-done {
+  background: #E8F9EE;
+  color: #1FA65A;
+}
+
+.s-rejected {
+  background: #EEF1F6;
+  color: #6B7B95;
+}
+
+.sro-hint {
+  display: block;
+  margin-top: 14rpx;
+  font-size: 22rpx;
+  color: #B9A29B;
+}
+
+/* ===== 被驳回：理由卡（干饭人的编辑态放最上面） ===== */
+.reject-card {
+  background: #F5F7FB;
+  border: 2rpx solid #E3E8F1;
+}
+
+.rc-head {
+  display: flex;
+  align-items: center;
+  padding-bottom: 10rpx;
+}
+
+.rc-emoji {
+  font-size: 34rpx;
+  padding-right: 12rpx;
+}
+
+.rc-title {
+  font-size: 26rpx;
   font-weight: 600;
+  color: #46536B;
+}
+
+.rc-reason {
+  display: block;
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #33405A;
+  padding: 8rpx 0;
+  word-break: break-all;
+}
+
+.rc-hint {
+  display: block;
+  font-size: 22rpx;
+  color: #9AA6B8;
+}
+
+/* ===== 只读态里的驳回理由 ===== */
+.ro-reject {
+  margin-top: 20rpx;
+  padding: 18rpx 22rpx;
+  background: #F5F7FB;
+  border: 2rpx solid #E3E8F1;
+  border-radius: 16rpx;
+}
+
+.rr-label {
+  display: block;
+  font-size: 22rpx;
+  color: #6B7B95;
+  padding-bottom: 8rpx;
+}
+
+.rr-text {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #46536B;
+  word-break: break-all;
+}
+
+/* ===== 掌勺人底部那排动作 ===== */
+.cook-act {
+  margin-top: 4rpx;
+  line-height: 92rpx;
+  font-size: 30rpx;
+}
+
+.cook-tip {
+  margin-top: 18rpx;
+  text-align: center;
+  font-size: 22rpx;
+  color: #B9A29B;
+}
+
+/* 驳回：描边弱化，跟主按钮拉开主次（点了还要写理由，多一道确认） */
+.btn-reject {
+  margin-top: 20rpx;
+  text-align: center;
+  line-height: 88rpx;
+  font-size: 28rpx;
+  color: #6B7B95;
+  background: #F5F7FB;
+  border: 2rpx solid #E3E8F1;
+  border-radius: 999rpx;
 }
 
 /* 按钮 */
