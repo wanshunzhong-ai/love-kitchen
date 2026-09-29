@@ -12,6 +12,10 @@
         "type": "folder"
       },
       {
+        "value": "templates",
+        "type": "folder"
+      },
+      {
         "value": "node_modules",
         "type": "folder"
       },

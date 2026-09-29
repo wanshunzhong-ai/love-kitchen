@@ -281,12 +281,16 @@ Page({
   },
 
   // 把当前菜单导出来 → 在电脑上改完再导回去（也方便备份）
+  //
+  // 用 TSV 而不是 CSV：剪贴板里的内容多半是往 Excel 里粘的，
+  // 只有制表符会让 Excel 自动分列，逗号会整段挤进一个格子。
+  // 解析器两种分隔符都认，所以导回来照样能用。
   onCopyMenu() {
     if (!this.existing.length) {
       ui.toast('菜单还是空的，没东西可导出')
       return
     }
-    this.copyText(csv.buildCSV(this.existing), '菜单已复制，可粘贴到表格里')
+    this.copyText(csv.buildTSV(this.existing), '已复制，粘到表格里会自动分列')
   },
 
   copyText(text, tip) {

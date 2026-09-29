@@ -33,10 +33,28 @@ const SPICE_KEYS = SPICE_LEVELS.map(function (s) {
 // 1. 分隔符识别
 // ---------------------------------------------------------------------------
 
+// 注释行前缀：以 # 开头的行整行忽略
+//
+// 为什么需要它：「复制模板」给出去的说明文字必须能和表格放进同一份文本里，
+// 否则用户把整段直接粘回输入框时，说明文字会被当成一道道菜**悄悄导进去**
+// （每行第一格「菜名：必填」这种恰好没超长，解析器不会报错，于是变成了
+//   9 道垃圾菜 —— 这种失败方式最难发现）。加了注释约定之后，
+//   说明留在原地，解析器跳过，用户爱粘哪里都对。
+const COMMENT_PREFIX = '#'
+
+/** 这一行是不是注释行（只看第一格是否以 # 开头） */
+function isCommentRow(cells) {
+  const first = cells && cells.length ? String(cells[0] == null ? '' : cells[0]).trim() : ''
+  return first.charAt(0) === COMMENT_PREFIX
+}
+
 /**
- * 猜分隔符：首行里制表符多就用 TSV，否则用 CSV。
+ * 猜分隔符：首个有效行里制表符多就用 TSV，否则用 CSV。
  * 为什么要猜：Excel / WPS 复制出来是 TSV，手敲的文件一般是 CSV，
  * 让用户先选一次分隔符，错一次就白导一遍。
+ *
+ * 注意要跳过注释行与空行再嗅探：注释是「人话」，里面常带逗号，
+ * 拿它去数分隔符会把一份 TSV 判成 CSV，整份文件就只剩一列了。
  * @param {string} text
  * @returns {','|'\t'}
  */
@@ -45,6 +63,7 @@ function detectDelimiter(text) {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i]
     if (!line.trim()) continue
+    if (line.trim().charAt(0) === COMMENT_PREFIX) continue
     const tabs = (line.match(/\t/g) || []).length
     const commas = (line.match(/,/g) || []).length
     if (tabs === 0 && commas === 0) return ','
@@ -131,20 +150,61 @@ function splitRows(text, delim) {
 }
 
 /**
+ * 每个解析行对应的「原文物理行号」（从 1 起）。
+ *
+ * 为什么要单独算：报错要说「第几行有问题」，用户才会拿着行号去文件里改。
+ * 行号不能用数组下标代替 —— 注释行被丢掉了（整体前移），而引号里的换行
+ * 又会让一个解析行跨好几个物理行（整体后移），两种偏差叠起来
+ * 能把「第 3 行」报成「第 12 行」。
+ * @param {string[][]} rows
+ * @returns {number[]}
+ */
+function lineNumbersOf(rows) {
+  const out = []
+  let line = 1
+  rows.forEach(function (cells) {
+    out.push(line)
+    let span = 1
+    cells.forEach(function (c) {
+      const s = String(c == null ? '' : c)
+      for (let i = 0; i < s.length; i++) {
+        if (s[i] === '\n') span++
+      }
+    })
+    line += span
+  })
+  return out
+}
+
+/**
  * 解析成表格 + 识别表头。
+ *
+ * 注释行（首格以 # 开头）在这里就被整行丢掉：不能留到后面再跳过，
+ * 否则一行注释当头会把 detectHeader 判成「没有表头」，整份文件按固定列序读 → 错位。
  * @param {string} text
- * @returns {{ rows: string[][], delimiter: string, header: Object|null, body: string[][] }}
+ * @returns {{ rows: string[][], lines: number[], delimiter: string, header: Object|null, body: string[][], bodyLines: number[] }}
  */
 function parseTable(text) {
   const delimiter = detectDelimiter(text)
-  const rows = splitRows(text, delimiter)
+  const all = splitRows(text, delimiter)
+  const allLines = lineNumbersOf(all)
+  const rows = []
+  const lines = []
+  all.forEach(function (cells, i) {
+    if (isCommentRow(cells)) return
+    rows.push(cells)
+    lines.push(allLines[i])
+  })
   const header = rows.length ? detectHeader(rows[0]) : null
+  const body = header ? rows.slice(1) : rows
   return {
     rows: rows,
+    lines: lines,
     delimiter: delimiter,
     header: header,
     // 有表头就跳过第一行；没有表头按固定列序
-    body: header ? rows.slice(1) : rows,
+    body: body,
+    bodyLines: header ? lines.slice(1) : lines,
   }
 }
 
@@ -375,8 +435,9 @@ function parseDishes(text, options) {
 
   for (let i = 0; i < table.body.length; i++) {
     const cells = table.body[i]
-    // 行号按「用户在文件里看到的那一行」算：有表头就整体 +2
-    const line = i + (table.header ? 2 : 1)
+    // 行号按「用户在文件里看到的那一行」算：由 parseTable 记录的真实物理行号，
+    // 注释行与引号内换行都已经被它算进去了
+    const line = table.bodyLines[i]
 
     if (stats.add + stats.update + stats.skip >= IMPORT_MAX) {
       if (!overflow) {
@@ -496,22 +557,42 @@ function escapeCell(v) {
   return /[",\n\r\t]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s
 }
 
+const EXPORT_HEAD = ['菜名', '分类', '图标', '辣度', '介绍']
+
+/** 菜品数组 → 表格文本（含表头），分隔符由调用方给 */
+function buildRows(dishes, sep) {
+  const lines = [EXPORT_HEAD.join(sep)]
+  ;(dishes || []).forEach(function (d) {
+    lines.push(
+      [d.name, d.category, d.emoji, d.spice, d.description || '']
+        .map(escapeCell)
+        .join(sep)
+    )
+  })
+  return lines.join('\n')
+}
+
 /**
  * 菜品数组 → CSV 文本（含表头）。字段顺序与模板一致。
  * @param {Array} dishes
  * @returns {string}
  */
 function buildCSV(dishes) {
-  const head = ['菜名', '分类', '图标', '辣度', '介绍']
-  const lines = [head.join(',')]
-  ;(dishes || []).forEach(function (d) {
-    lines.push(
-      [d.name, d.category, d.emoji, d.spice, d.description || '']
-        .map(escapeCell)
-        .join(',')
-    )
-  })
-  return lines.join('\n')
+  return buildRows(dishes, ',')
+}
+
+/**
+ * 菜品数组 → TSV 文本（制表符分隔，含表头）。
+ *
+ * 「复制菜单 / 复制模板」走的是剪贴板，**必须用制表符**：
+ * 粘到 Excel / WPS 里时只有制表符会分列，逗号文本会整段挤进一个格子，
+ * 用户还得手动「数据 → 分列」。而我们的解析器两种都认（自动嗅探），
+ * 所以改成分隔符不影响导回来。
+ * @param {Array} dishes
+ * @returns {string}
+ */
+function buildTSV(dishes) {
+  return buildRows(dishes, '\t')
 }
 
 // 模板里的示例菜：挑三道覆盖不同分类与辣度，让用户一眼看懂每列该填什么
@@ -521,26 +602,38 @@ const TEMPLATE_SAMPLE = [
   { name: '凉拌拍黄瓜', category: '凉菜腌腊', emoji: '🥒', spice: '微辣', description: '蒜香开胃，夏天必备' },
 ]
 
-/** 模板 CSV 文本（表头 + 三道示例） */
+/** 模板 CSV 文本（表头 + 三道示例）—— 落文件用这个（选文件器只认 .csv） */
 function templateCSV() {
   return buildCSV(TEMPLATE_SAMPLE)
 }
 
-/** 导出一份含「填写说明」的文本，供「复制模板」用（说明在 CSV 外面，不进数据） */
+/** 模板 TSV 文本 —— 复制到剪贴板用这个（粘进表格自动分列） */
+function templateTSV() {
+  return buildTSV(TEMPLATE_SAMPLE)
+}
+
+/**
+ * 导出一份含「填写说明」的文本，供「复制模板」用。
+ *
+ * 说明行全部冠以 # —— 这不是装饰：用户完全可能把这整段直接粘回输入框
+ * （「复制模板」→ 就在框里改 → 解析），没有注释约定的话那 9 行说明
+ * 会被当成 9 道菜悄悄导进去。表格本体用制表符分隔，粘到 Excel 里直接分列。
+ */
 function templateText() {
   const cats = CATEGORY_KEYS.join(' / ')
   const spices = SPICE_KEYS.join(' / ')
   return [
-    '【爱心小厨房 · 加菜模板】',
-    '第一行是表头，别删；从第二行开始每行一道菜。',
-    '菜名：必填，最多 ' + NAME_MAX + ' 字（重复的菜名会被识别成同一道菜）',
-    '分类：' + cats,
-    '图标：一个表情，比如 🍅；不填就按分类给默认图标',
-    '辣度：' + spices + '（不填按不辣）',
-    '介绍：可不填，最多 ' + DESC_MAX + ' 字',
-    '',
-    '—— 下面这些可以直接改成你的菜（含逗号的介绍要用英文双引号包起来）——',
-    templateCSV(),
+    '# 【爱心小厨房 · 加菜模板】',
+    '# 以 # 开头的行是说明，解析时会整行跳过，不会当成菜导进去。',
+    '# 第一行表头别删；从表头下面开始，每行一道菜。',
+    '# 菜名：必填，最多 ' + NAME_MAX + ' 字（重复的菜名会被识别成同一道菜）',
+    '# 分类：' + cats,
+    '# 图标：一个表情，比如 🍅；不填就按分类给默认图标',
+    '# 辣度：' + spices + '（不填按不辣）',
+    '# 介绍：可不填，最多 ' + DESC_MAX + ' 字',
+    '#',
+    '# —— 下面这些可以直接改成你的菜（介绍里含逗号、引号时用英文双引号包起来）——',
+    templateTSV(),
   ].join('\n')
 }
 
@@ -549,11 +642,14 @@ module.exports = {
   NAME_MAX,
   DESC_MAX,
   PREVIEW_MAX,
+  COMMENT_PREFIX,
   HEADER_ALIASES,
   POSITIONAL,
   TEMPLATE_SAMPLE,
   detectDelimiter,
   splitRows,
+  isCommentRow,
+  lineNumbersOf,
   detectHeader,
   parseTable,
   sanitizeDish,
@@ -561,8 +657,11 @@ module.exports = {
   looksLikeEmoji,
   chiliCount,
   parseDishes,
+  buildRows,
   buildCSV,
+  buildTSV,
   escapeCell,
   templateCSV,
+  templateTSV,
   templateText,
 }
