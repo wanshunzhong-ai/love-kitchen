@@ -28,8 +28,20 @@ Page({
   },
 
   onShow() {
-    this.setData({ cartCount: store.cartCount() })
+    // 身份守卫：没选过身份 → 送去选择页
+    const role = store.ensureRole()
+    if (!role) return
+    this.setData({
+      role: role,
+      roleInfo: store.getRoleInfo(),
+      cartCount: store.cartCount(),
+    })
     this.loadDishes()
+  },
+
+  // 头像/身份胶囊：点它回选择页换身份
+  goRoleSelect() {
+    wx.reLaunch({ url: '/pages/role-select/role-select' })
   },
 
   async loadDishes() {

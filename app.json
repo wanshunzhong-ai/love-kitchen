@@ -1,5 +1,6 @@
 {
   "pages": [
+    "pages/role-select/role-select",
     "pages/menu/menu",
     "pages/orders/orders",
     "pages/checkout/checkout",

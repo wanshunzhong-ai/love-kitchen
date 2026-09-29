@@ -1,7 +1,10 @@
-// 订单页：两个人都能看到全部订单，并推进状态（待开做 → 开做中 → 已上菜）
+// 订单页：全部订单都能看到，但操作按身份分工——
+//   做饭人：推进状态（待开做 → 开始做 → 做好了标记已上菜）
+//   点餐人：下单 / 改单 / 删单，等大厨开做
 const api = require('../../utils/api')
 const ui = require('../../utils/ui')
 const dine = require('../../utils/dine')
+const store = require('../../utils/store')
 const { ORDER_STATUS, SPICE_LEVELS } = require('../../utils/constants')
 const { formatTime } = require('../../utils/format')
 
@@ -19,10 +22,27 @@ Page({
     statusMap: ORDER_STATUS,
     loading: true,
     loadError: false,
+    // 身份：cook 才有「开始做 / 做好了」按钮；orderer 看到的是「等大厨开做」提示
+    role: '',
+    roleInfo: null,
+    isCook: false,
   },
 
   onShow() {
+    // 身份守卫：没选过身份 → 送去选择页
+    const role = store.ensureRole()
+    if (!role) return
+    this.setData({
+      role: role,
+      roleInfo: store.getRoleInfo(),
+      isCook: role === 'cook',
+    })
     this.loadOrders()
+  },
+
+  // 身份胶囊：点它回选择页换身份
+  goRoleSelect() {
+    wx.reLaunch({ url: '/pages/role-select/role-select' })
   },
 
   async loadOrders() {

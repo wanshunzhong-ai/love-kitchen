@@ -1,0 +1,108 @@
+/* 身份选择页：全屏粉色氛围 + 两张大卡片 */
+page {
+  height: 100%;
+}
+
+.welcome {
+  min-height: 100vh;
+  box-sizing: border-box;
+  padding: 0 48rpx 60rpx;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background: linear-gradient(180deg, #FFE9EE 0%, #FFF7F2 45%, #ffffff 100%);
+}
+
+/* 品牌区 */
+.w-hero {
+  text-align: center;
+  margin-bottom: 72rpx;
+}
+
+.w-logo {
+  font-size: 96rpx;
+  line-height: 1;
+}
+
+.w-title {
+  margin-top: 20rpx;
+  font-size: 48rpx;
+  font-weight: 700;
+  color: #4A3B38;
+  letter-spacing: 4rpx;
+}
+
+.w-sub {
+  margin-top: 14rpx;
+  font-size: 27rpx;
+  color: #B9A29B;
+}
+
+/* 身份卡片 */
+.w-card {
+  display: flex;
+  align-items: center;
+  background: #ffffff;
+  border: 3rpx solid #F6E3DC;
+  border-radius: 28rpx;
+  padding: 40rpx 36rpx;
+  margin-bottom: 28rpx;
+  box-shadow: 0 8rpx 28rpx rgba(255, 122, 158, 0.08);
+}
+
+.w-card-current {
+  border-color: #FF7A9E;
+  background: #FFF5F8;
+}
+
+.wc-emoji {
+  font-size: 72rpx;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.wc-body {
+  flex: 1;
+  min-width: 0;
+  padding: 0 24rpx;
+}
+
+.wc-title {
+  display: flex;
+  align-items: center;
+  font-size: 34rpx;
+  font-weight: 700;
+  color: #4A3B38;
+}
+
+.wc-now {
+  margin-left: 14rpx;
+  font-size: 20rpx;
+  font-weight: 600;
+  color: #FF7A9E;
+  background: #FFE9EE;
+  border-radius: 999rpx;
+  padding: 4rpx 16rpx;
+}
+
+.wc-desc {
+  margin-top: 10rpx;
+  font-size: 25rpx;
+  color: #B9A29B;
+  line-height: 1.5;
+}
+
+.wc-arrow {
+  flex-shrink: 0;
+  font-size: 34rpx;
+  color: #E8CFC7;
+}
+
+/* 底部提示 */
+.w-tip {
+  margin-top: 36rpx;
+  text-align: center;
+  font-size: 23rpx;
+  color: #C9B6AF;
+  line-height: 1.6;
+}

@@ -1,11 +1,14 @@
 <view class="page">
-  <!-- 顶部问候 -->
+  <!-- 顶部问候（按身份换文案 + 身份胶囊） -->
   <view class="hero">
     <view class="hero-text">
-      <view class="hero-title">今天想吃点什么？</view>
-      <view class="hero-sub">选好后交给大厨吧 💕</view>
+      <view class="hero-title">{{role === 'cook' ? '大厨今天露一手？' : '今天想吃点什么？'}}</view>
+      <view class="hero-sub">{{role === 'cook' ? '菜单在这，也可以帮TA点几个菜 💕' : '选好后交给大厨吧 💕'}}</view>
     </view>
-    <view class="hero-add" bindtap="goAddDish">＋ 加菜</view>
+    <view class="hero-right">
+      <view class="hero-role" bindtap="goRoleSelect">{{roleInfo.emoji}} {{roleInfo.text}}</view>
+      <view class="hero-add" bindtap="goAddDish">＋ 加菜</view>
+    </view>
   </view>
 
   <!-- 搜索 -->

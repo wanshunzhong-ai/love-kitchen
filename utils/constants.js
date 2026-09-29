@@ -8,6 +8,19 @@ const CATEGORIES = [
   { key: '其他', emoji: '🍴' },
 ]
 
+// 身份（首次进入二选一）：决定默认首页与操作权限
+//   点餐人 → 默认进「点菜」，负责下单 / 改单，不推进做菜状态
+//   做饭人 → 默认进「订单」（厨房看板），负责「开始做 / 做好了」推进状态
+const ROLES = {
+  orderer: { key: 'orderer', text: '点餐人', emoji: '🍽️', home: '/pages/menu/menu' },
+  cook: { key: 'cook', text: '做饭人', emoji: '👩‍🍳', home: '/pages/orders/orders' },
+}
+
+/** 身份 key → 展示信息；非法 / 空值返回 null */
+function roleInfo(key) {
+  return ROLES[key] || null
+}
+
 // 加菜时可以选的菜品图标
 const DISH_EMOJIS = [
   '🍗', '🍖', '🥩', '🍤', '🦐', '🐟', '🥘', '🍛', '🥟', '🍜',
@@ -86,6 +99,8 @@ const DISH_NOTE_TAGS = [
 
 module.exports = {
   CATEGORIES,
+  ROLES,
+  roleInfo,
   DISH_EMOJIS,
   ORDER_STATUS,
   ORDER_STATUS_OPTIONS,

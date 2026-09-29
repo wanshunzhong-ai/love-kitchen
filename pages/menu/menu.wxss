@@ -25,6 +25,23 @@
   color: #C97B8E;
 }
 
+.hero-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 14rpx;
+  flex-shrink: 0;
+}
+
+.hero-role {
+  background: rgba(255, 255, 255, 0.9);
+  color: #B4435E;
+  font-size: 24rpx;
+  font-weight: 600;
+  padding: 10rpx 22rpx;
+  border-radius: 999rpx;
+}
+
 .hero-add {
   background: rgba(255, 255, 255, 0.9);
   color: #FF5C8A;

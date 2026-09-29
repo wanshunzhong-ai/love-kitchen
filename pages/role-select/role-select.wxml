@@ -1,0 +1,30 @@
+<view class="welcome">
+  <!-- 顶部品牌区 -->
+  <view class="w-hero">
+    <text class="w-logo">🍳</text>
+    <view class="w-title">爱心小厨房</view>
+    <view class="w-sub">{{role ? '换个身份也可以哦' : '第一次来，先告诉我你是…'}}</view>
+  </view>
+
+  <!-- 身份卡片 -->
+  <view
+    class="w-card {{role === item.key ? 'w-card-current' : ''}}"
+    wx:for="{{roles}}"
+    wx:key="key"
+    data-role="{{item.key}}"
+    bindtap="onPick"
+  >
+    <text class="wc-emoji">{{item.emoji}}</text>
+    <view class="wc-body">
+      <view class="wc-title">
+        我是{{item.text}}
+        <text wx:if="{{role === item.key}}" class="wc-now">当前身份</text>
+      </view>
+      <view class="wc-desc">{{item.key === 'orderer' ? '挑菜下单，写好口味备注，坐等开饭' : '看订单开做，做好标记上菜'}}</view>
+    </view>
+    <text class="wc-arrow">→</text>
+  </view>
+
+  <!-- 底部提示 -->
+  <view class="w-tip">选好就能进来了，之后随时可以换，不影响已有订单</view>
+</view>

@@ -3,9 +3,35 @@
   padding: 24rpx 24rpx 60rpx;
 }
 
-.filters {
-  white-space: nowrap;
+/* 身份胶囊 + 筛选行 */
+.filters-row {
+  display: flex;
+  align-items: center;
   margin-bottom: 24rpx;
+}
+
+.filters {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.role-chip {
+  flex-shrink: 0;
+  margin-left: 14rpx;
+  background: #ffffff;
+  border: 2rpx solid #F6E3DC;
+  border-radius: 999rpx;
+  padding: 10rpx 22rpx;
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #8A7772;
+}
+
+.order-wait {
+  font-size: 22rpx;
+  color: #C9B6AF;
+  margin-right: 8rpx;
 }
 
 .fchip {

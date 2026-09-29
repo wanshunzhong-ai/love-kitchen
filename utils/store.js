@@ -10,10 +10,11 @@
 // 关于每道菜的备注（note）：它挂在「行」上，跟着这一行一起下单。
 // 整单想说的话请用订单级 remark，两者在下单页各有一块输入区。
 
-const { DISH_NOTE_MAX } = require('./constants')
+const { DISH_NOTE_MAX, ROLES } = require('./constants')
 
 const CART_KEY = 'lovekitchen_cart'
 const NICK_KEY = 'lovekitchen_nick'
+const ROLE_KEY = 'lovekitchen_role'
 
 let _seq = 0
 
@@ -253,6 +254,36 @@ function setNickname(nick) {
   wx.setStorageSync(NICK_KEY, nick)
 }
 
+// ---------- 身份（点餐人 / 做饭人） ----------
+
+/** @returns {'orderer'|'cook'|''} 未选过身份返回 '' */
+function getRole() {
+  const role = wx.getStorageSync(ROLE_KEY)
+  return ROLES[role] ? role : ''
+}
+
+/** 只接受合法身份，其他值一律忽略 */
+function setRole(role) {
+  if (ROLES[role]) wx.setStorageSync(ROLE_KEY, role)
+}
+
+/** 身份 key → 展示信息（emoji / 文案 / 默认首页）；未选返回 null */
+function getRoleInfo() {
+  return ROLES[getRole()] || null
+}
+
+/**
+ * 页面 onShow 的身份守卫：没选过身份就送去选择页。
+ * @returns {string} 身份 key；返回空串时调用方应立即 return（页面正被替换）
+ */
+function ensureRole() {
+  const role = getRole()
+  if (!role) {
+    wx.reLaunch({ url: '/pages/role-select/role-select' })
+  }
+  return role
+}
+
 module.exports = {
   itemKey,
   normalizeNote,
@@ -268,4 +299,8 @@ module.exports = {
   cartCount,
   getNickname,
   setNickname,
+  getRole,
+  setRole,
+  getRoleInfo,
+  ensureRole,
 }
