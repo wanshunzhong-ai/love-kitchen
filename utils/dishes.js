@@ -14,6 +14,10 @@
 
 const seed = require('../data/dishes.js')
 
+// 批量导入的字段规整规则与 CSV 解析共用一个实现（utils/csv.js），
+// 避免「页面按 A 校验、服务按 B 校验」两边漂移。
+const csv = require('./csv')
+
 const STORAGE_KEY = 'dishes_override_v1'
 const DELETED_KEY = 'dishes_deleted_v1'
 
@@ -247,6 +251,129 @@ function stats() {
   return { ok: true, dishes: merged().length, orders: 0 }
 }
 
+// 批量导入（CSV / 粘贴）：一次读、一次写
+//
+// 为什么不做成「页面循环调 saveDish」：
+//   saveDish 每次都 loadOverride() + saveOverride()，导 200 道菜就是 400 次
+//   同步存储读写 —— 真机上会明显卡住。这里同批只落一次盘。
+//
+// 条目约定：
+//   · 带 id  → 更新那道菜（CSV 是权威来源，五个字段整体覆盖）
+//   · 不带 id → 新增；但**若当前菜单里已有同名菜，则改为更新它**，
+//              否则同一道菜会被导成两份，购物车里会出现两条一模一样的
+function importDishes(event) {
+  const list = (event && Array.isArray(event.items) ? event.items : []).filter(function (it) {
+    return it && typeof it === 'object'
+  })
+  if (!list.length) throw new Error('没有要导入的菜')
+  if (list.length > csv.IMPORT_MAX) {
+    throw new Error('一次最多导入 ' + csv.IMPORT_MAX + ' 道菜')
+  }
+
+  const override = loadOverride()
+  const deleted = loadDeletedIds()
+  const deletedBefore = deleted.length
+
+  // 当前可见的菜（seed + override - 黑名单）→ 菜名索引，用于同名判定
+  const byName = {}
+  merged().forEach(function (d) {
+    const k = nameKey(d.name)
+    if (k && byName[k] === undefined) byName[k] = d
+  })
+
+  // override 里各 id 的位置（同 id 只可能有一条）
+  const posOf = {}
+  override.forEach(function (d, i) {
+    posOf[Number(d.id)] = i
+  })
+
+  // 新 id 从当前最大 id 往后排。批内用 cursor 递增，
+  // 不能每条都调 nextId()（那会重算一遍 merged 并重复读盘）
+  let cursor = seed.length
+  Object.keys(byName).forEach(function (k) {
+    const n = Number(byName[k].id) || 0
+    if (n > cursor) cursor = n
+  })
+
+  const now = Date.now()
+  const added = []
+  const updated = []
+  const skipped = []
+
+  list.forEach(function (it, i) {
+    const s = csv.sanitizeDish(it)
+    if (!s.ok) {
+      skipped.push({ name: String(it && it.name != null ? it.name : ''), reason: s.reason })
+      return
+    }
+    const dish = s.dish
+    const key = nameKey(dish.name)
+
+    // 解析出目标 id：显式给了就用，否则按同名菜找
+    let targetId = it.id === undefined || it.id === null || it.id === '' ? NaN : Number(it.id)
+    if (isNaN(targetId)) {
+      const hit = byName[key]
+      targetId = hit ? Number(hit.id) : NaN
+    }
+
+    const at = posOf[targetId]
+
+    let doc
+    if (isNaN(targetId)) {
+      cursor += 1
+      doc = Object.assign({}, dish, { id: cursor, created_at: now + i, updated_at: now + i })
+      override.push(doc)
+      posOf[cursor] = override.length - 1
+      added.push(dish.name)
+    } else {
+      // 编辑已有菜：以它当前的样子为底，再盖上 CSV 里的五个字段
+      const base = at === undefined ? findById(targetId) || {} : override[at] || {}
+
+      // 改名字时把旧名字从索引里撤掉，免得同一批后面的条目还按旧名找到它
+      const oldKey = nameKey(base.name)
+      if (oldKey && oldKey !== key && byName[oldKey] && Number(byName[oldKey].id) === targetId) {
+        delete byName[oldKey]
+      }
+
+      doc = Object.assign({}, base, dish, {
+        id: targetId,
+        created_at: Number(base.created_at) || now + i,
+        updated_at: now + i,
+      })
+      if (at === undefined) {
+        override.push(doc)
+        posOf[targetId] = override.length - 1
+      } else {
+        override[at] = doc
+      }
+      // 进过黑名单说明是被下架过的，这次导入即视为重新上架
+      const di = deleted.indexOf(targetId)
+      if (di >= 0) deleted.splice(di, 1)
+      updated.push(dish.name)
+    }
+    byName[key] = doc
+  })
+
+  if (added.length || updated.length) saveOverride(override)
+  if (deleted.length !== deletedBefore) saveDeletedIds(deleted)
+
+  return {
+    ok: true,
+    added: added.length,
+    updated: updated.length,
+    skipped: skipped.length,
+    skippedItems: skipped,
+    total: merged().length,
+  }
+}
+
+// 菜名归一化：判重名用它（去空白 + 忽略大小写）
+function nameKey(name) {
+  return String(name == null ? '' : name)
+    .trim()
+    .toLowerCase()
+}
+
 // ---------- 路由 ----------
 
 const ACTIONS = {
@@ -254,6 +381,7 @@ const ACTIONS = {
   getDish: getDish,
   saveDish: saveDish,
   deleteDish: deleteDish,
+  importDishes: importDishes,
   stats: stats,
 }
 

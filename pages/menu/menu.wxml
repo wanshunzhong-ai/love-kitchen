@@ -3,11 +3,15 @@
   <view class="hero">
     <view class="hero-text">
       <view class="hero-title">{{role === 'cook' ? '菜单由你打理' : '今天想吃点什么？'}}</view>
-      <view class="hero-sub">{{role === 'cook' ? '点菜名可以改菜、下架，右上角「＋ 加菜」上新的' : '选好后交给掌勺人吧 💕'}}</view>
+      <view class="hero-sub">{{role === 'cook' ? '点菜名改菜、下架；「批量」一次导入' : '选好后交给掌勺人吧 💕'}}</view>
     </view>
     <view class="hero-right">
       <view class="hero-role" bindtap="goProfile">{{roleInfo.emoji}} {{roleInfo.text}}</view>
-      <view class="hero-add" bindtap="goAddDish">＋ 加菜</view>
+      <!-- 加菜 / 批量导入并排（同一权限：两种身份都能维护菜单） -->
+      <view class="hero-btns">
+        <view class="hero-add" bindtap="goAddDish">＋ 加菜</view>
+        <view class="hero-import" bindtap="goImportDishes">📥 批量</view>
+      </view>
     </view>
   </view>
 

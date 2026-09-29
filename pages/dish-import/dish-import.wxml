@@ -1,0 +1,193 @@
+<view class="page {{stage === 'preview' ? 'page-foot' : ''}}">
+  <!-- ============ 第一步：弄到内容 ============ -->
+  <block wx:if="{{stage === 'input'}}">
+    <view class="hero">
+      <view class="hero-title">批量加菜 📥</view>
+      <view class="hero-sub">把整理好的菜单一次导进来，不用一道一道敲</view>
+    </view>
+
+    <view class="card sec">
+      <view class="sec-title">① 把内容给我</view>
+      <view class="sec-sub">三种方式，随手边方便的那个用</view>
+
+      <view class="pick" bindtap="onPickFile">
+        <text class="pick-emoji">📄</text>
+        <view class="pick-text">
+          <view class="pick-name">从微信聊天选文件</view>
+          <view class="pick-desc">先把 .csv 文件发给自己，再从这里选</view>
+        </view>
+        <text class="pick-arrow">›</text>
+      </view>
+
+      <view class="pick" bindtap="onReadClipboard">
+        <text class="pick-emoji">📋</text>
+        <view class="pick-text">
+          <view class="pick-name">从剪贴板粘贴</view>
+          <view class="pick-desc">在电脑上从表格里复制好，点这里就行</view>
+        </view>
+        <text class="pick-arrow">›</text>
+      </view>
+
+      <view class="paste-label">
+        <text>或者直接粘在下面</text>
+        <text wx:if="{{sourceLabel}}" class="paste-src">当前来源：{{sourceLabel}}</text>
+      </view>
+      <textarea
+        class="paste"
+        value="{{pasteText}}"
+        placeholder="菜名,分类,图标,辣度,介绍&#10;番茄炒蛋,经典热菜,🍅,不辣,酸甜下饭"
+        placeholder-class="ph"
+        maxlength="-1"
+        auto-height
+        bindinput="onPasteInput"
+      />
+      <button class="btn-main parse-btn" bindtap="onParse">解析一下</button>
+    </view>
+
+    <view class="card sec">
+      <view class="sec-title">② 每一列填什么</view>
+      <view class="fmt">
+        <view class="fmt-row">
+          <text class="fmt-key">菜名</text>
+          <text class="fmt-val">必填，最多 {{nameMax}} 字。同名的会被当成同一道菜</text>
+        </view>
+        <view class="fmt-row">
+          <text class="fmt-key">分类</text>
+          <text class="fmt-val">{{categoryHint}}</text>
+        </view>
+        <view class="fmt-row">
+          <text class="fmt-key">图标</text>
+          <text class="fmt-val">一个表情，像 🍅。不填就按分类给默认图标</text>
+        </view>
+        <view class="fmt-row">
+          <text class="fmt-key">辣度</text>
+          <text class="fmt-val">{{spiceHint}}（不填按不辣）</text>
+        </view>
+        <view class="fmt-row">
+          <text class="fmt-key">介绍</text>
+          <text class="fmt-val">可不填，最多 {{descMax}} 字</text>
+        </view>
+      </view>
+      <view class="fmt-tip">
+        第一行表头可以留可以删，列的顺序也能换（认表头）。从 Excel 直接复制是制表符分隔，一样能认。
+      </view>
+    </view>
+
+    <view class="card sec">
+      <view class="sec-title">懒人办法</view>
+      <view class="quick-row">
+        <view class="quick" bindtap="onCopyTemplate">
+          <text class="quick-emoji">📝</text>
+          <text class="quick-name">复制模板</text>
+        </view>
+        <view class="quick" bindtap="onCopyMenu">
+          <text class="quick-emoji">📤</text>
+          <text class="quick-name">导出菜单</text>
+        </view>
+      </view>
+      <view class="fmt-tip">
+        复制模板 → 粘到电脑上把示例改成你的菜 → 复制回来 → 粘贴解析。
+        导出菜单则是反过来：把现在的 {{menuCount}} 道菜导出去改，改完再导回来。
+      </view>
+    </view>
+  </block>
+
+  <!-- ============ 第二步：预览确认 ============ -->
+  <block wx:elif="{{stage === 'preview'}}">
+    <view class="hero hero-preview">
+      <view class="hero-title">看一眼再导</view>
+      <view class="hero-sub">{{hint}}</view>
+    </view>
+
+    <view class="card sec">
+      <view class="tally">
+        <view class="tally-item">
+          <text class="tally-num num-add">{{stats.add}}</text>
+          <text class="tally-label">要新增</text>
+        </view>
+        <view class="tally-item">
+          <text class="tally-num num-upd">{{stats.update}}</text>
+          <text class="tally-label">要覆盖</text>
+        </view>
+        <view class="tally-item">
+          <text class="tally-num num-skip">{{stats.skip}}</text>
+          <text class="tally-label">会跳过</text>
+        </view>
+        <view class="tally-item">
+          <text class="tally-num num-err">{{stats.error}}</text>
+          <text class="tally-label">有问题</text>
+        </view>
+      </view>
+
+      <!-- 只有真的撞上同名菜时才让人选，平时不拿这个选项烦人 -->
+      <block wx:if="{{hasSame}}">
+        <view class="mode-tip">发现有和现有菜单重名的菜，你想怎么办？</view>
+        <view class="mode-row">
+          <view class="mode {{mode === 'skip' ? 'mode-on' : ''}}" data-mode="skip" bindtap="onSetMode">
+            <view class="mode-name">跳过它</view>
+            <view class="mode-desc">菜单里原来的不动</view>
+          </view>
+          <view class="mode {{mode === 'update' ? 'mode-on' : ''}}" data-mode="update" bindtap="onSetMode">
+            <view class="mode-name">覆盖它</view>
+            <view class="mode-desc">用新的这份替换</view>
+          </view>
+        </view>
+      </block>
+    </view>
+
+    <!-- 有问题的行单独说清楚，不然用户不知道哪一行要改 -->
+    <view wx:if="{{errors.length}}" class="card sec sec-warn">
+      <view class="sec-title">这 {{errors.length}} 行没读懂，会被略过</view>
+      <view class="err" wx:for="{{errors}}" wx:key="line">
+        <text class="err-line">第 {{item.line}} 行</text>
+        <view class="err-body">
+          <text class="err-reason">{{item.reason}}</text>
+          <text wx:if="{{item.raw}}" class="err-raw">{{item.raw}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="card sec">
+      <view class="sec-title">逐行清单（{{rows.length}} 道）</view>
+      <view class="pr" wx:for="{{shownRows}}" wx:key="line">
+        <text class="pr-line">{{item.line}}</text>
+        <text class="pr-emoji">{{item.emoji}}</text>
+        <view class="pr-main">
+          <view class="pr-head">
+            <text class="pr-name">{{item.name}}</text>
+            <text class="pr-badge pr-{{item.action}}">
+              {{item.action === 'add' ? '新增' : item.action === 'update' ? '覆盖' : '跳过'}}
+            </text>
+          </view>
+          <view class="pr-meta">{{item.category}} · {{item.spice}}</view>
+          <view wx:if="{{item.reason}}" class="pr-reason">{{item.reason}}</view>
+          <view wx:for="{{item.notes}}" wx:for-item="note" wx:key="*this" class="pr-note">⚠️ {{note}}</view>
+        </view>
+      </view>
+      <view wx:if="{{moreRows}}" class="more-tip">还有 {{moreRows}} 道没列出来，导入时一并处理</view>
+    </view>
+
+    <view class="foot">
+      <button class="btn-main" bindtap="onImport" disabled="{{importing || (stats.add + stats.update === 0)}}">
+        {{importing ? '正在导入…' : '导入这 ' + (stats.add + stats.update) + ' 道菜'}}
+      </button>
+      <view class="foot-ghost" bindtap="onReset">换一份内容</view>
+    </view>
+  </block>
+
+  <!-- ============ 第三步：结果 ============ -->
+  <block wx:else>
+    <view class="state">
+      <text class="state-emoji">🎉</text>
+      <text class="done-title">导好啦</text>
+      <view class="done-lines">
+        <view class="done-line" wx:if="{{result.added}}">新添了 <text class="done-num">{{result.added}}</text> 道菜</view>
+        <view class="done-line" wx:if="{{result.updated}}">更新了 <text class="done-num">{{result.updated}}</text> 道菜</view>
+        <view class="done-line" wx:if="{{result.skipped}}">跳过了 <text class="done-num">{{result.skipped}}</text> 道</view>
+        <view class="done-line">现在菜单上一共 <text class="done-num">{{result.total}}</text> 道菜</view>
+      </view>
+      <button class="btn-retry" bindtap="onBackToMenu">回菜单看看</button>
+      <view class="foot-ghost" bindtap="onReset">再导一份</view>
+    </view>
+  </block>
+</view>

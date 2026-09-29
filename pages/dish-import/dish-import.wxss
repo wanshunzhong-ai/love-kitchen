@@ -1,0 +1,501 @@
+/* 批量加菜（CSV 导入）页 */
+.page {
+  padding: 24rpx 24rpx 0;
+  /* 底部留出全面屏手势条 */
+  padding-bottom: 60rpx;
+  padding-bottom: calc(40rpx + constant(safe-area-inset-bottom));
+  padding-bottom: calc(40rpx + env(safe-area-inset-bottom));
+}
+
+/* 预览阶段底部有固定操作条（约 200rpx），内容要让位
+   （不用 :has()，小程序 WXSS 不支持，改由数据驱动加类名） */
+.page-foot {
+  padding-bottom: 240rpx;
+  padding-bottom: calc(220rpx + constant(safe-area-inset-bottom));
+  padding-bottom: calc(220rpx + env(safe-area-inset-bottom));
+}
+
+.hero {
+  background: linear-gradient(135deg, #FFD3E0, #FFE9C7);
+  border-radius: 24rpx;
+  padding: 32rpx;
+  margin-bottom: 24rpx;
+}
+
+.hero-preview {
+  background: linear-gradient(135deg, #E4F3FF, #FFE9C7);
+}
+
+.hero-title {
+  font-size: 40rpx;
+  font-weight: 700;
+  color: #B4435E;
+}
+
+.hero-sub {
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  line-height: 1.5;
+  color: #C97B8E;
+}
+
+.sec {
+  padding: 28rpx;
+  margin-bottom: 24rpx;
+}
+
+.sec-title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #4A3B38;
+}
+
+.sec-sub {
+  margin-top: 6rpx;
+  margin-bottom: 20rpx;
+  font-size: 22rpx;
+  color: #B9A29B;
+}
+
+/* ---------- 三个入口 ---------- */
+
+.pick {
+  display: flex;
+  align-items: center;
+  background: #FFFBF9;
+  border: 2rpx solid #F6E3DC;
+  border-radius: 20rpx;
+  padding: 22rpx 24rpx;
+  /* 不用 flex gap：低版本安卓内核不支持，改子项外边距 */
+  margin-bottom: 16rpx;
+}
+
+.pick-emoji {
+  font-size: 40rpx;
+  margin-right: 20rpx;
+}
+
+.pick-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.pick-name {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #4A3B38;
+}
+
+.pick-desc {
+  margin-top: 4rpx;
+  font-size: 22rpx;
+  color: #B9A29B;
+}
+
+.pick-arrow {
+  font-size: 40rpx;
+  color: #D8C7C1;
+  margin-left: 12rpx;
+}
+
+.paste-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 24rpx 0 12rpx;
+  font-size: 24rpx;
+  color: #8A7772;
+}
+
+.paste-src {
+  font-size: 22rpx;
+  color: #FF7A9E;
+  max-width: 320rpx;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.paste {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 180rpx;
+  max-height: 480rpx;
+  background: #FFFBF9;
+  border-radius: 16rpx;
+  padding: 20rpx 24rpx;
+  font-size: 26rpx;
+  line-height: 1.6;
+  color: #4A3B38;
+}
+
+.ph {
+  color: #D8C7C1;
+  font-size: 26rpx;
+}
+
+.parse-btn {
+  margin-top: 20rpx;
+  line-height: 88rpx;
+  font-size: 30rpx;
+}
+
+/* ---------- 列格式说明 ---------- */
+
+.fmt {
+  margin-top: 8rpx;
+}
+
+.fmt-row {
+  display: flex;
+  align-items: flex-start;
+  padding: 12rpx 0;
+  border-bottom: 2rpx solid #FDF1EC;
+}
+
+.fmt-row:last-child {
+  border-bottom: none;
+}
+
+.fmt-key {
+  width: 96rpx;
+  flex-shrink: 0;
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #FF7A9E;
+}
+
+.fmt-val {
+  flex: 1;
+  min-width: 0;
+  font-size: 24rpx;
+  line-height: 1.5;
+  color: #8A7772;
+  word-break: break-all;
+}
+
+.fmt-tip {
+  margin-top: 18rpx;
+  padding: 18rpx 20rpx;
+  background: #FFF7F3;
+  border-radius: 16rpx;
+  font-size: 22rpx;
+  line-height: 1.6;
+  color: #B08C82;
+}
+
+/* ---------- 快捷：复制模板 / 导出菜单 ---------- */
+
+.quick-row {
+  display: flex;
+  margin-top: 8rpx;
+}
+
+.quick {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #FFF7F3;
+  border: 2rpx solid #F6E3DC;
+  border-radius: 20rpx;
+  padding: 22rpx 0;
+}
+
+.quick:first-child {
+  margin-right: 16rpx;
+}
+
+.quick-emoji {
+  font-size: 32rpx;
+  margin-right: 12rpx;
+}
+
+.quick-name {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #C9557A;
+}
+
+/* ---------- 统计条 ---------- */
+
+.tally {
+  display: flex;
+}
+
+.tally-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.tally-num {
+  font-size: 44rpx;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.num-add {
+  color: #4CAF7D;
+}
+
+.num-upd {
+  color: #FF9F43;
+}
+
+.num-skip {
+  color: #B9A29B;
+}
+
+.num-err {
+  color: #E45C6E;
+}
+
+.tally-label {
+  margin-top: 6rpx;
+  font-size: 22rpx;
+  color: #8A7772;
+}
+
+/* ---------- 同名菜处理 ---------- */
+
+.mode-tip {
+  margin-top: 28rpx;
+  font-size: 24rpx;
+  color: #8A7772;
+}
+
+.mode-row {
+  display: flex;
+  margin-top: 16rpx;
+}
+
+.mode {
+  flex: 1;
+  padding: 20rpx;
+  border-radius: 20rpx;
+  background: #FFFBF9;
+  border: 2rpx solid #F6E3DC;
+}
+
+.mode:first-child {
+  margin-right: 16rpx;
+}
+
+.mode-on {
+  background: #FFE9EE;
+  border-color: #FF7A9E;
+}
+
+.mode-name {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #4A3B38;
+}
+
+.mode-desc {
+  margin-top: 6rpx;
+  font-size: 22rpx;
+  line-height: 1.4;
+  color: #B9A29B;
+}
+
+/* ---------- 有问题的行 ---------- */
+
+.sec-warn {
+  background: #FFF6F7;
+  border: 2rpx solid #FFDCE2;
+}
+
+.err {
+  display: flex;
+  padding: 16rpx 0;
+  border-bottom: 2rpx solid #FFE7EB;
+}
+
+.err:last-child {
+  border-bottom: none;
+}
+
+.err-line {
+  width: 130rpx;
+  flex-shrink: 0;
+  font-size: 22rpx;
+  color: #E45C6E;
+  padding-top: 4rpx;
+}
+
+.err-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.err-reason {
+  display: block;
+  font-size: 24rpx;
+  line-height: 1.5;
+  color: #4A3B38;
+}
+
+.err-raw {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 22rpx;
+  line-height: 1.5;
+  color: #B9A29B;
+  word-break: break-all;
+}
+
+/* ---------- 逐行清单 ---------- */
+
+.pr {
+  display: flex;
+  align-items: flex-start;
+  padding: 18rpx 0;
+  border-bottom: 2rpx solid #FDF1EC;
+}
+
+.pr:last-child {
+  border-bottom: none;
+}
+
+.pr-line {
+  width: 56rpx;
+  flex-shrink: 0;
+  font-size: 22rpx;
+  color: #CBB8B2;
+  padding-top: 6rpx;
+}
+
+.pr-emoji {
+  font-size: 36rpx;
+  margin-right: 16rpx;
+}
+
+.pr-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.pr-head {
+  display: flex;
+  align-items: center;
+}
+
+.pr-name {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #4A3B38;
+  max-width: 360rpx;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.pr-badge {
+  margin-left: 14rpx;
+  font-size: 22rpx;
+  padding: 2rpx 14rpx;
+  border-radius: 999rpx;
+  flex-shrink: 0;
+}
+
+.pr-add {
+  background: #E4F6EC;
+  color: #3E9A6C;
+}
+
+.pr-update {
+  background: #FFF0DC;
+  color: #D9862B;
+}
+
+.pr-skip {
+  background: #F3EFEE;
+  color: #9C8A84;
+}
+
+.pr-meta {
+  margin-top: 6rpx;
+  font-size: 22rpx;
+  color: #B9A29B;
+}
+
+.pr-reason {
+  margin-top: 6rpx;
+  font-size: 22rpx;
+  line-height: 1.5;
+  color: #B08C82;
+}
+
+.pr-note {
+  margin-top: 4rpx;
+  font-size: 22rpx;
+  line-height: 1.5;
+  color: #D9862B;
+}
+
+.more-tip {
+  margin-top: 20rpx;
+  text-align: center;
+  font-size: 22rpx;
+  color: #B9A29B;
+}
+
+/* ---------- 底部固定操作条 ---------- */
+
+.foot {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  background: rgba(255, 255, 255, 0.97);
+  padding: 20rpx 32rpx 20rpx;
+  /* 安全区双写：env 单独用没有兜底，老环境整条会失效 */
+  padding-bottom: calc(20rpx + constant(safe-area-inset-bottom));
+  padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
+  box-shadow: 0 -6rpx 24rpx rgba(255, 122, 158, 0.1);
+}
+
+.foot .btn-main {
+  line-height: 92rpx;
+  font-size: 30rpx;
+}
+
+.foot-ghost {
+  margin-top: 16rpx;
+  text-align: center;
+  font-size: 24rpx;
+  color: #C97B8E;
+  padding: 8rpx;
+}
+
+/* ---------- 结果 ---------- */
+
+.done-title {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #4A3B38;
+  margin-bottom: 24rpx;
+}
+
+.done-lines {
+  width: 100%;
+  margin-bottom: 40rpx;
+}
+
+.done-line {
+  font-size: 27rpx;
+  line-height: 1.9;
+  color: #8A7772;
+  text-align: center;
+}
+
+.done-num {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #FF7A9E;
+  padding: 0 6rpx;
+}

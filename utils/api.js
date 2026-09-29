@@ -19,7 +19,7 @@ const localDishes = require('./dishes')
 const localOrders = require('./orders')
 
 // 菜品 action：由 utils/dishes.js 接管
-const DISH_ACTIONS = ['listDishes', 'getDish', 'saveDish', 'deleteDish']
+const DISH_ACTIONS = ['listDishes', 'getDish', 'saveDish', 'deleteDish', 'importDishes']
 
 // 订单 action：由 utils/orders.js 接管
 const ORDER_ACTIONS = [

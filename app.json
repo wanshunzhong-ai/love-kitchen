@@ -6,6 +6,7 @@
     "pages/todo/todo",
     "pages/checkout/checkout",
     "pages/dish-edit/dish-edit",
+    "pages/dish-import/dish-import",
     "pages/order-edit/order-edit",
     "pages/review/review",
     "pages/profile/profile"

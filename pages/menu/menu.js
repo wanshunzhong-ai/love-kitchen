@@ -217,6 +217,11 @@ Page({
     wx.navigateTo({ url: '/pages/dish-edit/dish-edit' })
   },
 
+  // 批量加菜（CSV / 粘贴导入）。与「＋ 加菜」同一权限：两种身份都能维护菜单。
+  goImportDishes() {
+    wx.navigateTo({ url: '/pages/dish-import/dish-import' })
+  },
+
   goCart() {
     if (this.data.isCook) return
     if (this.data.cartCount <= 0) return
