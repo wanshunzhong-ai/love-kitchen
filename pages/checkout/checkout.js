@@ -258,7 +258,8 @@ Page({
           items: items,
           remark: (this.data.remark || '').trim(),
           order_by: nickname,
-          status: 'pending',
+          // 刻意不传 status：新单固定是「待开做」，由服务端写死
+          // （状态只由掌勺人推进 / 驳回，客户端不是状态的主人）
           dine_date: this.data.dineDate,
           dine_slot: this.data.dineSlot,
         },
