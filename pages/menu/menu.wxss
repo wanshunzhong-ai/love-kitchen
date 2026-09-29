@@ -52,6 +52,16 @@
   box-shadow: 0 4rpx 12rpx rgba(255, 122, 158, 0.25);
 }
 
+/* 点餐人没有「订单」tab：从点菜页进订单看状态 / 改单 */
+.hero-orders {
+  background: rgba(255, 255, 255, 0.9);
+  color: #B4435E;
+  font-size: 24rpx;
+  font-weight: 600;
+  padding: 12rpx 24rpx;
+  border-radius: 999rpx;
+}
+
 /* 搜索 */
 .search {
   display: flex;
