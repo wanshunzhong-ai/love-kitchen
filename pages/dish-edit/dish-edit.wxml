@@ -4,6 +4,14 @@
     <text class="state-tip">正在翻菜单…</text>
   </view>
 
+  <!-- 加载失败：留在本页重试，不把人踢回列表 -->
+  <view wx:elif="{{loadError}}" class="state">
+    <text class="state-emoji">😵</text>
+    <text class="state-tip">这道菜没加载出来</text>
+    <text class="state-sub">网络开小差了，稍后再试试</text>
+    <button class="btn-retry" bindtap="onRetry">重新加载</button>
+  </view>
+
   <block wx:else>
     <view class="card section">
       <view class="section-title">菜名</view>

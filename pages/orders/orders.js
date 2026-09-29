@@ -84,6 +84,9 @@ Page({
         if (self.data.loading) self.setData({ loading: false, loadError: true })
         return
       }
+      // 数据没变就别重画整棵列表：d.primed = 已过首帧，d.any = 有真实变化。
+      // 15 秒一档的轮询里绝大多数轮次都是「没变」，全量 map + setData 纯白耗。
+      if (d && d.primed && !d.any) return
       self.render(orders)
       // 提示文案按「当前身份」算：同一个页面掌勺人看到的是「来新单」，
       // 干饭人看到的是「开始做 / 上菜了」
@@ -182,6 +185,11 @@ Page({
 
   onTapNotice() {
     const n = this.data.notice
+    // 撤销删除的提示条：点了就反悔
+    if (n && n.undo) {
+      this.onUndoDelete()
+      return
+    }
     this.hideNotice()
     if (!n || !n.path) return
     // 已经在订单页了（本页就是提示的目标）→ 收起提示就行
@@ -239,6 +247,7 @@ Page({
       this.setData({ orders: orders })
       this.applyFilter()
       ui.toast(ORDER_STATUS[nextStatus].text)
+      ui.haptic('medium')
     } catch (err) {
       ui.hideLoading()
       console.error('[orders] 状态更新失败', err)
@@ -429,7 +438,7 @@ Page({
     live.pause()
     wx.showModal({
       title: '删掉这一单？',
-      content: '删掉就找不回来了哦',
+      content: '删掉后 5 秒内可以撤销',
       confirmText: '删掉',
       confirmColor: '#FF7A9E',
       cancelText: '再想想',
@@ -442,27 +451,58 @@ Page({
     })
   },
 
+  /**
+   * 删除 = 先「假装删了」，5 秒后才真正发请求。
+   * 本地先移除（列表立刻少一行），顶部出一条「已删除 · 点这里撤销」；
+   * 点了撤销就取消定时器并拉回最新数据，没点 5 秒后真正调 deleteOrder。
+   * 误触从此有 5 秒反悔期，不再「删掉就找不回来」。
+   */
   async doDeleteOrder(order) {
-    ui.showLoading('删除中…')
-    try {
-      const res = await api.call('deleteOrder', { id: order.id })
-      ui.hideLoading()
-      if (!res.removed) {
-        ui.toast('没删掉，再试一次')
-        return
-      }
-      // 本地同步移除，避免再拉一次接口
-      const orders = this.data.orders.filter(function (o) {
-        return o.id !== order.id
-      })
-      this.setData({ orders: orders })
-      this.applyFilter()
-      ui.toast('已删除')
-    } catch (err) {
-      ui.hideLoading()
-      console.error('[orders] 删除订单失败', err)
-      ui.toast('网络开小差了，稍后再试')
+    const self = this
+    // 本地同步移除，避免再拉一次接口
+    const orders = this.data.orders.filter(function (o) {
+      return o.id !== order.id
+    })
+    this.setData({ orders: orders, loading: false })
+    this.applyFilter()
+
+    // 上一单还没删完又删了一单：旧的定时器作废，立刻把上一单真删掉
+    if (this._deleteTimer) {
+      clearTimeout(this._deleteTimer)
+      this._deleteTimer = null
+      const prev = this._pendingDelete
+      this._pendingDelete = null
+      if (prev) api.call('deleteOrder', { id: prev.id }).catch(function () {})
     }
+    this._pendingDelete = order
+    this.showNotice({
+      key: 'deleted',
+      undo: true,
+      emoji: '🗑️',
+      text: '已删除一单，点这里撤销',
+    })
+    this._deleteTimer = setTimeout(function () {
+      self._deleteTimer = null
+      const pending = self._pendingDelete
+      self._pendingDelete = null
+      if (!pending) return
+      api.call('deleteOrder', { id: pending.id }).catch(function (err) {
+        console.error('[orders] 删除订单失败', err)
+        ui.toast('没删干净，稍后再试一次')
+      })
+    }, 5000)
+  },
+
+  // 提示条上的「撤销」：取消待删定时器，单子随下一轮轮询回来
+  onUndoDelete() {
+    if (this._deleteTimer) {
+      clearTimeout(this._deleteTimer)
+      this._deleteTimer = null
+    }
+    this._pendingDelete = null
+    this.hideNotice()
+    ui.toast('已撤销，单子回来啦', 'success')
+    live.refreshNow()
   },
 
   goMenu() {

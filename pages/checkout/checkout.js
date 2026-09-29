@@ -108,20 +108,57 @@ Page({
     })
   },
 
-  // 数量加减：按行身份（uid）定位，同菜不同辣度互不影响
+  // 数量加减：按行身份（uid）定位，同菜不同辣度互不影响。
+  // qty=1 时点「−」不许静默删行——历史上这一下会把菜悄悄删掉，找回都没处找；
+  // 改成弹确认，用户真想删就删得明明白白。
   onQtyChange(e) {
     const uid = e.currentTarget.dataset.uid
     const delta = Number(e.currentTarget.dataset.delta)
+    if (delta < 0) {
+      const row = this.data.cart.find(function (it) {
+        return it.uid === uid
+      })
+      if (row && Number(row.qty) <= 1) {
+        const self = this
+        wx.showModal({
+          title: '把「' + row.name + '」删掉？',
+          content: '数量已经是 1 了，再减这一行就没了',
+          confirmText: '删掉',
+          cancelText: '留着',
+          success: function (res) {
+            if (!res.confirm) return
+            store.removeFromCart(uid)
+            if (self.data.editorUid === uid) self.setData({ editorUid: '' })
+            self.refreshCart()
+          },
+        })
+        return
+      }
+    }
     store.changeQty(uid, delta)
     this.refreshCart()
   },
 
+  // 直接删行：同样给个确认，误触不再无法挽回
   onRemoveItem(e) {
     const uid = e.currentTarget.dataset.uid
-    store.removeFromCart(uid)
-    // 面板正开着这一行时，把它一起关掉
-    if (this.data.editorOpen && this.data.editorUid === uid) this.closeEditor()
-    this.refreshCart()
+    const row = this.data.cart.find(function (it) {
+      return it.uid === uid
+    })
+    if (!row) return
+    const self = this
+    wx.showModal({
+      title: '把「' + row.name + '」删掉？',
+      confirmText: '删掉',
+      cancelText: '留着',
+      success: function (res) {
+        if (!res.confirm) return
+        store.removeFromCart(uid)
+        // 面板正开着这一行时，把它一起关掉
+        if (self.data.editorOpen && self.data.editorUid === uid) self.closeEditor()
+        self.refreshCart()
+      },
+    })
   },
 
   // 单道菜的备注：点列表里那一行备注就能直接写，不必打开面板。
@@ -240,6 +277,7 @@ Page({
     }
     const nickname = (this.data.nickname || '').trim() || '宝贝'
     store.setNickname(nickname)
+    ui.haptic('medium')
     this.setData({ submitting: true })
     ui.showLoading('下单中…')
     try {

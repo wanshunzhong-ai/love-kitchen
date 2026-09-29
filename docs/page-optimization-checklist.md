@@ -1,47 +1,47 @@
 # 页面层优化清单
 
 > 2026-09-29 全页面审查产出（pages/ 全部 9 页 + custom-tab-bar + app.js/app.wxss + utils/ui.js、live.js、store.js、components/dish-editor）。
-> 本清单只存档，未实施。将来动手时从「四、优先顺序」开始。
+> **优先前 5 组（H1-H7）已于 2026-09-29 晚实施完成**（见各条 ✅ 标记）；其余仍待实施。
 
 ---
 
 ## 一、高价值（用户能直接感知）
 
-### H1. 菜单页每次 onShow 全量重载，闪 loading + 丢失滚动位置
+### ✅ H1. 菜单页每次 onShow 全量重载，闪 loading + 丢失滚动位置
 - 位置：`pages/menu/menu.js:66-90`（loadDishes 设 `loading:true`）、`menu.js:51`（onShow 每次调用）、`menu.wxml:46-49`
 - 现状：从 dish-edit 改完菜返回、从 checkout 返回、每次切 tab 回来，303 道菜的列表先被「正在摆盘…」占位替换、再整列表 setData 重画；滚动位置随之丢失回到顶部。下拉刷新（menu.js:254-258）同样会闪。
 - 建议：`dishes.length` 非空时不置 loading（stale-while-revalidate：先渲染旧列表，请求回来静默 setData）。
 - 改动量：小-中
 
-### H2. 冷启动每次都强制走身份选择页
+### ✅ H2. 冷启动每次都强制走身份选择页
 - 位置：`app.json:3`（首页是 role-select）；`pages/role-select/role-select.js:16-38`
 - 现状：已选过身份的老用户每次冷启动都要手动点一次卡片才能进功能页。
 - 建议：已有身份时顶部加「继续作为 {身份} 进入 →」主按钮（或 800ms 自动 reLaunch），点其它卡片仍可换身份。
 - 改动量：小
 
-### H3. 轮询每轮全量重渲染 orders/todo 列表（无视 diff）
+### ✅ H3. 轮询每轮全量重渲染 orders/todo 列表（无视 diff）
 - 位置：`pages/orders/orders.js:78-92 + 123-159`；`pages/todo/todo.js:71-81 + 112-127`
 - 现状：live.js 已算好差异（`d.any`，15/30/60s 三档轮询），但页面每轮整列表 setData。订单多时每 15s 一次大树 diff，读评价时内容重排，白耗电。
 - 建议：订阅回调里 `if (d && d.primed && !d.any) return`（首帧与真变化才 render）；进阶可按订单 id 做路径级 setData。
 - 改动量：小
 
-### H4. 购物车数量减到 1 再点「−」静默删行；删除类操作全无撤销
+### ✅ H4. 购物车数量减到 1 再点「−」静默删行；删除类操作全无撤销
 - 位置：`pages/checkout/checkout.wxml:56-60`、`checkout.js:112-125`（`utils/store.js:122-140` qty≤0 直接移除）；删单 `pages/orders/orders.js:417-466`、下架菜 `pages/dish-edit/dish-edit.js:108-134` 只有确认无撤销
 - 现状：qty=1 时点「−」菜直接消失，无提示无恢复；删单/下架文案明说「找不回来了」。
 - 建议：① stepper qty=1 时「−」置灰或点它弹确认；② 删单改「先本地移除 + toast『已删除 · 撤销』，5 秒后真正调 deleteOrder」；至少给 checkout 的 ✕ 加确认。
 - 改动量：小（①）/中（②）
 
-### H5. 全局零触感反馈（haptic）
+### ✅ H5. 全局零触感反馈（haptic）
 - 位置：全仓库无 `vibrateShort`。涉及加购 `menu.js:191`、推进状态 `orders.js:217` / `todo.js:162`、下单 `checkout.js:234`、打星 `review.js:144`
 - 建议：`utils/ui.js` 加 `haptic(type)` 封装（wx.vibrateShort，light/heavy，失败静默），关键确认操作各加一行。
 - 改动量：小
 
-### H6. review 页错误态没有重试按钮；dish-edit 加载失败直接被踢回
+### ✅ H6. review 页错误态没有重试按钮；dish-edit 加载失败直接被踢回
 - 位置：`pages/review/review.wxml:31-35`（只有文案「下拉刷新即可」，json 已开下拉但用户不知道）；`pages/dish-edit/dish-edit.js:48-54`（失败 toast 后 800ms navigateBack）
 - 建议：review 补 `btn-retry`（复用 app.wxss 的 .state/.btn-retry）；dish-edit 改页内错误态+重试。
 - 改动量：小
 
-### H7. 断网无全局感知
+### ✅ H7. 断网无全局感知
 - 位置：全仓库无 `onNetworkStatusChange`，失败全靠点按钮后的 toast「网络开小差了」。
 - 建议：app.js onLaunch 监听，断网时全局提示。
 - 改动量：小
@@ -68,7 +68,7 @@
 - **L6** menu loading 态下「🎲 今天吃什么」仍显示且基于旧数据（`menu.wxml:91`）。小。
 - **L7** 评价区随轮询整列表 setData 重建（H3 修掉后自然缓解），无需单独处理。
 
-## 四、将来实施的优先顺序（前 5 项）
+## 四、优先顺序（前 5 项，已实施）
 
 1. **H1** 菜单缓存 + 静默刷新（高频路径、保滚动位置）
 2. **H2** 冷启动已选身份一键继续

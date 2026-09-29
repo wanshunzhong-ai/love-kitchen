@@ -75,6 +75,8 @@ Page({
         if (self.data.loading) self.setData({ loading: false, loadError: true })
         return
       }
+      // 数据没变就别重画看板（d.primed = 已过首帧，d.any = 有真实变化）
+      if (d && d.primed && !d.any) return
       self.render(orders)
       const n = live.notice(d, orders, 'cook')
       if (n) self.showNotice(n)
@@ -170,6 +172,7 @@ Page({
         return
       }
       ui.toast(next === 'cooking' ? '开做啦，加油 💪' : '上菜咯，开饭 🎉')
+      ui.haptic('medium')
       live.refreshNow()
     } catch (err) {
       ui.hideLoading()

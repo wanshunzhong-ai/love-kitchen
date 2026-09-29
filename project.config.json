@@ -12,14 +12,13 @@
         "type": "folder"
       },
       {
-        "  {
-   "value": "templates",
-   "type": "folder"
-  },
-  {
-   "value": "docs",
-   "type": "folder"
-  },
+        "value": "templates",
+        "type": "folder"
+      },
+      {
+        "value": "docs",
+        "type": "folder"
+      },
       {
         "value": "node_modules",
         "type": "folder"

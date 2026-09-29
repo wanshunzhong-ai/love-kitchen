@@ -31,7 +31,8 @@
   <view wx:elif="{{loadError}}" class="state">
     <text class="state-emoji">😵</text>
     <text class="state-tip">这一单没加载出来</text>
-    <text class="state-sub">评价存在云数据库里，网络恢复后下拉刷新即可</text>
+    <text class="state-sub">评价存在云数据库里，网络恢复后再试试</text>
+    <button class="btn-retry" bindtap="onRetry">重新加载</button>
   </view>
 
   <view wx:else class="rv-list">

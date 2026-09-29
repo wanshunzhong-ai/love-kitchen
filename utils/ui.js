@@ -136,4 +136,17 @@ function askReason(quick, options) {
   })
 }
 
-module.exports = { showLoading, hideLoading, toast, askText, askReason }
+// 轻触感反馈。type: 'light'（轻点，默认）/ 'medium' / 'heavy'（重确认）。
+// 真机才有振动器，工具与老基础库上静默跳过，绝不影响主流程。
+function haptic(type) {
+  const api = getWx()
+  if (!api || typeof api.vibrateShort !== 'function') return
+  api.vibrateShort({
+    type: ['light', 'medium', 'heavy'].indexOf(type) >= 0 ? type : 'light',
+    success: function () {},
+    fail: function () {},
+    complete: function () {},
+  })
+}
+
+module.exports = { showLoading, hideLoading, toast, askText, askReason, haptic }

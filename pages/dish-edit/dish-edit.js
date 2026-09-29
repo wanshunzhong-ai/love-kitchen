@@ -16,6 +16,8 @@ Page({
     spiceLevels: SPICE_LEVELS,
     saving: false,
     loading: false,
+    // 加载失败 ≠ 被踢回列表：页内给错误态 + 重试，用户知道发生了什么
+    loadError: false,
   },
 
   onLoad(options) {
@@ -27,10 +29,12 @@ Page({
   },
 
   async loadDish(id) {
+    this.setData({ loading: true, loadError: false })
     try {
       const res = await api.call('getDish', { id: id })
       const data = res.dish
       if (!data) {
+        // 菜真的不存在了（刚被另一台手机下架）：这单没得改，回列表是对的
         ui.toast('这道菜不存在了')
         setTimeout(function () {
           wx.navigateBack()
@@ -47,11 +51,14 @@ Page({
       })
     } catch (err) {
       console.error('[dish-edit] 加载菜品失败', err)
-      ui.toast('网络开小差了')
-      setTimeout(function () {
-        wx.navigateBack()
-      }, 800)
+      // 网络问题留在本页重试，别把人踢回去（TA 可能正改到一半的思路呢）
+      this.setData({ loading: false, loadError: true })
     }
+  },
+
+  // 错误态的重试按钮
+  onRetry() {
+    if (this.data.id) this.loadDish(this.data.id)
   },
 
   onNameInput(e) {

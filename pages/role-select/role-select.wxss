@@ -39,6 +39,19 @@ page {
   color: #B9A29B;
 }
 
+/* 老用户「继续进入」按钮：主渐变胶囊，放在卡片上方最顺手的位置 */
+.w-continue {
+  margin: 0 8rpx 36rpx;
+  text-align: center;
+  padding: 24rpx 0;
+  border-radius: 999rpx;
+  font-size: 29rpx;
+  font-weight: 600;
+  color: #ffffff;
+  background: linear-gradient(135deg, #FF7A9E, #FF9F43);
+  box-shadow: 0 8rpx 20rpx rgba(255, 122, 158, 0.3);
+}
+
 /* 身份卡片 */
 .w-card {
   display: flex;

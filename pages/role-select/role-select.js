@@ -22,6 +22,14 @@ Page({
     })
   },
 
+  // 已选过身份的老用户：一键继续，别再让人手点卡片（每冷启动省一次点击）。
+  // 点下面的卡片仍然可以换身份，这条路不受影响。
+  onContinue() {
+    const info = roleInfo(this.data.role)
+    if (!info) return
+    wx.reLaunch({ url: info.home })
+  },
+
   onPick(e) {
     const key = e.currentTarget.dataset.role
     const info = roleInfo(key)

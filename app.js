@@ -16,9 +16,22 @@
 //   页面各自只负责订阅数据、画列表、弹一句提示（见 pages/todo、pages/orders）。
 const live = require('./utils/live')
 const store = require('./utils/store')
+const ui = require('./utils/ui')
 
 App({
-  onLaunch() {},
+  onLaunch() {
+    // 断网全局感知：没有这层，用户只会看到「点了按钮才弹网络开小差」，
+    // 没法解释「为什么单子半天不动」。恢复时也补一句，让人知道能继续了。
+    const wxApi = typeof wx !== 'undefined' ? wx : null
+    if (!wxApi || typeof wxApi.onNetworkStatusChange !== 'function') return
+    wxApi.onNetworkStatusChange(function (res) {
+      if (res && res.isConnected === false) {
+        ui.toast('网络断开了，恢复后订单会自动同步', 'none', 2500)
+      } else if (res && res.isConnected === true && res.networkType && res.networkType !== 'none') {
+        ui.toast('网络恢复啦', 'success', 1500)
+      }
+    })
+  },
 
   // 进前台：有身份了就开始盯着点单情况
   onShow() {

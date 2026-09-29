@@ -64,7 +64,14 @@ Page({
   },
 
   async loadDishes() {
-    this.setData({ loading: true, loadError: false })
+    // stale-while-revalidate：手上已有菜单就别闪 loading 了——
+    // 先让旧列表继续显示（滚动位置也保住），请求回来静默换新数据。
+    // 只有首屏（一次都没加载过）才显示「正在摆盘…」占位。
+    const hasCache = this.data.dishes.length > 0
+    // 并发保护：onShow 与下拉刷新可能叠在一起，同屏只发一次
+    if (this._loadingDishes) return
+    this._loadingDishes = true
+    if (!hasCache) this.setData({ loading: true, loadError: false })
     try {
       const res = await api.call('listDishes')
       const dishes = (res.dishes || []).map(function (d) {
@@ -85,7 +92,11 @@ Page({
       this.applyFilter()
     } catch (err) {
       console.error('[menu] 菜单加载失败', err)
-      this.setData({ loading: false, loadError: true })
+      // 有缓存时静默失败（旧数据还能看），只在首屏给出错误态
+      if (!hasCache) this.setData({ loadError: true })
+      this.setData({ loading: false })
+    } finally {
+      this._loadingDishes = false
     }
   },
 
@@ -203,6 +214,7 @@ Page({
       'spicePicker.open': false,
     })
     this.setTabBarHidden(false)
+    ui.haptic('light')
     ui.toast('已加入购物车', 'success')
   },
 

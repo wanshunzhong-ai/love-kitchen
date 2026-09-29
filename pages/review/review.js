@@ -120,6 +120,11 @@ Page({
     }
   },
 
+  // 加载失败后的重试（错误态上的按钮；下拉刷新也能达到同样效果）
+  onRetry() {
+    if (this.data.id) this.loadOrder(this.data.id)
+  },
+
   // 标签选中态：wxml 里不能直接 indexOf 数组，这里预先摊平成对象
   refreshTags() {
     const patch = {}
@@ -150,6 +155,7 @@ Page({
     const it = this.data.items[i]
     // 再点同一颗星 = 取消（回到「还没评」），免得选错了退不回去
     const next = it.draft.rating === star ? 0 : star
+    ui.haptic('light')
     const draft = Object.assign({}, it.draft, { rating: next })
     this.setData({
       ['items[' + i + '].draft']: draft,

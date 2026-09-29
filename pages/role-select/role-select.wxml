@@ -6,6 +6,9 @@
     <view class="w-sub">{{role ? '换个身份也可以哦' : '第一次来，先告诉我你是…'}}</view>
   </view>
 
+  <!-- 老用户快捷入口：已选过身份就给一个「继续」，免得每次冷启动都手点卡片 -->
+  <view wx:if="{{role}}" class="w-continue" bindtap="onContinue">继续作为{{roleText}}进入 →</view>
+
   <!-- 身份卡片 -->
   <view
     class="w-card {{role === item.key ? 'w-card-current' : ''}}"
