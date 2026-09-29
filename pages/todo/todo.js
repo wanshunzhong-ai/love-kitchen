@@ -2,12 +2,17 @@
 //   · 只看今天：按一日三餐（早餐 / 午餐 / 晚餐 / 夜宵）分格，一眼看清每顿要做啥
 //   · 卡片上直接「▶ 开始做 / ✅ 做好了」推进状态，不用再跳订单页
 //   · 后面的单子只做摘要，点一下去中间的「订单」页（那里能看到全部订单）
-//   · 状态写的是云端同一个接口，中间订单页 onShow 重拉，两边自然同步
+//
+// 实时性：
+//   轮询器是 App 级的（app.js 里起，见 utils/live.js），本页只做两件事 ——
+//   订阅数据把看板重画一遍、发现变化时浮一句话提示。
+//   所以「干净 15 秒也行、来了单立刻也行」：有待开做的单时轮询是 15 秒一档。
 const api = require('../../utils/api')
 const ui = require('../../utils/ui')
 const store = require('../../utils/store')
 const dine = require('../../utils/dine')
 const board = require('../../utils/todo')
+const live = require('../../utils/live')
 const { ORDER_STATUS } = require('../../utils/constants')
 
 Page({
@@ -27,6 +32,8 @@ Page({
     statusMap: ORDER_STATUS,
     // 只有掌勺人能推进状态；干饭人进来自动弹回点单页（兜底）
     isCook: true,
+    // 轮询发现变化时浮出来的一句话提示（几秒后自己消失）
+    notice: null,
   },
 
   onShow() {
@@ -45,36 +52,112 @@ Page({
       return
     }
     this.setData({ isCook: true })
-    this.loadOrders()
+    this.startLive()
   },
 
-  /** silent：状态推进后的静默重拉，不闪 loading */
-  async loadOrders(opts) {
-    const silent = !!(opts && opts.silent === true)
-    if (!silent) this.setData({ loading: true, loadError: false })
-    try {
-      const res = await api.call('listOrders')
-      const todayKey = dine.toDateKey(new Date())
-      const b = board.buildBoard(res.orders || [], todayKey)
-      this.setData({
-        todayLabel: board.dateLabel(todayKey),
-        meals: b.meals,
-        todayCount: b.todayCount,
-        todayDishes: b.todayDishes,
-        laterGroups: b.laterGroups,
-        laterDishes: b.laterDishes,
-        isEmpty: b.isEmpty,
-        heroSub: board.heroSub(b),
-        loading: false,
-        loadError: false,
+  onHide() {
+    this.stopLive()
+  },
+
+  onUnload() {
+    this.stopLive()
+  },
+
+  // ---------- 订阅实时数据 ----------
+
+  startLive() {
+    const self = this
+    this.unsub = live.subscribe(function (d, orders, err) {
+      if (err) {
+        console.error('[todo] 轮询失败', err)
+        // 已经有内容了就静默等下一轮（退避到最长 2 分钟）；一次都没拉到才给错误态
+        if (self.data.loading) self.setData({ loading: false, loadError: true })
+        return
+      }
+      self.render(orders)
+      const n = live.notice(d, orders, 'cook')
+      if (n) self.showNotice(n)
+    })
+    // 兜底：冷启动直接编译到本页、或刚在身份页选完身份时，App.onShow 不会重跑，
+    // 这时自己把轮询器拉起来（live.watch 是单例，重复调只会顶掉自己）
+    if (!live.watching()) {
+      live.watch({
+        role: function () {
+          return store.getRole()
+        },
       })
-    } catch (err) {
-      console.error('[todo] 订单加载失败', err)
-      this.setData({ loading: false, loadError: true })
     }
+    // 已经有数据就直接画，别让用户对着转圈等下一轮
+    if (live.hasData()) {
+      this.render(live.currentOrders())
+    } else {
+      this.setData({ loading: true, loadError: false })
+    }
+    // 进页面再补一轮最新：轮询可能刚好处在 60 秒那一档，等下一轮太久
+    live.refreshNow()
   },
 
-  // 推进状态：先写云端，成功后静默重拉（做完的单会自己从清单里消失）
+  stopLive() {
+    if (this.unsub) {
+      this.unsub()
+      this.unsub = null
+    }
+    // 本页可能暂停过轮询（二次确认弹窗），离开时必须恢复，否则别的页面就静了
+    live.resume()
+    this.hideNotice()
+  },
+
+  /** 订单列表 → 看板数据 */
+  render(orders) {
+    const todayKey = dine.toDateKey(new Date())
+    const b = board.buildBoard(orders || [], todayKey)
+    this.setData({
+      todayLabel: board.dateLabel(todayKey),
+      meals: b.meals,
+      todayCount: b.todayCount,
+      todayDishes: b.todayDishes,
+      laterGroups: b.laterGroups,
+      laterDishes: b.laterDishes,
+      isEmpty: b.isEmpty,
+      heroSub: board.heroSub(b),
+      loading: false,
+      loadError: false,
+    })
+  },
+
+  // ---------- 变化提示条 ----------
+
+  showNotice(n) {
+    if (!n) return
+    if (this._noticeTimer) clearTimeout(this._noticeTimer)
+    this.setData({ notice: n })
+    const self = this
+    this._noticeTimer = setTimeout(function () {
+      self.setData({ notice: null })
+      self._noticeTimer = null
+    }, 6000)
+  },
+
+  hideNotice() {
+    if (this._noticeTimer) {
+      clearTimeout(this._noticeTimer)
+      this._noticeTimer = null
+    }
+    if (this.data.notice) this.setData({ notice: null })
+  },
+
+  onTapNotice() {
+    const n = this.data.notice
+    this.hideNotice()
+    if (!n || !n.path) return
+    // 提示指向的就是本页（来了新单）→ 东西已经在眼前了，点一下只是收起提示
+    if (n.path === '/pages/todo/todo') return
+    wx.switchTab({ url: n.path })
+  },
+
+  // ---------- 推进状态 ----------
+
+  // 推进状态：先写云端，成功后立刻补一轮轮询（做完的单会自己从清单里消失）
   async advance(id, next) {
     if (!id) return
     ui.showLoading('处理中…')
@@ -86,7 +169,7 @@ Page({
         return
       }
       ui.toast(next === 'cooking' ? '开做啦，加油 💪' : '上菜咯，开饭 🎉')
-      this.loadOrders({ silent: true })
+      live.refreshNow()
     } catch (err) {
       ui.hideLoading()
       console.error('[todo] 状态更新失败', err)
@@ -102,12 +185,17 @@ Page({
   onFinishCooking(e) {
     const id = e.currentTarget.dataset.id
     const self = this
+    // 弹窗期间暂停轮询：列表要是在对话框底下自己变了，用户会以为点错了
+    live.pause()
     wx.showModal({
       title: '这一单都上菜啦？',
       content: '标记「已上菜」后就不能再改了哦',
       confirmText: '上菜咯',
       confirmColor: '#FF7A9E',
       cancelText: '再做会儿',
+      complete: function () {
+        live.resume()
+      },
       success: function (res) {
         if (res.confirm) self.advance(id, 'done')
       },
@@ -118,9 +206,16 @@ Page({
     wx.switchTab({ url: '/pages/orders/orders' })
   },
 
+  // 加载失败后的重试：手动补一轮
+  onRetry() {
+    this.setData({ loading: true, loadError: false })
+    live.refreshNow()
+  },
+
   onPullDownRefresh() {
-    this.loadOrders().finally(function () {
+    const done = function () {
       wx.stopPullDownRefresh()
-    })
+    }
+    live.refreshNow().then(done, done)
   },
 })

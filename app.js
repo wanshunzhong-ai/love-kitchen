@@ -8,6 +8,33 @@
 // 云服务客户端是「用到才建」的懒加载（见 utils/orders.js 的 getCloud），
 // 所以这里不需要做任何初始化 —— 启动更快，而且万一云服务有问题，
 // 也只是订单功能受影响，菜单照样能用。
+//
+// 实时监听放在这里（而不是各个页面）：
+//   云服务 SDK 没有 realtime 订阅通道，只能前台轮询。轮询器做成 App 级唯一实例，
+//   好处是「底栏角标」在任何 tab 页都实时 —— 掌勺人在菜单页翻菜谱时也能看到
+//   待做数往上跳，干饭人在资料页也能看到「正在做」的单数。
+//   页面各自只负责订阅数据、画列表、弹一句提示（见 pages/todo、pages/orders）。
+const live = require('./utils/live')
+const store = require('./utils/store')
+
 App({
   onLaunch() {},
+
+  // 进前台：有身份了就开始盯着点单情况
+  onShow() {
+    // role 传函数而不是值：身份在「我的」页切换后不用重建 watcher，下一轮自动跟上
+    if (store.getRole()) {
+      live.watch({
+        role: function () {
+          return store.getRole()
+        },
+      })
+    }
+  },
+
+  // 退到后台：立刻停轮询。小程序后台的 setTimeout 会被限流，
+  // 与其留个半死不活的定时器，不如明确停掉，回前台由 onShow 重新拉起。
+  onHide() {
+    live.unwatch()
+  },
 })

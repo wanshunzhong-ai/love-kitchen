@@ -1,4 +1,11 @@
 <view class="todo">
+  <!-- 轮询发现变化时浮出来的一句话（不打断手上正在做的事，6 秒后自己消失） -->
+  <view class="notice" wx:if="{{notice}}" bindtap="onTapNotice">
+    <text class="notice-emoji">{{notice.emoji}}</text>
+    <text class="notice-text">{{notice.text}}</text>
+    <text class="notice-go" wx:if="{{notice.path !== '/pages/todo/todo'}}">去看看 ›</text>
+  </view>
+
   <!-- 顶部：今天概览 -->
   <view class="hero">
     <view class="hero-title">{{todayLabel}} 待做清单</view>
@@ -13,7 +20,7 @@
   <view wx:elif="{{loadError}}" class="state">
     <text class="state-emoji">😵</text>
     <text class="state-tip">清单没加载出来，网络可能开小差了</text>
-    <button class="btn-retry" bindtap="loadOrders">重试</button>
+    <button class="btn-retry" bindtap="onRetry">重试</button>
   </view>
 
   <view wx:elif="{{isEmpty}}" class="state">

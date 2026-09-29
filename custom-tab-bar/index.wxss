@@ -26,6 +26,31 @@
   padding: 14rpx 0 6rpx;
   color: #B9A29B;
   transition: color 0.15s;
+  /* 角标要绝对定位到这个 tab 上 */
+  position: relative;
+}
+
+/* 数字角标：贴在 emoji 右上角。
+   字号跟全站下限一致（22rpx），再小在真机上看不清。 */
+.tab-badge {
+  position: absolute;
+  top: 2rpx;
+  left: 50%;
+  /* 用 margin-left 推开，避免为它引入 flex 布局（安卓部分内核 gap 不支持） */
+  margin-left: 10rpx;
+  min-width: 32rpx;
+  height: 32rpx;
+  line-height: 32rpx;
+  padding: 0 8rpx;
+  box-sizing: border-box;
+  text-align: center;
+  font-size: 22rpx;
+  font-weight: 600;
+  color: #ffffff;
+  background: #FF5C8A;
+  border: 2rpx solid #ffffff;
+  border-radius: 999rpx;
+  box-shadow: 0 2rpx 8rpx rgba(255, 92, 138, 0.35);
 }
 
 /* 固定盒高：不同机型 emoji 字形高低不一，不锁死会把 tabBar 撑得一高一低 */

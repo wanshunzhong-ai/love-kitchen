@@ -2,7 +2,13 @@
 //   干饭人：点单 / 我的订单 / 我的资料（只管点，不掌勺）
 //   掌勺人：待做 / 菜单 / 订单 / 我的资料（菜单 = 加菜 / 改菜 / 下架，看得到但点不了单）
 // 官方 custom-tab-bar 约定：tab 页在 onShow 里 getTabBar().setData({ selected }) 同步选中态
+//
+// 角标（badge）：
+//   待做 tab 显示「有几单等着开做」，我的订单 tab 显示「有几单正在做」。
+//   数字来自 utils/live.js 最近一轮轮询的结果 —— 它是模块级共享的，
+//   所以页面那边轮询一到新数据，这里 refresh() 一下就能看到新角标。
 const store = require('../utils/store')
+const live = require('../utils/live')
 
 const TABS = {
   orderer: [
@@ -44,7 +50,22 @@ Component({
   methods: {
     refresh() {
       const role = store.getRole() || 'orderer'
-      const tabs = TABS[role] || TABS.orderer
+      const badges = live.badgeFor(role)
+      const base = TABS[role] || TABS.orderer
+
+      // 角标每轮轮询都会重算，但绝大多数时候没变。
+      // 用签名挡掉「什么都没变」的 setData —— 15 秒一次的无谓渲染，攒起来也是功耗。
+      let sig = role
+      base.forEach(function (t) {
+        sig += '|' + t.key + ':' + (badges[t.key] || '')
+      })
+      if (this._sig === sig) return
+      this._sig = sig
+
+      // TABS 是模块级常量，必须复制一份再挂角标，不能就地改（否则会越积越多）
+      const tabs = base.map(function (t) {
+        return { key: t.key, path: t.path, text: t.text, emoji: t.emoji, badge: badges[t.key] || '' }
+      })
       this.setData({ role: role, tabs: tabs })
     },
 

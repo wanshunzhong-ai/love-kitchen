@@ -11,5 +11,7 @@
   >
     <text class="tab-emoji">{{item.emoji}}</text>
     <text class="tab-text">{{item.text}}</text>
+    <!-- 角标：掌勺人「待做」= 待开做单数，干饭人「我的订单」= 正在做的单数 -->
+    <text class="tab-badge" wx:if="{{item.badge}}">{{item.badge}}</text>
   </view>
 </view>
