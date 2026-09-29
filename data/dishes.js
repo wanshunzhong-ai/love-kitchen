@@ -1,5 +1,5 @@
 // 爱心小厨房 · 内置菜品数据（共 101 道）
-// 由 dishes.import.json 自动生成，请勿手工编辑；改菜请在应用内新增/编辑（会存到本地覆盖层）。
+// 由 dishes.import.jsonl 自动生成，请勿手工编辑；改菜请在应用内新增/编辑（会存到本地覆盖层）。
 // 注意：id 必须为纯数字 —— pages/checkout/checkout.js 用 Number(dataset.id) 做购物车加减，
 //       字符串 id 会得到 NaN 导致加减失效。
 module.exports = [

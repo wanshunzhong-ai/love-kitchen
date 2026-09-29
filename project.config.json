@@ -28,8 +28,8 @@
         "type": "prefix"
       },
       {
-        "value": "dishes.import.json",
-        "type": "file"
+        "value": "dishes.import.",
+        "type": "prefix"
       },
       {
         "value": "package.json",
