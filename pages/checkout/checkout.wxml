@@ -2,7 +2,7 @@
   <view wx:if="{{cart.length === 0}}" class="state">
     <text class="state-emoji">🛒</text>
     <text class="state-tip">购物车空空的，去挑点好吃的吧</text>
-    <button class="btn-retry" bindtap="goBackMenu">去点菜</button>
+    <button class="btn-retry" bindtap="goBackMenu">去点单</button>
   </view>
 
   <block wx:else>

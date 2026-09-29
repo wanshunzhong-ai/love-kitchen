@@ -95,7 +95,7 @@
       <text class="me-role-text">{{roleInfo.emoji}} {{roleInfo.text}}</text>
       <text class="me-role-switch">切换身份 →</text>
     </view>
-    <view class="me-tip">换身份不影响已有订单；分工是：做饭人不点菜，点餐人不掌勺</view>
+    <view class="me-tip">换身份不影响已有订单；分工是：做饭人不点单，点餐人不掌勺</view>
   </view>
 
   <view class="me-foot">💕 爱心小厨房 · 记录每一次开饭</view>

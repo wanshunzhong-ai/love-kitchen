@@ -23,7 +23,7 @@
     "list": [
       {
         "pagePath": "pages/menu/menu",
-        "text": "点菜"
+        "text": "点单"
       },
       {
         "pagePath": "pages/orders/orders",

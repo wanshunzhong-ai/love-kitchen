@@ -28,7 +28,7 @@ Page({
   },
 
   onShow() {
-    // 自定义 tabBar：同步选中态 + 按身份重算 tab 列表（做饭人没有点菜 tab）
+    // 自定义 tabBar：同步选中态 + 按身份重算 tab 列表（做饭人没有点单 tab）
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
       this.getTabBar().setData({ selected: 'menu' })
       this.getTabBar().refresh()
@@ -39,7 +39,7 @@ Page({
     this.setData({
       role: role,
       roleInfo: store.getRoleInfo(),
-      // 做饭人不点菜：＋ / 随机帮选 / 购物车栏都只给点餐人
+      // 做饭人不点单：＋ / 随机帮选 / 购物车栏都只给点餐人
       isCook: role === 'cook',
       cartCount: store.cartCount(),
     })
@@ -51,7 +51,7 @@ Page({
     wx.switchTab({ url: '/pages/profile/profile' })
   },
 
-  // 点餐人的底栏只有「点菜 / 我的」：订单从这里进（看状态、改单、删单）
+  // 点餐人的底栏只有「点单 / 我的」：订单从这里进（看状态、改单、删单）
   goOrders() {
     wx.switchTab({ url: '/pages/orders/orders' })
   },
@@ -135,9 +135,9 @@ Page({
 
   // 点「＋」→ 先让他选辣度（默认就是这道菜的推荐辣度）
   onAddTap(e) {
-    // 做饭人不点菜（模板已隐藏＋，这里兜底）
+    // 做饭人不点单（模板已隐藏＋，这里兜底）
     if (this.data.isCook) {
-      ui.toast('做饭人不点菜哦，等TA来下单 💕')
+      ui.toast('做饭人不点单哦，等TA来下单 💕')
       return
     }
     const dish = this.data.filteredDishes[e.currentTarget.dataset.idx]
@@ -173,7 +173,7 @@ Page({
     if (!dish) return
     if (this.data.isCook) {
       this.setData({ 'spicePicker.open': false })
-      ui.toast('做饭人不点菜哦，等TA来下单 💕')
+      ui.toast('做饭人不点单哦，等TA来下单 💕')
       return
     }
     store.addToCart(dish, selected)
