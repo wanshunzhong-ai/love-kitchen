@@ -273,8 +273,9 @@ async function createOrder(event) {
 // 这条规则由页面层拦（订单页不给入口、编辑页对掌勺人退化成只读），
 // 服务端再兜一道状态机，两头都不会漏。
 //
-// 服务端的两个兜底：
+// 服务端的三个兜底：
 //   · 已上菜（done）的单不能再改 —— 菜都端上桌了；
+//   · 开做中（cooking）的单也不能再改 —— 掌勺人已经开火了，改了菜就是给人添乱；
 //   · **不接受 status 字段**。状态是掌勺人的事，页面传了也不认；
 //     若这一单原本是「已驳回」，改完内容自动退回「待开做」= 重新提交。
 async function updateOrder(event) {
@@ -285,12 +286,13 @@ async function updateOrder(event) {
   const items = normalizeItems(payload.items)
   if (!items.length) throw new Error('订单里没有菜品')
 
-  // 先读现状：既用来拦「已上菜」，也用来判断这次改动算不算「重新提交」
+  // 先读现状：既用来拦终态 / 开做中，也用来判断这次改动算不算「重新提交」
   const cur = unwrap(await getDB().from(TABLE).select('id, status').eq('id', id).limit(1))
   const curRows = Array.isArray(cur.data) ? cur.data : []
   if (!curRows.length) throw new Error('这一单不存在了')
   const status = curRows[0].status || 'pending'
   if (status === 'done') throw new Error('这一单已经上菜了，不能再改')
+  if (status === 'cooking') throw new Error('这一单正在做，等做完这顿再说吧')
 
   const patch = {
     items: items,

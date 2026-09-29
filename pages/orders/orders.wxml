@@ -105,15 +105,18 @@
 
           <!-- 干饭人：改单 / 删单 / 评价；状态不归他管 -->
           <block wx:else>
-            <text wx:if="{{item.status === 'pending' || item.status === 'cooking'}}" class="order-wait">等掌勺人开做哦</text>
+            <text wx:if="{{item.status === 'pending'}}" class="order-wait">等掌勺人开做哦</text>
+            <!-- 开做中 = 掌勺人已经开火：不给编辑入口，免得改了白改 -->
+            <text wx:elif="{{item.status === 'cooking'}}" class="order-wait">掌勺人正在做，先别改单啦</text>
             <view
               wx:if="{{item.status === 'done'}}"
               class="act act-main"
               data-idx="{{index}}"
               catchtap="onReview"
             >{{item.reviewSummary.any ? '✏️ 改评价' : '🍽️ 去评价'}}</view>
+            <!-- 可编辑的只有「待开做」和「已驳回」：开做中 / 已上菜都不给入口 -->
             <view
-              wx:if="{{item.status !== 'done'}}"
+              wx:if="{{item.status === 'pending' || item.status === 'rejected'}}"
               class="act act-ghost"
               data-idx="{{index}}"
               catchtap="onEditOrder"

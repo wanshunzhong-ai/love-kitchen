@@ -1,8 +1,9 @@
-// 订单详情页：同一个页面，两种身份两副面孔
+// 订单详情页：同一个页面，多种形态
 //
 //   干饭人（下单的人）→ 编辑态：改菜、改辣度 / 备注、换菜、改用餐时间、改署名，
 //                        被驳回时看到理由，改完点「改好重新提交」。
 //                        **没有状态开关** —— 状态是掌勺人的事。
+//                        待开做 / 已驳回才能改；开做中、已上菜对 TA 也是只读。
 //   掌勺人            → 只读态：菜品 / 备注 / 用餐时间都只看不改，
 //                        底部只有「开始做 / 做好了」和「驳回（要写理由）」。
 //
@@ -178,10 +179,11 @@ Page({
       const slot = slotHit && !slotHit.disabled ? savedSlot : dine.defaultSlot(now, date)
       const status = order.status || 'pending'
       const done = status === 'done'
+      const cooking = status === 'cooking'
       const rejected = status === 'rejected'
       const isCook = this.data.isCook
-      // 只读的两种情况不一样，文案也就不一样（同一个页面两种身份 + 终态）
-      const badge = this.readonlyBadge(isCook, done, rejected)
+      // 只读的几种情况不一样，文案也就不一样（同一个页面多种身份 + 终态 + 开做中）
+      const badge = this.readonlyBadge(isCook, done, rejected, cooking)
       const info = ORDER_STATUS[status] || ORDER_STATUS.pending
       this.setData({
         items: items,
@@ -191,7 +193,8 @@ Page({
         statusEmoji: info.emoji,
         statusText: info.text,
         isCook: isCook,
-        readonly: isCook || done,
+        // 只读：掌勺人（不是他点的单）、已上菜的终态、开做中（掌勺人已经开火）
+        readonly: isCook || done || cooking,
         finalized: done,
         showStatusActions: isCook && !done,
         canReject: isCook && !done && rejectLib.canReject(status),
@@ -219,10 +222,11 @@ Page({
   },
 
   /**
-   * 只读态顶部那句说明：掌勺人（不是他点的单）/ 已上菜（对谁都是终态）。
-   * 抽出来是为了「同一个页面两种身份」的文案不会写歪在模板里。
+   * 只读态顶部那句说明：掌勺人（不是他点的单）/ 已上菜（终态）/
+   * 开做中（对干饭人 —— 掌勺人已经开火了）。
+   * 抽出来是为了「同一个页面多种形态」的文案不会写歪在模板里。
    */
-  readonlyBadge(isCook, done, rejected) {
+  readonlyBadge(isCook, done, rejected, cooking) {
     if (done) {
       return {
         emoji: '🎉',
@@ -235,6 +239,14 @@ Page({
         emoji: '🙅',
         title: '这一单你已经驳回了',
         sub: '等 TA 改好重新提交，或者把驳回收回来',
+      }
+    }
+    // 开做中：只有干饭人（掌勺人此时走上面的默认文案，他的按钮在下面）
+    if (cooking && !isCook) {
+      return {
+        emoji: '🍳',
+        title: '掌勺人正在做这一单',
+        sub: '开做之后就改不了单啦，有想说的直接和 TA 讲',
       }
     }
     return {
@@ -516,13 +528,17 @@ Page({
   async onSave() {
     if (this.data.saving) return
     // 只读兜底：掌勺人绕过入口进到本页也不允许保存（他只推进状态 / 驳回），
-    // 已上菜的终态同理 —— 两处都在写库调用之前拦住
+    // 已上菜的终态、开做中的单同理 —— 与服务端的拦截一一对应
     if (this.data.isCook) {
       ui.toast('这一单是 TA 点的，你只能更新状态或驳回')
       return
     }
     if (this.data.finalized) {
       ui.toast('这一单已上菜，不能再改了')
+      return
+    }
+    if (this.data.status === 'cooking') {
+      ui.toast('这一单正在做，等做完这顿再说吧')
       return
     }
     if (!this.data.items.length) {

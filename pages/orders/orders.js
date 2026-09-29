@@ -385,12 +385,17 @@ Page({
   },
 
   // 打开这一单：干饭人进编辑态，掌勺人进只读详情（他只能推进状态 / 驳回）。
-  // 已上菜 = 终态，两边都不给编辑入口（列表里也不渲染，这里是兜底防误入）
+  // 已上菜 = 终态、开做中 = 掌勺人已经开火，两边都不给干饭人编辑入口
+  // （列表里也不渲染，这里是兜底防误入）
   onEditOrder(e) {
     const order = this.data.filteredOrders[e.currentTarget.dataset.idx]
     if (!order) return
     if (!this.data.isCook && order.status === 'done') {
       ui.toast('这一单已上菜，只能删掉')
+      return
+    }
+    if (!this.data.isCook && order.status === 'cooking') {
+      ui.toast('这一单正在做，先别改啦')
       return
     }
     wx.navigateTo({ url: '/pages/order-edit/order-edit?id=' + order.id })
