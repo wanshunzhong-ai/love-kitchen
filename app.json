@@ -5,7 +5,8 @@
     "pages/orders/orders",
     "pages/checkout/checkout",
     "pages/dish-edit/dish-edit",
-    "pages/order-edit/order-edit"
+    "pages/order-edit/order-edit",
+    "pages/profile/profile"
   ],
   "window": {
     "navigationBarBackgroundColor": "#FF7A9E",

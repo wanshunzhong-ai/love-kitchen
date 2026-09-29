@@ -10,7 +10,7 @@
         bindtap="onFilterTap"
       >{{item.emoji}} {{item.key === '全部' ? '全部' : statusMap[item.key].text}}</view>
     </scroll-view>
-    <view class="role-chip" bindtap="goRoleSelect">{{roleInfo.emoji}} {{roleInfo.text}}</view>
+    <view class="role-chip" bindtap="goProfile">{{roleInfo.emoji}} {{roleInfo.text}}</view>
   </view>
 
   <!-- 订单列表 -->

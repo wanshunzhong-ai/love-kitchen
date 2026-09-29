@@ -27,6 +27,12 @@ Page({
   },
 
   onShow() {
+    // 做饭人不点菜：万一从别的路径进来（购物车已随切身份清空），直接送回订单页
+    if (store.getRole() === 'cook') {
+      ui.toast('做饭人不点菜哦，等TA来下单 💕')
+      wx.switchTab({ url: '/pages/orders/orders' })
+      return
+    }
     // 每次进来都收起辣度展开态：列表默认只显示选定的那一档
     this.setData({ spiceOpenUid: '' })
     this.refreshCart()

@@ -40,9 +40,9 @@ Page({
     this.loadOrders()
   },
 
-  // 身份胶囊：点它回选择页换身份
-  goRoleSelect() {
-    wx.reLaunch({ url: '/pages/role-select/role-select' })
+  // 身份胶囊：进基本资料页（里面可以换身份）
+  goProfile() {
+    wx.navigateTo({ url: '/pages/profile/profile' })
   },
 
   async loadOrders() {

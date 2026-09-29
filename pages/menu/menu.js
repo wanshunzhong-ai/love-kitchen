@@ -34,14 +34,16 @@ Page({
     this.setData({
       role: role,
       roleInfo: store.getRoleInfo(),
+      // 做饭人不点菜：＋ / 随机帮选 / 购物车栏都只给点餐人
+      isCook: role === 'cook',
       cartCount: store.cartCount(),
     })
     this.loadDishes()
   },
 
-  // 头像/身份胶囊：点它回选择页换身份
-  goRoleSelect() {
-    wx.reLaunch({ url: '/pages/role-select/role-select' })
+  // 头像/身份胶囊：进基本资料页（里面可以换身份）
+  goProfile() {
+    wx.navigateTo({ url: '/pages/profile/profile' })
   },
 
   async loadDishes() {
@@ -123,6 +125,11 @@ Page({
 
   // 点「＋」→ 先让他选辣度（默认就是这道菜的推荐辣度）
   onAddTap(e) {
+    // 做饭人不点菜（模板已隐藏＋，这里兜底）
+    if (this.data.isCook) {
+      ui.toast('做饭人不点菜哦，等TA来下单 💕')
+      return
+    }
     const dish = this.data.filteredDishes[e.currentTarget.dataset.idx]
     if (!dish) return
     this.openSpicePicker(dish)
@@ -154,6 +161,11 @@ Page({
   confirmAdd() {
     const { dish, selected } = this.data.spicePicker
     if (!dish) return
+    if (this.data.isCook) {
+      this.setData({ 'spicePicker.open': false })
+      ui.toast('做饭人不点菜哦，等TA来下单 💕')
+      return
+    }
     store.addToCart(dish, selected)
     this.setData({
       cartCount: store.cartCount(),
@@ -174,12 +186,14 @@ Page({
   },
 
   goCart() {
+    if (this.data.isCook) return
     if (this.data.cartCount <= 0) return
     wx.navigateTo({ url: '/pages/checkout/checkout' })
   },
 
-  // 「今天吃什么」随机帮选
+  // 「今天吃什么」随机帮选（点菜功能，只给点餐人）
   onRandom() {
+    if (this.data.isCook) return
     const dishes = this.data.dishes
     if (!dishes.length) {
       ui.toast('菜单还是空的，先加道菜吧')

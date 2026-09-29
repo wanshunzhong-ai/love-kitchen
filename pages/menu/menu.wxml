@@ -2,11 +2,11 @@
   <!-- 顶部问候（按身份换文案 + 身份胶囊） -->
   <view class="hero">
     <view class="hero-text">
-      <view class="hero-title">{{role === 'cook' ? '大厨今天露一手？' : '今天想吃点什么？'}}</view>
-      <view class="hero-sub">{{role === 'cook' ? '菜单在这，也可以帮TA点几个菜 💕' : '选好后交给大厨吧 💕'}}</view>
+      <view class="hero-title">{{role === 'cook' ? '大厨今天掌勺～' : '今天想吃点什么？'}}</view>
+      <view class="hero-sub">{{role === 'cook' ? '菜单由你打理，等TA来点单 💕' : '选好后交给大厨吧 💕'}}</view>
     </view>
     <view class="hero-right">
-      <view class="hero-role" bindtap="goRoleSelect">{{roleInfo.emoji}} {{roleInfo.text}}</view>
+      <view class="hero-role" bindtap="goProfile">{{roleInfo.emoji}} {{roleInfo.text}}</view>
       <view class="hero-add" bindtap="goAddDish">＋ 加菜</view>
     </view>
   </view>
@@ -79,15 +79,15 @@
         </view>
         <view class="dish-desc" wx:if="{{item.description}}">{{item.description}}</view>
       </view>
-      <view class="dish-add" data-idx="{{index}}" catchtap="onAddTap">＋</view>
+      <view wx:if="{{!isCook}}" class="dish-add" data-idx="{{index}}" catchtap="onAddTap">＋</view>
     </view>
   </view>
 
-  <!-- 随机帮选 -->
-  <view class="lucky" bindtap="onRandom">🎲 今天吃什么</view>
+  <!-- 随机帮选（点菜功能，做饭人不显示） -->
+  <view wx:if="{{!isCook}}" class="lucky" bindtap="onRandom">🎲 今天吃什么</view>
 
-  <!-- 购物车栏 -->
-  <view class="cart-bar" wx:if="{{cartCount > 0}}" bindtap="goCart">
+  <!-- 购物车栏（做饭人不显示，切身份时购物车已清空） -->
+  <view class="cart-bar" wx:if="{{cartCount > 0 && !isCook}}" bindtap="goCart">
     <view class="cart-badge">{{cartCount}}</view>
     <text class="cart-label">已选好菜</text>
     <view class="cart-go">去下单</view>

@@ -1,0 +1,39 @@
+<view class="me">
+  <!-- 头像卡：身份即头像 -->
+  <view class="me-card me-hero">
+    <text class="me-avatar">{{roleInfo.emoji}}</text>
+    <view class="me-identity">{{roleInfo.text}}</view>
+    <view class="me-id-desc">{{role === 'cook' ? '掌勺的人：看订单开做，做好标记上菜' : '点菜的人：挑菜下单，写好口味备注'}}</view>
+  </view>
+
+  <!-- 昵称 -->
+  <view class="me-card">
+    <view class="me-label">我的称呼</view>
+    <view class="me-nick-row">
+      <input
+        class="me-nick-input"
+        value="{{nickname}}"
+        maxlength="{{nickMax}}"
+        placeholder="比如：宝贝"
+        placeholder-class="me-ph"
+        bindinput="onNickInput"
+        bindblur="saveNickname"
+      />
+      <text class="me-count">{{nickname.length}}/{{nickMax}}</text>
+    </view>
+    <view class="me-tip">下单时会显示在订单的「来自 xx」里</view>
+    <view wx:if="{{dirty}}" class="me-save" bindtap="saveNickname">保存一下</view>
+  </view>
+
+  <!-- 身份 -->
+  <view class="me-card">
+    <view class="me-label">当前身份</view>
+    <view class="me-role-row" bindtap="goRoleSelect">
+      <text class="me-role-text">{{roleInfo.emoji}} {{roleInfo.text}}</text>
+      <text class="me-role-switch">切换身份 →</text>
+    </view>
+    <view class="me-tip">换身份不影响已有订单；分工是：做饭人不点菜，点餐人不掌勺</view>
+  </view>
+
+  <view class="me-foot">💕 爱心小厨房 · 记录每一次开饭</view>
+</view>

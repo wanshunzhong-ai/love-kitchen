@@ -262,9 +262,16 @@ function getRole() {
   return ROLES[role] ? role : ''
 }
 
-/** 只接受合法身份，其他值一律忽略 */
+/**
+ * 只接受合法身份，其他值一律忽略。
+ * 切到做饭人时顺手清空购物车：做饭人不点菜，
+ * 避免之前以点餐人身份加的菜被做饭人误下单。
+ */
 function setRole(role) {
-  if (ROLES[role]) wx.setStorageSync(ROLE_KEY, role)
+  if (!ROLES[role]) return
+  const prev = getRole()
+  wx.setStorageSync(ROLE_KEY, role)
+  if (role === 'cook' && prev !== 'cook') clearCart()
 }
 
 /** 身份 key → 展示信息（emoji / 文案 / 默认首页）；未选返回 null */
