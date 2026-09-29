@@ -250,12 +250,38 @@ function cartCount() {
   }, 0)
 }
 
-function getNickname() {
-  return wx.getStorageSync(NICK_KEY) || ''
+/**
+ * 称呼按身份分开存：两个人在同一台手机上各有一份资料，
+ * 以前共用一个 key，掌勺人一改会把干饭人下单的署名也带歪。
+ * @param {string} role 'cook' | 'orderer'；空串按干饭人算（老数据语义）
+ */
+function nickKeyOf(role) {
+  return NICK_KEY + '_' + (role === 'cook' ? 'cook' : 'orderer')
 }
 
-function setNickname(nick) {
-  wx.setStorageSync(NICK_KEY, nick)
+/**
+ * 读称呼。role 不传就用当前身份。
+ *
+ * 兼容老数据：旧版只有 NICK_KEY 一个 key，而它实际承载的一直是
+ * 干饭人的署名（checkout 的「谁点的」、评价的 by 都读它）——
+ * 所以旧值迁移给干饭人，只迁一次（读到时顺手写进新 key）。
+ * 掌勺人的称呼从空开始，各存各的。
+ */
+function getNickname(role) {
+  const r = role === 'cook' || role === 'orderer' ? role : getRole()
+  const own = wx.getStorageSync(nickKeyOf(r))
+  if (own) return own
+  const legacy = wx.getStorageSync(NICK_KEY)
+  if (legacy && r !== 'cook') {
+    wx.setStorageSync(nickKeyOf(r), legacy)
+    return legacy
+  }
+  return ''
+}
+
+function setNickname(nick, role) {
+  const r = role === 'cook' || role === 'orderer' ? role : getRole()
+  wx.setStorageSync(nickKeyOf(r), nick)
 }
 
 // ---------- 基本资料：头像 / 状态 / 忌口 ----------

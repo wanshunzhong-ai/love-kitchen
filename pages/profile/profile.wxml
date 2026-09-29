@@ -101,7 +101,8 @@
       />
       <text class="me-count">{{nickname.length}}/{{nickMax}}</text>
     </view>
-    <view class="me-tip">下单时会显示在订单的「来自 xx」里</view>
+    <view class="me-tip" wx:if="{{!isCook}}">下单时会显示在订单的「来自 xx」里</view>
+    <view class="me-tip" wx:else>你俩的称呼各存各的，改这里不会影响 TA</view>
     <view wx:if="{{dirty}}" class="me-save" bindtap="saveNickname">保存一下</view>
   </view>
 
