@@ -1,14 +1,35 @@
 // 购物车与点菜人的本地存取
 // 购物车是本机的临时状态；下单后会写入云端订单，两台手机都能看到
 //
-// 关于辣度：购物车条目以「菜 + 辣度」为唯一标识（key = dishId + '|' + spice），
-// 因此同一道菜选了两种辣度会分成两条独立记录
-// （比如「麻婆豆腐·微辣」x1 和「麻婆豆腐·特辣」x2）。
+// 两个标识，别混用：
+//   uid = 这一行的「身份」，一旦建立永不改变 —— 改辣度、换菜、改备注都不动它
+//   key = dishId|spice，表达「同一道菜 + 同一辣度只有一行」的合并规则
+// 为什么要有 uid：改辣度会改 key、换菜会改 dishId，若拿 key 当身份，
+// 用户连续操作时编辑面板就会跟丢这一行；uid 不变，面板永远能定位到它。
+//
+// 关于每道菜的备注（note）：它挂在「行」上，跟着这一行一起下单。
+// 整单想说的话请用订单级 remark，两者在下单页各有一块输入区。
+
+const { DISH_NOTE_MAX } = require('./constants')
+
 const CART_KEY = 'lovekitchen_cart'
 const NICK_KEY = 'lovekitchen_nick'
 
+let _seq = 0
+
+/** 生成一个不会被复用到的行身份 */
+function newUid() {
+  _seq += 1
+  return 'u' + Date.now().toString(36) + _seq.toString(36) + Math.floor(Math.random() * 60466176).toString(36)
+}
+
+/** 备注统一收敛：去掉首尾空白、限长，非字符串一律当空 */
+function normalizeNote(v) {
+  return String(v === null || v === undefined ? '' : v).trim().slice(0, DISH_NOTE_MAX)
+}
+
 /**
- * 购物车条目的唯一键。
+ * 购物车条目的展示键。
  * 注意：这里不能只用 dishId —— 同菜不同辣度要分开算。
  * @param {object} it 购物车条目
  * @returns {string}
@@ -17,13 +38,33 @@ function itemKey(it) {
   return String(it.dishId) + '|' + (it.spice || '不辣')
 }
 
+/**
+ * 定位用身份：老数据没有 uid 时用 'k' + key 兜底。
+ * 必须是确定性的 —— 若每次读取都现生成，编辑中的行会瞬间对不上号。
+ */
+function rowUid(it) {
+  return it.uid || 'k' + itemKey(it)
+}
+
+// 兼容按 uid 定位（新代码）与按 key 定位（老调用/老测试）两种写法
+function sameRow(it, id) {
+  return rowUid(it) === id || itemKey(it) === id
+}
+
 function getCart() {
-  const cart = wx.getStorageSync(CART_KEY)
-  if (!Array.isArray(cart)) return []
-  // 兼容早期没有 spice 字段 / 没有 key 的历史数据
-  return cart.map(function (it) {
+  const raw = wx.getStorageSync(CART_KEY)
+  if (!Array.isArray(raw)) return []
+  return raw.map(function (it) {
     const spice = it.spice || '不辣'
-    return Object.assign({}, it, { spice: spice, key: it.dishId + '|' + spice })
+    const qty = Number(it.qty)
+    const row = Object.assign({}, it, {
+      spice: spice,
+      qty: qty > 0 ? qty : 1,
+      note: normalizeNote(it.note),
+    })
+    row.uid = rowUid(row)
+    row.key = itemKey(row)
+    return row
   })
 }
 
@@ -32,14 +73,15 @@ function setCart(cart) {
 }
 
 /**
- * 加入购物车
+ * 加入购物车。合并只看「菜 + 辣度」，备注留在原行上。
  * @param {object} dish 菜品
  * @param {string} [spice] 用户选的辣度；不传则用菜品推荐辣度
+ * @returns {string} 落到的行身份（uid）
  */
 function addToCart(dish, spice) {
   const cart = getCart()
   const useSpice = spice || dish.spice || '不辣'
-  const wantKey = String(dish.id) + '|' + useSpice
+  const wantKey = String(dish.id !== undefined && dish.id !== null ? dish.id : dish.dishId) + '|' + useSpice
 
   const found = cart.find(function (it) {
     return itemKey(it) === wantKey
@@ -47,79 +89,150 @@ function addToCart(dish, spice) {
 
   if (found) {
     found.qty += 1
-  } else {
-    cart.push({
-      key: wantKey,
-      dishId: dish.id,
-      name: dish.name,
-      emoji: dish.emoji,
-      spice: useSpice,
-      qty: 1,
-    })
+    setCart(cart)
+    return rowUid(found)
   }
+
+  const row = {
+    uid: newUid(),
+    key: wantKey,
+    dishId: dish.id !== undefined && dish.id !== null ? dish.id : dish.dishId,
+    name: dish.name,
+    emoji: dish.emoji,
+    spice: useSpice,
+    note: '',
+    qty: 1,
+  }
+  cart.push(row)
   setCart(cart)
-  return cart
+  return row.uid
 }
 
 /**
- * 改数量（按条目 key 定位，同菜不同辣度互不影响）
- * @param {string} key 条目唯一键
+ * 改数量（按行定位，同菜不同辣度互不影响）
+ * @param {string} id 行身份（uid，兼容旧的 key）
  * @param {number} delta +1 / -1
+ * @returns {string} 操作后这一行的 uid；数量归零被移除时返回 ''
  */
-function changeQty(key, delta) {
-  let cart = getCart()
-  const found = cart.find(function (it) {
-    return itemKey(it) === key
+function changeQty(id, delta) {
+  const cart = getCart()
+  const row = cart.find(function (it) {
+    return sameRow(it, id)
   })
-  if (!found) return cart
-  found.qty += delta
-  if (found.qty <= 0) {
-    cart = cart.filter(function (it) {
-      return itemKey(it) !== key
-    })
+  if (!row) return ''
+
+  row.qty += delta
+  if (row.qty <= 0) {
+    setCart(
+      cart.filter(function (it) {
+        return !sameRow(it, id)
+      })
+    )
+    return ''
   }
   setCart(cart)
-  return cart
+  return rowUid(row)
 }
 
-function removeFromCart(key) {
-  const cart = getCart().filter(function (it) {
-    return itemKey(it) !== key
-  })
-  setCart(cart)
-  return cart
+/** @returns {string} 恒为 ''（这行已经没了） */
+function removeFromCart(id) {
+  setCart(
+    getCart().filter(function (it) {
+      return !sameRow(it, id)
+    })
+  )
+  return ''
 }
 
 /**
- * 改某条目的辣度。若改后与已有条目重复则合并数量。
- * @param {string} key 原条目 key
- * @param {string} spice 新辣度
+ * 改某行的辣度。若改后与另一行重复则合并数量。
+ * 合并时：目标行没备注就继承被合并行的备注（别让用户白写）。
+ * @returns {string} 合并 / 修改后活下来的那行 uid；找不到返回 ''
  */
-function changeSpice(key, spice) {
-  let cart = getCart()
+function changeSpice(id, spice) {
+  const cart = getCart()
   const idx = cart.findIndex(function (it) {
-    return itemKey(it) === key
+    return sameRow(it, id)
   })
-  if (idx < 0) return cart
+  if (idx < 0) return ''
 
   const target = cart[idx]
   target.spice = spice
-  const newKey = target.dishId + '|' + spice
+  const newKey = itemKey(target)
 
-  // 已经有同样「菜 + 辣度」的条目 → 合并
   const dupIdx = cart.findIndex(function (it, i) {
     return i !== idx && itemKey(it) === newKey
   })
 
   if (dupIdx >= 0) {
-    cart[dupIdx].qty += target.qty
+    const dup = cart[dupIdx]
+    dup.qty += target.qty
+    if (!dup.note && target.note) dup.note = target.note
     cart.splice(idx, 1)
-  } else {
-    target.key = newKey
+    setCart(cart)
+    return rowUid(dup)
+  }
+
+  target.key = newKey
+  setCart(cart)
+  return rowUid(target)
+}
+
+/**
+ * 换一道菜（保留这一行的数量与 uid）。
+ * 若换成的菜 + 辣度已经存在 → 合并数量，备注同样按「目标空则继承」处理。
+ * @param {string} id 行身份
+ * @param {object} dish 新菜品（需要 id 或 dishId / name / emoji / spice）
+ * @returns {string} 换完后那一行的 uid；找不到返回 ''
+ */
+function replaceDish(id, dish) {
+  const cart = getCart()
+  const idx = cart.findIndex(function (it) {
+    return sameRow(it, id)
+  })
+  if (idx < 0 || !dish) return ''
+
+  const row = cart[idx]
+  const dishId = dish.dishId !== undefined && dish.dishId !== null ? dish.dishId : dish.id
+  row.dishId = dishId
+  row.name = dish.name || row.name
+  row.emoji = dish.emoji || row.emoji
+  // 新菜有推荐辣度就用它，否则保留原来选的
+  row.spice = dish.spice || row.spice || '不辣'
+  row.key = itemKey(row)
+
+  const dupIdx = cart.findIndex(function (it, i) {
+    return i !== idx && itemKey(it) === row.key
+  })
+
+  if (dupIdx >= 0) {
+    const dup = cart[dupIdx]
+    dup.qty += row.qty
+    if (!dup.note && row.note) dup.note = row.note
+    cart.splice(idx, 1)
+    setCart(cart)
+    return rowUid(dup)
   }
 
   setCart(cart)
-  return cart
+  return rowUid(row)
+}
+
+/**
+ * 改某行的备注
+ * @param {string} id 行身份
+ * @param {string} note 备注（自动去掉首尾空白并限长）
+ * @returns {string} 这一行的 uid；找不到返回 ''
+ */
+function setItemNote(id, note) {
+  const cart = getCart()
+  const row = cart.find(function (it) {
+    return sameRow(it, id)
+  })
+  if (!row) return ''
+  row.note = normalizeNote(note)
+  setCart(cart)
+  return rowUid(row)
 }
 
 function clearCart() {
@@ -142,12 +255,15 @@ function setNickname(nick) {
 
 module.exports = {
   itemKey,
+  normalizeNote,
   getCart,
   setCart,
   addToCart,
   changeQty,
   removeFromCart,
   changeSpice,
+  replaceDish,
+  setItemNote,
   clearCart,
   cartCount,
   getNickname,

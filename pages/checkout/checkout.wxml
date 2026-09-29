@@ -8,13 +8,17 @@
   <block wx:else>
     <!-- 菜品清单 -->
     <view class="card section">
-      <view class="section-title">🧺 选好的菜<text class="section-hint">（辣度可以逐道改）</text></view>
+      <view class="section-title">🧺 选好的菜<text class="section-hint">（辣度、备注、换菜都能改）</text></view>
 
-      <view class="cart-item" wx:for="{{cart}}" wx:key="key">
+      <view class="cart-item" wx:for="{{cart}}" wx:key="uid">
         <view class="ci-main">
           <text class="ci-emoji">{{item.emoji}}</text>
           <view class="ci-info">
-            <text class="ci-name">{{item.name}}</text>
+            <view class="ci-name-row">
+              <text class="ci-name">{{item.name}}</text>
+              <!-- 打开「改这道菜」面板：辣度 / 备注 / 换菜 -->
+              <text class="ci-edit" data-uid="{{item.uid}}" catchtap="openEditor">✏️</text>
+            </view>
             <!-- 辣度选择：点一下直接切换 -->
             <view class="ci-spices">
               <text
@@ -22,23 +26,27 @@
                 wx:for="{{spiceLevels}}"
                 wx:for-item="sp"
                 wx:key="key"
-                data-key="{{item.key}}"
+                data-uid="{{item.uid}}"
                 data-spice="{{sp.key}}"
                 catchtap="onTapSpice"
               >{{sp.key}}</text>
             </view>
+            <!-- 这一道菜的备注 -->
+            <view class="ci-note" wx:if="{{item.note}}">📝 {{item.note}}</view>
           </view>
         </view>
 
         <view class="ci-actions">
           <view class="ci-stepper">
-            <view class="step" data-key="{{item.key}}" data-delta="-1" catchtap="onQtyChange">−</view>
+            <view class="step" data-uid="{{item.uid}}" data-delta="-1" catchtap="onQtyChange">−</view>
             <text class="step-num">{{item.qty}}</text>
-            <view class="step step-plus" data-key="{{item.key}}" data-delta="1" catchtap="onQtyChange">＋</view>
+            <view class="step step-plus" data-uid="{{item.uid}}" data-delta="1" catchtap="onQtyChange">＋</view>
           </view>
-          <text class="ci-remove" data-key="{{item.key}}" catchtap="onRemoveItem">✕</text>
+          <text class="ci-remove" data-uid="{{item.uid}}" catchtap="onRemoveItem">✕</text>
         </view>
       </view>
+
+      <view class="add-more" bindtap="goBackMenu">＋ 再加几个菜</view>
     </view>
 
     <!-- 用餐时间 -->
@@ -86,11 +94,11 @@
 
     <!-- 备注 -->
     <view class="card section">
-      <view class="section-title">💬 想对大厨说</view>
+      <view class="section-title">💬 想对大厨说<text class="section-hint">（整单的话；单道菜的要求点 ✏️ 写）</text></view>
       <textarea
         class="textarea"
         value="{{remark}}"
-        placeholder="辣度、忌口、想说的话…（可不填）"
+        placeholder="忌口、几点到家、想说的话…（可不填）"
         placeholder-class="ph"
         maxlength="100"
         bindinput="onRemarkInput"
@@ -99,4 +107,12 @@
 
     <button class="btn-main submit" disabled="{{submitting}}" bindtap="onSubmit">下单给大厨 👨‍🍳（{{totalCount}} 道菜）</button>
   </block>
+
+  <!-- 逐道菜修改：辣度 / 备注 / 换一道菜 -->
+  <dish-editor
+    wx:if="{{editorOpen}}"
+    item="{{editorItem}}"
+    bind:change="onEditorChange"
+    bind:close="closeEditor"
+  />
 </view>

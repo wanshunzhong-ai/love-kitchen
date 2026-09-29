@@ -16,7 +16,11 @@
         <view class="ci-main">
           <text class="ci-emoji">{{item.emoji}}</text>
           <view class="ci-info">
-            <text class="ci-name">{{item.name}}</text>
+            <view class="ci-name-row">
+              <text class="ci-name">{{item.name}}</text>
+              <!-- 打开「改这道菜」面板：辣度 / 备注 / 换菜 -->
+              <text class="ci-edit" data-key="{{item.key}}" catchtap="openEditor">✏️</text>
+            </view>
             <!-- 辣度可改：点一下直接切换 -->
             <view class="ci-spices">
               <text
@@ -29,6 +33,8 @@
                 catchtap="onTapSpice"
               >{{sp.key}}</text>
             </view>
+            <!-- 这一道菜的备注 -->
+            <view class="ci-note" wx:if="{{item.note}}">📝 {{item.note}}</view>
           </view>
         </view>
 
@@ -157,4 +163,12 @@
       </scroll-view>
     </view>
   </view>
+
+  <!-- 逐道菜修改：辣度 / 备注 / 换一道菜 -->
+  <dish-editor
+    wx:if="{{editorOpen}}"
+    item="{{editorItem}}"
+    bind:change="onEditorChange"
+    bind:close="closeEditor"
+  />
 </view>

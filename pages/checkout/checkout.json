@@ -1,5 +1,8 @@
 {
   "navigationBarTitleText": "确认订单",
   "navigationBarBackgroundColor": "#FFF7F3",
-  "navigationBarTextStyle": "black"
+  "navigationBarTextStyle": "black",
+  "usingComponents": {
+    "dish-editor": "/components/dish-editor/dish-editor"
+  }
 }

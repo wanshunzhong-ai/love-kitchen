@@ -51,6 +51,19 @@ const DINE_SLOTS = [
 // 点菜可提前的最大天数（含今天，共 8 天可选）
 const DINE_MAX_AHEAD_DAYS = 7
 
+// 每道菜单独备注的字数上限（下单页「改这道菜」面板里用）
+const DISH_NOTE_MAX = 20
+
+// 每道菜备注的快捷短语：点一下就填进去，省得逐字打
+const DISH_NOTE_TAGS = [
+  '不放葱',
+  '不要香菜',
+  '少放盐',
+  '少放油',
+  '多放辣椒',
+  '打包带走',
+]
+
 module.exports = {
   CATEGORIES,
   DISH_EMOJIS,
@@ -59,4 +72,6 @@ module.exports = {
   SPICE_LEVELS,
   DINE_SLOTS,
   DINE_MAX_AHEAD_DAYS,
+  DISH_NOTE_MAX,
+  DISH_NOTE_TAGS,
 }

@@ -21,6 +21,9 @@ const ORDER_STATUSES = ['pending', 'cooking', 'done']
 // 用餐时间校验（日期范围 / 时段合法性）
 const dine = require('./dine')
 
+// 每道菜备注的长度上限（与前端输入框保持一致）
+const { DISH_NOTE_MAX } = require('./constants')
+
 // 单次最多拉多少条订单。订单页是一次性拉全再本地筛选，
 // 200 条足够很长一段时间的日常使用，超出后只显示最近的。
 const MAX_ORDERS = 200
@@ -157,6 +160,7 @@ function normalizeDine(payload) {
 }
 
 // 页面层传来的菜品清单 → 只保留该存的字段，避免脏数据进库
+// note 是「这一道菜」的备注（比如「不放葱」），与订单级 remark 是两回事
 function normalizeItems(raw) {
   const items = Array.isArray(raw) ? raw : []
   return items.map(function (it) {
@@ -165,6 +169,11 @@ function normalizeItems(raw) {
       name: it.name,
       emoji: it.emoji,
       spice: it.spice || '不辣',
+      // 只接受字符串备注：脏数据（数字 / 对象）一律当没写
+      note:
+        typeof it.note === 'string'
+          ? it.note.trim().slice(0, DISH_NOTE_MAX)
+          : '',
       qty: Number(it.qty) || 1,
     }
   })

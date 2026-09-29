@@ -1,4 +1,4 @@
-// 确认订单页：调整数量、逐道改辣度、选用餐时间、写备注、填点菜人，提交到云端
+// 确认订单页：改数量、逐道改辣度 / 备注 / 换菜、选用餐时间、写备注、填点菜人，提交到云端
 const api = require('../../utils/api')
 const store = require('../../utils/store')
 const ui = require('../../utils/ui')
@@ -13,6 +13,10 @@ Page({
     nickname: '',
     submitting: false,
     spiceLevels: SPICE_LEVELS,
+    // 逐道菜修改面板（辣度 / 备注 / 换菜）
+    editorOpen: false,
+    editorUid: '',
+    editorItem: null,
     // 用餐时间：日期（今天～一周内）+ 时段（早/中/晚/夜宵）
     dineDates: [],
     dineDate: '',
@@ -77,24 +81,78 @@ Page({
     })
   },
 
-  // 数量加减：按条目 key（菜 + 辣度）定位，同菜不同辣度互不影响
+  // 数量加减：按行身份（uid）定位，同菜不同辣度互不影响
   onQtyChange(e) {
-    const key = e.currentTarget.dataset.key
+    const uid = e.currentTarget.dataset.uid
     const delta = Number(e.currentTarget.dataset.delta)
-    store.changeQty(key, delta)
+    store.changeQty(uid, delta)
     this.refreshCart()
   },
 
   onRemoveItem(e) {
-    store.removeFromCart(e.currentTarget.dataset.key)
+    const uid = e.currentTarget.dataset.uid
+    store.removeFromCart(uid)
+    // 面板正开着这一行时，把它一起关掉
+    if (this.data.editorOpen && this.data.editorUid === uid) this.closeEditor()
     this.refreshCart()
   },
 
-  // 逐道改辣度：同菜已有该辣度时会自动合并数量
+  // 辣度：列表里点一下就能改（更细的修改在「改这道菜」面板里）
   onTapSpice(e) {
-    const key = e.currentTarget.dataset.key
-    store.changeSpice(key, e.currentTarget.dataset.spice)
+    const uid = e.currentTarget.dataset.uid
+    const spice = e.currentTarget.dataset.spice
+    const newUid = store.changeSpice(uid, spice)
     this.refreshCart()
+    // 改辣度可能撞上已有条目而合并，面板跟着换到活下来那一行
+    if (this.data.editorOpen && this.data.editorUid === uid && newUid) {
+      this.setData({ editorUid: newUid })
+    }
+  },
+
+  // ---------- 逐道菜修改面板 ----------
+
+  openEditor(e) {
+    const uid = e.currentTarget.dataset.uid
+    const row = this.data.cart.find(function (it) {
+      return it.uid === uid
+    })
+    if (!row) return
+    this.setData({
+      editorOpen: true,
+      editorUid: uid,
+      editorItem: { name: row.name, emoji: row.emoji, spice: row.spice, note: row.note },
+    })
+  },
+
+  closeEditor() {
+    this.setData({ editorOpen: false, editorUid: '', editorItem: null })
+  },
+
+  // 面板里的改动落到购物车。注意：改辣度 / 换菜都可能让这一行与别行合并
+  // （活下来的那条 uid 会变），所以每一步都接着最新的 uid 往下走。
+  onEditorChange(e) {
+    const d = e.detail || {}
+    let uid = this.data.editorUid
+    if (!uid) return
+
+    if (d.dish) uid = store.replaceDish(uid, d.dish) || uid
+    if (d.spice) uid = store.changeSpice(uid, d.spice) || uid
+    if (d.note !== undefined) uid = store.setItemNote(uid, d.note) || uid
+
+    this.refreshCart()
+
+    const row = store.getCart().find(function (it) {
+      return it.uid === uid
+    })
+    if (!row) {
+      // 这一行被合并掉 / 删掉了，面板没必要继续留着
+      this.closeEditor()
+      return
+    }
+    this.setData({
+      editorUid: uid,
+      editorItem: { name: row.name, emoji: row.emoji, spice: row.spice, note: row.note },
+    })
   },
 
   onRemarkInput(e) {
@@ -127,6 +185,7 @@ Page({
           name: it.name,
           emoji: it.emoji,
           spice: it.spice || '不辣', // 用户选定的辣度
+          note: it.note || '', // 这一道菜的单独备注
           qty: it.qty,
         }
       })
@@ -145,7 +204,7 @@ Page({
       // 重置提交态，否则从订单页返回后按钮会一直是禁用的
       this.setData({ submitting: false })
       ui.toast('订单已送达厨房 🎉')
-      // 用 navigateBack 回订单页（orders 是 tabBar 页，switchTab 会保留本页在栈里）
+      // 用 switchTab 回订单页（orders 是 tabBar 页，会关掉本页）
       setTimeout(function () {
         wx.switchTab({ url: '/pages/orders/orders' })
       }, 800)

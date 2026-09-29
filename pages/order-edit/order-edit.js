@@ -1,4 +1,4 @@
-// 编辑订单页：改菜品、改每道菜的辣度、选用餐时间、改备注、改点菜人、改状态，或整单删除
+// 编辑订单页：改菜品、逐道改辣度 / 备注 / 换菜、从菜单加菜、选用餐时间、改备注、改点菜人、改状态，或整单删除
 const api = require('../../utils/api')
 const ui = require('../../utils/ui')
 const dine = require('../../utils/dine')
@@ -7,6 +7,45 @@ const { CATEGORIES, ORDER_STATUS_OPTIONS, SPICE_LEVELS } = require('../../utils/
 /** 订单内条目的唯一键：同一道菜的不同辣度算两条 */
 function itemKey(it) {
   return String(it.dishId != null ? it.dishId : it.name) + '|' + (it.spice || '不辣')
+}
+
+/** 辣度 → 档位（0~3），用于配色 */
+function spiceIdxOf(spice) {
+  const hit = SPICE_LEVELS.find(function (s) {
+    return s.key === spice
+  })
+  return hit ? hit.level : 0
+}
+
+/**
+ * 把某个条目的字段改掉，并处理「改完撞上已有条目」的情况。
+ * 撞上时合并数量到目标条目（备注按「目标没有就继承来源」处理，别让用户白写）。
+ * @returns {{ items: Array, key: string, found: boolean }} key 是改完后活下来那条
+ */
+function applyRowChange(items, key, patch) {
+  const out = items.map(function (it) {
+    return Object.assign({}, it)
+  })
+  const idx = out.findIndex(function (it) {
+    return it.key === key
+  })
+  if (idx < 0) return { items: out, key: key, found: false }
+
+  const row = out[idx]
+  Object.assign(row, patch)
+  row.spiceIdx = spiceIdxOf(row.spice)
+  row.key = itemKey(row)
+
+  const dupIdx = out.findIndex(function (it, i) {
+    return i !== idx && it.key === row.key
+  })
+  if (dupIdx >= 0) {
+    const dup = out[dupIdx]
+    dup.qty += row.qty
+    if (!dup.note && row.note) dup.note = row.note
+    out.splice(idx, 1)
+  }
+  return { items: out, key: row.key, found: true }
 }
 
 Page({
@@ -27,6 +66,10 @@ Page({
     totalCount: 0,
     loading: true,
     saving: false,
+    // 逐道菜修改面板（辣度 / 备注 / 换菜）
+    editorOpen: false,
+    editorKey: '',
+    editorItem: null,
     // 用餐时间（与结算页同一套选项；老订单没存过则给默认值）
     dineDates: [],
     dineDate: '',
@@ -47,19 +90,17 @@ Page({
     this.loadOrder(id)
   },
 
-  // 给每条补 key / spiceIdx，供 wxml 使用
+  // 给每条补 key / spiceIdx / note，供 wxml 使用
   decorate(items) {
     return (Array.isArray(items) ? items : []).map(function (it) {
       const spice = it.spice || '不辣'
-      const hit = SPICE_LEVELS.find(function (s) {
-        return s.key === spice
-      })
       const row = {
         dishId: it.dishId,
         name: it.name,
         emoji: it.emoji || '🍴',
         spice: spice,
-        spiceIdx: hit ? hit.level : 0,
+        spiceIdx: spiceIdxOf(spice),
+        note: it.note || '',
         qty: Number(it.qty) || 1,
       }
       row.key = itemKey(row)
@@ -158,6 +199,8 @@ Page({
     this.setData({ dineSlot: key })
   },
 
+  // ---------- 菜品行 ----------
+
   onQtyChange(e) {
     const key = e.currentTarget.dataset.key
     const delta = Number(e.currentTarget.dataset.delta)
@@ -176,38 +219,89 @@ Page({
     const items = this.data.items.filter(function (it) {
       return it.key !== key
     })
+    if (this.data.editorOpen && this.data.editorKey === key) this.closeEditor()
     this.setData({ items: items, totalCount: this.countOf(items) })
   },
 
-  // 改某道菜的辣度；若改后与同单已有条目重复则合并数量
+  // 列表里直接改辣度
   onTapSpice(e) {
     const key = e.currentTarget.dataset.key
     const spice = e.currentTarget.dataset.spice
+    const r = applyRowChange(this.data.items, key, { spice: spice })
+    if (!r.found) return
+    this.setData({ items: r.items, totalCount: this.countOf(r.items) })
+    // 合并到别条时，面板要跟着换到活下来那条
+    if (this.data.editorOpen && this.data.editorKey === key) {
+      this.setData({ editorKey: r.key })
+    }
+  },
 
-    const items = this.data.items.map(function (it) {
-      return Object.assign({}, it)
-    })
-    const idx = items.findIndex(function (it) {
+  // ---------- 逐道菜修改面板 ----------
+
+  openEditor(e) {
+    const key = e.currentTarget.dataset.key
+    const row = this.data.items.find(function (it) {
       return it.key === key
     })
-    if (idx < 0) return
-
-    const target = items[idx]
-    target.spice = spice
-    target.spiceIdx = (SPICE_LEVELS.find(function (s) {
-      return s.key === spice
-    }) || { level: 0 }).level
-    target.key = itemKey(target)
-
-    const dupIdx = items.findIndex(function (it, i) {
-      return i !== idx && it.key === target.key
+    if (!row) return
+    this.setData({
+      editorOpen: true,
+      editorKey: key,
+      editorItem: { name: row.name, emoji: row.emoji, spice: row.spice, note: row.note },
     })
-    if (dupIdx >= 0) {
-      items[dupIdx].qty += target.qty
-      items.splice(idx, 1)
+  },
+
+  closeEditor() {
+    this.setData({ editorOpen: false, editorKey: '', editorItem: null })
+  },
+
+  // 面板里的改动落到这一单的条目上（改辣度 / 换菜可能触发合并，key 会变）
+  onEditorChange(e) {
+    const d = e.detail || {}
+    let key = this.data.editorKey
+    if (!key) return
+
+    let items = this.data.items
+    let found = true
+
+    if (d.dish) {
+      const r = applyRowChange(items, key, {
+        dishId: d.dish.dishId,
+        name: d.dish.name,
+        emoji: d.dish.emoji,
+        spice: d.dish.spice,
+      })
+      items = r.items
+      key = r.key
+      found = r.found
+    }
+    if (found && d.spice) {
+      const r = applyRowChange(items, key, { spice: d.spice })
+      items = r.items
+      key = r.key
+      found = r.found
+    }
+    if (found && d.note !== undefined) {
+      const r = applyRowChange(items, key, { note: d.note })
+      items = r.items
+      key = r.key
+      found = r.found
     }
 
-    this.setData({ items: items, totalCount: this.countOf(items) })
+    if (!found) {
+      this.closeEditor()
+      return
+    }
+
+    const row = items.find(function (it) {
+      return it.key === key
+    })
+    this.setData({
+      items: items,
+      totalCount: this.countOf(items),
+      editorKey: key,
+      editorItem: row ? { name: row.name, emoji: row.emoji, spice: row.spice, note: row.note } : null,
+    })
   },
 
   // ---------- 从菜单加菜 ----------
@@ -265,9 +359,8 @@ Page({
       name: dish.name,
       emoji: dish.emoji || '🍴',
       spice: spice,
-      spiceIdx: (SPICE_LEVELS.find(function (s) {
-        return s.key === spice
-      }) || { level: 0 }).level,
+      spiceIdx: spiceIdxOf(spice),
+      note: '',
       qty: 1,
     }
     row.key = itemKey(row)
@@ -305,6 +398,7 @@ Page({
               name: it.name,
               emoji: it.emoji,
               spice: it.spice,
+              note: it.note || '', // 逐道菜的备注必须带上，否则保存一次就丢了
               qty: it.qty,
             }
           }),

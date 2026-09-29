@@ -41,8 +41,12 @@
       <view class="order-items">
         <view class="order-item" wx:for="{{item.items}}" wx:for-item="dish" wx:key="rowKey">
           <view class="oi-left">
-            <text>{{dish.emoji}} {{dish.name}}</text>
-            <text class="oi-spice spice-{{dish.spiceIdx}}">{{dish.spiceText}}</text>
+            <view class="oi-line">
+              <text>{{dish.emoji}} {{dish.name}}</text>
+              <text class="oi-spice spice-{{dish.spiceIdx}}">{{dish.spiceText}}</text>
+            </view>
+            <!-- 这一道菜的单独备注 -->
+            <view class="oi-note" wx:if="{{dish.note}}">📝 {{dish.note}}</view>
           </view>
           <text class="order-qty">× {{dish.qty}}</text>
         </view>

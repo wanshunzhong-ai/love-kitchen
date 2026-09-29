@@ -1,0 +1,260 @@
+/* 「改这道菜」面板（组件内自包含样式：小程序自定义组件默认样式隔离，
+   组件里不能依赖 app.wxss / 页面样式，所以这里把用到的都写全） */
+
+.de-mask {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background: rgba(63, 47, 44, 0.45);
+  z-index: 100;
+  display: flex;
+  align-items: flex-end;
+}
+
+.de-sheet {
+  width: 100%;
+  background: #FFF7F3;
+  border-radius: 32rpx 32rpx 0 0;
+  padding: 28rpx 24rpx 44rpx;
+  box-sizing: border-box;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.de-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20rpx;
+}
+
+.de-title {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #4A3B38;
+}
+
+.de-close {
+  font-size: 32rpx;
+  color: #B9A29B;
+  padding: 0 12rpx;
+}
+
+.de-back {
+  font-size: 26rpx;
+  color: #FF5C8A;
+  font-weight: 600;
+  padding: 0 8rpx;
+}
+
+/* 当前这道菜 */
+.de-cur {
+  display: flex;
+  align-items: center;
+  background: #ffffff;
+  border-radius: 20rpx;
+  padding: 20rpx 24rpx;
+  margin-bottom: 24rpx;
+}
+
+.de-cur-emoji {
+  font-size: 48rpx;
+  width: 72rpx;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.de-cur-info {
+  flex: 1;
+  min-width: 0;
+  padding-left: 8rpx;
+  display: flex;
+  flex-direction: column;
+}
+
+.de-cur-name {
+  font-size: 30rpx;
+  color: #4A3B38;
+  font-weight: 600;
+}
+
+.de-cur-sub {
+  font-size: 22rpx;
+  color: #C08A7A;
+  margin-top: 6rpx;
+}
+
+/* 分区 */
+.de-field {
+  margin-bottom: 26rpx;
+}
+
+.de-label {
+  font-size: 26rpx;
+  color: #4A3B38;
+  font-weight: 600;
+  margin-bottom: 14rpx;
+}
+
+.de-hint {
+  font-size: 22rpx;
+  font-weight: 400;
+  color: #C4B2AC;
+}
+
+.de-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14rpx;
+  margin-top: 14rpx;
+}
+
+.de-chip {
+  font-size: 24rpx;
+  line-height: 56rpx;
+  padding: 0 26rpx;
+  border-radius: 999rpx;
+  color: #8A7772;
+  background: #ffffff;
+  border: 2rpx solid #F6E3DC;
+}
+
+.de-chip-on {
+  background: linear-gradient(135deg, #FF7A9E, #FF9F43);
+  color: #ffffff;
+  border-color: transparent;
+  font-weight: 600;
+}
+
+.de-chip-tag {
+  font-size: 22rpx;
+  line-height: 50rpx;
+  padding: 0 20rpx;
+  color: #C97B8E;
+  background: #FFF0F4;
+  border-color: #FFE0EA;
+}
+
+.de-chip-clear {
+  font-size: 22rpx;
+  line-height: 50rpx;
+  padding: 0 20rpx;
+  color: #B9A29B;
+  background: #F8F3F1;
+  border-color: transparent;
+}
+
+/* 备注输入 */
+.de-input {
+  background: #ffffff;
+  border-radius: 16rpx;
+  padding: 20rpx 24rpx;
+  font-size: 28rpx;
+  border: 2rpx solid #F6E3DC;
+}
+
+.de-ph {
+  color: #D8C7C1;
+}
+
+/* 换菜入口 */
+.de-swap {
+  text-align: center;
+  font-size: 26rpx;
+  color: #FF5C8A;
+  font-weight: 600;
+  background: #FFF3F6;
+  border-radius: 999rpx;
+  padding: 20rpx 0;
+  border: 2rpx dashed #FFD3E0;
+}
+
+.de-done {
+  margin-top: 20rpx;
+  text-align: center;
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #ffffff;
+  line-height: 88rpx;
+  border-radius: 999rpx;
+  background: linear-gradient(135deg, #FF7A9E, #FF9F43);
+}
+
+/* 换菜：分类 + 列表 */
+.de-cats {
+  white-space: nowrap;
+  margin-bottom: 20rpx;
+}
+
+.de-cat {
+  display: inline-block;
+  padding: 12rpx 28rpx;
+  margin-right: 16rpx;
+  background: #ffffff;
+  border-radius: 999rpx;
+  font-size: 24rpx;
+  color: #8A7772;
+  border: 2rpx solid #F6E3DC;
+}
+
+.de-cat-on {
+  background: linear-gradient(135deg, #FF7A9E, #FF9F43);
+  color: #ffffff;
+  border-color: transparent;
+  font-weight: 600;
+}
+
+.de-list {
+  flex: 1;
+  max-height: 56vh;
+}
+
+.de-list-state {
+  padding: 60rpx 0;
+  text-align: center;
+  font-size: 24rpx;
+  color: #B9A29B;
+}
+
+.de-pick {
+  display: flex;
+  align-items: center;
+  background: #ffffff;
+  border-radius: 20rpx;
+  padding: 20rpx 24rpx;
+  margin-bottom: 16rpx;
+}
+
+.de-pick-emoji {
+  font-size: 44rpx;
+  width: 64rpx;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.de-pick-name {
+  flex: 1;
+  font-size: 28rpx;
+  color: #4A3B38;
+  padding-left: 8rpx;
+}
+
+.de-pick-spice {
+  font-size: 20rpx;
+  color: #C97B8E;
+  background: #FFF0F4;
+  padding: 4rpx 14rpx;
+  border-radius: 999rpx;
+  flex-shrink: 0;
+}
+
+.de-pick-go {
+  font-size: 24rpx;
+  color: #FF5C8A;
+  font-weight: 600;
+  padding-left: 20rpx;
+  flex-shrink: 0;
+}

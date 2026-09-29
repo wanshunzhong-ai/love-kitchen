@@ -86,6 +86,7 @@
 
 .order-item {
   display: flex;
+  align-items: flex-start;
   justify-content: space-between;
   padding: 10rpx 0;
   font-size: 28rpx;
@@ -94,12 +95,31 @@
 
 .order-qty {
   color: #B9A29B;
+  flex-shrink: 0;
+  padding-left: 16rpx;
 }
 
 .oi-left {
   display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  flex: 1;
+  min-width: 0;
+}
+
+.oi-line {
+  display: flex;
   align-items: center;
   min-width: 0;
+}
+
+/* 这一道菜的单独备注 */
+.oi-note {
+  margin-top: 4rpx;
+  font-size: 22rpx;
+  line-height: 1.4;
+  color: #C08A7A;
+  word-break: break-all;
 }
 
 /* 辣度标签：与点菜页同配色 */
