@@ -45,25 +45,42 @@
     </view>
   </view>
 
-  <!-- 忌口清单 -->
-  <view class="me-card">
-    <view class="me-label">忌口清单 <text class="me-count">{{avoids.length}}/{{avoidMax}}</text></view>
-    <view class="me-avoids" wx:if="{{avoids.length > 0}}">
-      <view class="me-avoid" wx:for="{{avoids}}" wx:key="*this">
-        {{item}}
-        <text class="me-avoid-del" data-tag="{{item}}" catchtap="onRemoveAvoid">✕</text>
-      </view>
+  <!-- 忌口清单：只有点餐人需要（谁吃饭谁提要求），做饭人不展示 -->
+  <view class="me-card" wx:if="{{!isCook}}">
+    <view class="me-label-row">
+      <text class="me-label">忌口清单</text>
+      <text class="me-badge">{{avoids.length}}/{{avoidMax}}</text>
+      <text wx:if="{{avoids.length > 0}}" class="me-clear" bindtap="onClearAvoids">清空</text>
     </view>
-    <view class="me-tip" wx:else>还没有忌口，从下面挑几个，或自己输入</view>
 
-    <view class="me-tags">
+    <!-- 已记：一眼看清不能吃什么，点一下就去掉 -->
+    <view class="me-picked" wx:if="{{avoids.length > 0}}">
       <view
-        class="me-tag"
-        wx:for="{{commonTags}}"
+        class="me-avoid"
+        wx:for="{{avoids}}"
         wx:key="*this"
         data-tag="{{item}}"
+        bindtap="onRemoveAvoid"
+      >
+        <text class="me-avoid-text">{{item}}</text>
+        <text class="me-avoid-del">✕</text>
+      </view>
+    </view>
+    <view class="me-empty" wx:else>
+      <text class="me-empty-emoji">🍽️</text>
+      <text class="me-empty-tip">还没记忌口 · 点下面标签，或自己输入</text>
+    </view>
+
+    <!-- 常用标签：已选中的打 ✓（再点一下去掉），没选的显示 ＋ -->
+    <view class="me-sub">常用 · 点一下加，再点一下去</view>
+    <view class="me-tags">
+      <view
+        class="me-tag {{item.on ? 'me-tag-on' : ''}}"
+        wx:for="{{commonTags}}"
+        wx:key="text"
+        data-tag="{{item.text}}"
         bindtap="onCommonTagTap"
-      >＋ {{item}}</view>
+      >{{item.on ? '✓' : '＋'}} {{item.text}}</view>
       <view class="me-tag me-tag-input" bindtap="onAddAvoid">✏️ 自己输入</view>
     </view>
     <view class="me-tip">掌勺前照着这份清单避雷，吃的放心</view>
