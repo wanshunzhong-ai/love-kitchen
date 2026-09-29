@@ -182,6 +182,22 @@ page {
   color: #4A3B38;
 }
 
+/* 个人介绍：多行文本 */
+.me-intro-row {
+  background: #FFF7F2;
+  border: 2rpx solid #F6E3DC;
+  border-radius: 18rpx;
+  padding: 20rpx 24rpx;
+}
+
+.me-intro-input {
+  width: 100%;
+  min-height: 70rpx;
+  font-size: 28rpx;
+  color: #4A3B38;
+  line-height: 1.6;
+}
+
 .me-ph {
   color: #D9C6BF;
 }

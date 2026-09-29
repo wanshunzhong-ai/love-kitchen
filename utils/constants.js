@@ -10,10 +10,10 @@ const CATEGORIES = [
 
 // 身份（首次进入二选一）：决定默认首页与操作权限
 //   点餐人 → 默认进「点菜」，负责下单 / 改单，不推进做菜状态
-//   做饭人 → 默认进「订单」（厨房看板），负责「开始做 / 做好了」推进状态
+//   做饭人 → 默认进「待做」（按日期看要做的菜），负责「开始做 / 做好了」推进状态
 const ROLES = {
   orderer: { key: 'orderer', text: '点餐人', emoji: '🍽️', home: '/pages/menu/menu' },
-  cook: { key: 'cook', text: '做饭人', emoji: '👩‍🍳', home: '/pages/orders/orders' },
+  cook: { key: 'cook', text: '做饭人', emoji: '👩‍🍳', home: '/pages/todo/todo' },
 }
 
 /** 身份 key → 展示信息；非法 / 空值返回 null */
@@ -130,6 +130,9 @@ const AVOID_COMMON = [
   '花生',
 ]
 
+// 个人介绍字数上限（「我的」页，一句话介绍自己）
+const INTRO_MAX = 60
+
 module.exports = {
   CATEGORIES,
   ROLES,
@@ -148,4 +151,5 @@ module.exports = {
   AVOID_MAX,
   AVOID_TEXT_MAX,
   AVOID_COMMON,
+  INTRO_MAX,
 }

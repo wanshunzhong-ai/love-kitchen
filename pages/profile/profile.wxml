@@ -7,8 +7,28 @@
       <view class="me-avatar-edit">📷 换头像</view>
     </button>
     <view class="me-identity">{{roleInfo.text}}</view>
-    <view class="me-id-desc" wx:if="{{moodInfo}}">{{moodInfo.emoji}} 现在{{moodInfo.text}}</view>
-    <view class="me-id-desc" wx:else>选一个当前状态，让TA看见</view>
+    <view class="me-id-desc" wx:if="{{intro}}">{{intro}}</view>
+    <view class="me-id-desc" wx:elif="{{moodInfo}}">{{moodInfo.emoji}} 现在{{moodInfo.text}}</view>
+    <view class="me-id-desc" wx:else>写句介绍，选个状态，让TA看见</view>
+  </view>
+
+  <!-- 个人介绍 -->
+  <view class="me-card">
+    <view class="me-label">个人介绍</view>
+    <view class="me-intro-row">
+      <textarea
+        class="me-intro-input"
+        value="{{intro}}"
+        maxlength="{{introMax}}"
+        auto-height
+        placeholder="一句话介绍自己，比如：爱吃甜，厨艺待考证"
+        placeholder-class="me-ph"
+        bindinput="onIntroInput"
+        bindblur="saveIntro"
+      />
+      <text class="me-count">{{intro.length}}/{{introMax}}</text>
+    </view>
+    <view wx:if="{{introDirty}}" class="me-save" bindtap="saveIntro">保存一下</view>
   </view>
 
   <!-- 当前状态 -->

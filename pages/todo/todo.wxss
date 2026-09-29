@@ -1,0 +1,211 @@
+/* 待做页：做饭人的厨房看板 */
+.todo {
+  padding: 24rpx 24rpx 200rpx;
+}
+
+/* 顶部概览 */
+.hero {
+  background: linear-gradient(135deg, #FFD3E0, #FFE9C7);
+  border-radius: 28rpx;
+  padding: 32rpx;
+  margin-bottom: 24rpx;
+}
+
+.hero-title {
+  font-size: 40rpx;
+  font-weight: 700;
+  color: #B4435E;
+}
+
+.hero-sub {
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  color: #C97B8E;
+}
+
+/* 日期分组头 */
+.date-group {
+  margin-bottom: 30rpx;
+}
+
+.date-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 0 8rpx 14rpx;
+}
+
+.date-text {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #4A3B38;
+}
+
+.date-stat {
+  font-size: 22rpx;
+  color: #B9A29B;
+}
+
+/* 订单卡片（与订单页同风格） */
+.order {
+  background: #ffffff;
+  border: 3rpx solid #F6E3DC;
+  border-radius: 24rpx;
+  padding: 26rpx;
+  margin-bottom: 18rpx;
+  box-shadow: 0 6rpx 20rpx rgba(255, 122, 158, 0.06);
+}
+
+.order-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16rpx;
+}
+
+.order-from {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #8A7772;
+}
+
+.order-status {
+  font-size: 22rpx;
+  font-weight: 600;
+  border-radius: 999rpx;
+  padding: 6rpx 18rpx;
+}
+
+.s-pending {
+  color: #C97B2D;
+  background: #FFF3E0;
+}
+
+.s-cooking {
+  color: #FF5C8A;
+  background: #FFE9EE;
+}
+
+.order-item {
+  display: flex;
+  align-items: center;
+  padding: 12rpx 0;
+  border-bottom: 2rpx dashed #F9EDE7;
+}
+
+.order-item:last-child {
+  border-bottom: none;
+}
+
+.oi-left {
+  flex: 1;
+  min-width: 0;
+}
+
+.oi-line {
+  font-size: 27rpx;
+  color: #4A3B38;
+  font-weight: 500;
+}
+
+.oi-spice {
+  margin-left: 12rpx;
+  font-size: 20rpx;
+  border-radius: 999rpx;
+  padding: 2rpx 12rpx;
+  color: #ffffff;
+}
+
+.spice-0 {
+  background: #D9C6BF;
+}
+
+.spice-1 {
+  background: #FFB35C;
+}
+
+.spice-2 {
+  background: #FF7A45;
+}
+
+.spice-3 {
+  background: #F4433C;
+}
+
+.oi-note {
+  margin-top: 6rpx;
+  font-size: 22rpx;
+  color: #C97B8E;
+}
+
+.order-qty {
+  flex-shrink: 0;
+  margin-left: 16rpx;
+  font-size: 25rpx;
+  font-weight: 600;
+  color: #FF7A9E;
+}
+
+.order-remark {
+  margin-top: 14rpx;
+  font-size: 23rpx;
+  color: #8A7772;
+  background: #FFF7F2;
+  border-radius: 14rpx;
+  padding: 12rpx 18rpx;
+}
+
+.order-foot {
+  margin-top: 14rpx;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.order-goto {
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #FF7A9E;
+}
+
+/* 空态 / 加载态 */
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 100rpx 40rpx;
+}
+
+.state-emoji {
+  font-size: 90rpx;
+  line-height: 1;
+}
+
+.state-tip {
+  margin-top: 24rpx;
+  font-size: 27rpx;
+  color: #8A7772;
+}
+
+.state-sub {
+  margin-top: 10rpx;
+  font-size: 23rpx;
+  color: #C9B6AF;
+}
+
+.btn-retry {
+  margin-top: 28rpx;
+  background: linear-gradient(135deg, #FF7A9E, #FF9F43);
+  color: #ffffff;
+  font-size: 27rpx;
+  font-weight: 600;
+  border-radius: 999rpx;
+  padding: 0 56rpx;
+  line-height: 76rpx;
+}
+
+.todo-tip {
+  text-align: center;
+  font-size: 22rpx;
+  color: #C9B6AF;
+  padding: 10rpx 0 20rpx;
+}

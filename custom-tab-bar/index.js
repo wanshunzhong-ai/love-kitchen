@@ -1,6 +1,6 @@
 // 自定义 tabBar：按身份出不同的 tab ——
 //   点餐人：点菜 / 订单 / 我的
-//   做饭人：订单 / 我的（不需要点餐功能，连「点菜」入口都不给）
+//   做饭人：待做 / 订单 / 我的（待做 = 按日期看的厨房清单，没有点餐入口）
 // 官方 custom-tab-bar 约定：tab 页在 onShow 里 getTabBar().setData({ selected }) 同步选中态
 const store = require('../utils/store')
 
@@ -11,6 +11,7 @@ const TABS = {
     { key: 'profile', path: '/pages/profile/profile', text: '我的', emoji: '💕' },
   ],
   cook: [
+    { key: 'todo', path: '/pages/todo/todo', text: '待做', emoji: '🍳' },
     { key: 'orders', path: '/pages/orders/orders', text: '订单', emoji: '📋' },
     { key: 'profile', path: '/pages/profile/profile', text: '我的', emoji: '💕' },
   ],

@@ -10,7 +10,7 @@
 // 关于每道菜的备注（note）：它挂在「行」上，跟着这一行一起下单。
 // 整单想说的话请用订单级 remark，两者在下单页各有一块输入区。
 
-const { DISH_NOTE_MAX, ROLES, AVOID_MAX, AVOID_TEXT_MAX } = require('./constants')
+const { DISH_NOTE_MAX, ROLES, AVOID_MAX, AVOID_TEXT_MAX, INTRO_MAX } = require('./constants')
 
 const CART_KEY = 'lovekitchen_cart'
 const NICK_KEY = 'lovekitchen_nick'
@@ -18,6 +18,7 @@ const ROLE_KEY = 'lovekitchen_role'
 const AVATAR_KEY = 'lovekitchen_avatar'
 const MOOD_KEY = 'lovekitchen_mood'
 const AVOID_KEY = 'lovekitchen_avoids'
+const INTRO_KEY = 'lovekitchen_intro'
 
 let _seq = 0
 
@@ -323,6 +324,17 @@ function removeAvoid(item) {
   )
 }
 
+/** 个人介绍（一句话自我介绍，没写过返回 ''） */
+function getIntro() {
+  return wx.getStorageSync(INTRO_KEY) || ''
+}
+
+function setIntro(text) {
+  const clean = String(text === null || text === undefined ? '' : text).trim().slice(0, INTRO_MAX)
+  wx.setStorageSync(INTRO_KEY, clean)
+  return clean
+}
+
 // ---------- 身份（点餐人 / 做饭人） ----------
 
 /** @returns {'orderer'|'cook'|''} 未选过身份返回 '' */
@@ -383,6 +395,8 @@ module.exports = {
   setAvoids,
   addAvoid,
   removeAvoid,
+  getIntro,
+  setIntro,
   getRole,
   setRole,
   getRoleInfo,

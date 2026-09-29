@@ -20,7 +20,7 @@
         我是{{item.text}}
         <text wx:if="{{role === item.key}}" class="wc-now">当前身份</text>
       </view>
-      <view class="wc-desc">{{item.key === 'orderer' ? '挑菜下单，写好口味备注，坐等开饭' : '看订单开做，做好标记上菜'}}</view>
+      <view class="wc-desc">{{item.key === 'orderer' ? '挑菜下单，写好口味备注，坐等开饭' : '看待做清单掌勺，做好标记上菜'}}</view>
     </view>
     <text class="wc-arrow">→</text>
   </view>

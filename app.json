@@ -3,6 +3,7 @@
     "pages/role-select/role-select",
     "pages/menu/menu",
     "pages/orders/orders",
+    "pages/todo/todo",
     "pages/checkout/checkout",
     "pages/dish-edit/dish-edit",
     "pages/order-edit/order-edit",
@@ -27,6 +28,10 @@
       {
         "pagePath": "pages/orders/orders",
         "text": "订单"
+      },
+      {
+        "pagePath": "pages/todo/todo",
+        "text": "待做"
       },
       {
         "pagePath": "pages/profile/profile",

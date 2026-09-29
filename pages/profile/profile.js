@@ -2,7 +2,7 @@
 // 内容：头像（微信选头像，saveFile 持久化）、称呼、当前状态、忌口清单、当前身份
 // 都存本地 —— 双人小应用，不需要账号体系
 const store = require('../../utils/store')
-const { roleInfo, moodInfo, MOODS, AVOID_COMMON, AVOID_MAX, AVOID_TEXT_MAX } = require('../../utils/constants')
+const { roleInfo, moodInfo, MOODS, AVOID_COMMON, AVOID_MAX, AVOID_TEXT_MAX, INTRO_MAX } = require('../../utils/constants')
 const ui = require('../../utils/ui')
 
 // 昵称字数上限：显示在订单「来自 xx」里，短一点好看
@@ -19,6 +19,10 @@ Page({
     nickMax: NICK_MAX,
     // 改过还没保存：显示「保存」按钮提醒
     dirty: false,
+    // 个人介绍
+    intro: '',
+    introMax: INTRO_MAX,
+    introDirty: false,
     // 当前状态
     moods: Object.keys(MOODS).map(function (k) {
       return MOODS[k]
@@ -48,6 +52,8 @@ Page({
       avatar: store.getAvatar(),
       nickname: store.getNickname(),
       dirty: false,
+      intro: store.getIntro(),
+      introDirty: false,
       moodKey: moodKey,
       moodInfo: moodInfo(moodKey),
       avoids: store.getAvoids(),
@@ -85,6 +91,17 @@ Page({
     store.setNickname(nick)
     this.setData({ nickname: nick, dirty: false })
     ui.toast('已保存', 'success')
+  },
+
+  // ---------- 个人介绍 ----------
+  onIntroInput(e) {
+    this.setData({ intro: e.detail.value, introDirty: true })
+  },
+
+  saveIntro() {
+    const intro = store.setIntro(this.data.intro)
+    this.setData({ intro: intro, introDirty: false })
+    ui.toast('介绍已保存', 'success')
   },
 
   // ---------- 当前状态 ----------
@@ -140,9 +157,10 @@ Page({
   },
 
   // ---------- 身份 ----------
-  // 去身份选择页换身份；先保存昵称，别让用户白写
+  // 去身份选择页换身份；先保存没落的称呼和介绍，别让用户白写
   goRoleSelect() {
     if (this.data.dirty) this.saveNickname()
+    if (this.data.introDirty) this.saveIntro()
     wx.reLaunch({ url: '/pages/role-select/role-select' })
   },
 })

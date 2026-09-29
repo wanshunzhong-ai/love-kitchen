@@ -1,0 +1,62 @@
+<view class="todo">
+  <!-- 顶部：今日概览 -->
+  <view class="hero">
+    <view class="hero-title">👨‍🍳 待做清单</view>
+    <view class="hero-sub">{{totalDishes > 0 ? '还有 ' + totalDishes + ' 道菜等着你' : '厨房暂无任务'}}</view>
+  </view>
+
+  <view wx:if="{{loading}}" class="state">
+    <text class="state-emoji">🍳</text>
+    <text class="state-tip">正在看看厨房…</text>
+  </view>
+
+  <view wx:elif="{{loadError}}" class="state">
+    <text class="state-emoji">😵</text>
+    <text class="state-tip">清单没加载出来，网络可能开小差了</text>
+    <button class="btn-retry" bindtap="loadOrders">重试</button>
+  </view>
+
+  <view wx:elif="{{groups.length === 0}}" class="state">
+    <text class="state-emoji">☕</text>
+    <text class="state-tip">现在没有要做的菜，歇会儿吧</text>
+    <text class="state-sub">TA 下单后会出现在这里</text>
+  </view>
+
+  <!-- 按日期分组的清单 -->
+  <view wx:else>
+    <view class="date-group" wx:for="{{groups}}" wx:for-item="group" wx:key="key">
+      <view class="date-head">
+        <text class="date-text">{{group.dateText}}</text>
+        <text class="date-stat">{{group.orderCount}} 单 · {{group.dishCount}} 道菜</text>
+      </view>
+
+      <view class="order card" wx:for="{{group.orders}}" wx:for-item="order" wx:key="id">
+        <view class="order-head">
+          <text class="order-from">来自 {{order.order_by}}</text>
+          <text class="order-status s-{{order.status}}">{{statusMap[order.status].emoji}} {{statusMap[order.status].text}}</text>
+        </view>
+
+        <view class="order-items">
+          <view class="order-item" wx:for="{{order.items}}" wx:for-item="dish" wx:key="rowKey">
+            <view class="oi-left">
+              <view class="oi-line">
+                <text>{{dish.emoji}} {{dish.name}}</text>
+                <text class="oi-spice spice-{{dish.spiceIdx}}">{{dish.spiceText}}</text>
+              </view>
+              <view class="oi-note" wx:if="{{dish.note}}">📝 {{dish.note}}</view>
+            </view>
+            <text class="order-qty">× {{dish.qty}}</text>
+          </view>
+        </view>
+
+        <view class="order-remark" wx:if="{{order.remark}}">💬 {{order.remark}}</view>
+
+        <view class="order-foot" bindtap="goOrders">
+          <text class="order-goto">去开做 / 上菜 →</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="todo-tip">状态推进去「订单」tab 操作哦</view>
+  </view>
+</view>
