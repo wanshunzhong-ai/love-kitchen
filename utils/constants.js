@@ -97,6 +97,39 @@ const DISH_NOTE_TAGS = [
   '打包带走',
 ]
 
+// 当前状态（基本资料页选 mood，情绪小标签）
+const MOODS = {
+  happy: { key: 'happy', text: '开心', emoji: '😄' },
+  plain: { key: 'plain', text: '平淡', emoji: '😐' },
+  sad: { key: 'sad', text: '不开心', emoji: '🙁' },
+  tired: { key: 'tired', text: '累了', emoji: '😪' },
+  angry: { key: 'angry', text: '生气', emoji: '😤' },
+  greedy: { key: 'greedy', text: '嘴馋', emoji: '🤤' },
+}
+
+/** 状态 key → 展示信息；非法 / 空值返回 null */
+function moodInfo(key) {
+  return MOODS[key] || null
+}
+
+// 忌口清单：条数与单条字数上限（基本资料页维护，做菜的人照着避雷）
+const AVOID_MAX = 12
+const AVOID_TEXT_MAX = 10
+
+// 忌口快捷标签：点一下就加进清单
+const AVOID_COMMON = [
+  '香菜',
+  '葱',
+  '姜',
+  '蒜',
+  '辣椒',
+  '海鲜',
+  '香菇',
+  '肥肉',
+  '生冷',
+  '花生',
+]
+
 module.exports = {
   CATEGORIES,
   ROLES,
@@ -110,4 +143,9 @@ module.exports = {
   DINE_MAX_AHEAD_DAYS,
   DISH_NOTE_MAX,
   DISH_NOTE_TAGS,
+  MOODS,
+  moodInfo,
+  AVOID_MAX,
+  AVOID_TEXT_MAX,
+  AVOID_COMMON,
 }

@@ -1,0 +1,12 @@
+<view class="tabbar">
+  <view
+    class="tab {{selected === item.key ? 'tab-on' : ''}}"
+    wx:for="{{tabs}}"
+    wx:key="key"
+    data-path="{{item.path}}"
+    bindtap="onTap"
+  >
+    <text class="tab-emoji">{{item.emoji}}</text>
+    <text class="tab-text">{{item.text}}</text>
+  </view>
+</view>

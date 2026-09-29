@@ -10,11 +10,14 @@
 // 关于每道菜的备注（note）：它挂在「行」上，跟着这一行一起下单。
 // 整单想说的话请用订单级 remark，两者在下单页各有一块输入区。
 
-const { DISH_NOTE_MAX, ROLES } = require('./constants')
+const { DISH_NOTE_MAX, ROLES, AVOID_MAX, AVOID_TEXT_MAX } = require('./constants')
 
 const CART_KEY = 'lovekitchen_cart'
 const NICK_KEY = 'lovekitchen_nick'
 const ROLE_KEY = 'lovekitchen_role'
+const AVATAR_KEY = 'lovekitchen_avatar'
+const MOOD_KEY = 'lovekitchen_mood'
+const AVOID_KEY = 'lovekitchen_avoids'
 
 let _seq = 0
 
@@ -254,6 +257,72 @@ function setNickname(nick) {
   wx.setStorageSync(NICK_KEY, nick)
 }
 
+// ---------- 基本资料：头像 / 状态 / 忌口 ----------
+
+/** 头像路径（选完微信头像后已 saveFile 持久化；没设置过返回 ''） */
+function getAvatar() {
+  return wx.getStorageSync(AVATAR_KEY) || ''
+}
+
+function setAvatar(path) {
+  if (path) wx.setStorageSync(AVATAR_KEY, path)
+}
+
+/** 当前状态 key（'' = 还没选过） */
+function getMood() {
+  const mood = wx.getStorageSync(MOOD_KEY)
+  return mood && typeof mood === 'string' ? mood : ''
+}
+
+function setMood(key) {
+  if (key) wx.setStorageSync(MOOD_KEY, key)
+}
+
+/** 忌口清单：永远是字符串数组，脏数据兜底为空 */
+function getAvoids() {
+  const raw = wx.getStorageSync(AVOID_KEY)
+  if (!Array.isArray(raw)) return []
+  return raw.filter(function (it) {
+    return typeof it === 'string' && it.trim()
+  })
+}
+
+function setAvoids(list) {
+  const seen = {}
+  const clean = []
+  const arr = Array.isArray(list) ? list : []
+  for (let i = 0; i < arr.length && clean.length < AVOID_MAX; i++) {
+    const item = String(arr[i] === null || arr[i] === undefined ? '' : arr[i]).trim().slice(0, AVOID_TEXT_MAX)
+    if (item && !seen[item]) {
+      seen[item] = true
+      clean.push(item)
+    }
+  }
+  wx.setStorageSync(AVOID_KEY, clean)
+  return clean
+}
+
+/** 加一条忌口：去重、限长、限量；已存在或满了返回 false */
+function addAvoid(item) {
+  const list = getAvoids()
+  const text = String(item === null || item === undefined ? '' : item).trim().slice(0, AVOID_TEXT_MAX)
+  if (!text) return false
+  if (list.indexOf(text) >= 0) return false
+  if (list.length >= AVOID_MAX) return false
+  list.push(text)
+  setAvoids(list)
+  return true
+}
+
+/** 按文本删一条忌口 */
+function removeAvoid(item) {
+  setAvoids(
+    getAvoids().filter(function (it) {
+      return it !== item
+    })
+  )
+}
+
 // ---------- 身份（点餐人 / 做饭人） ----------
 
 /** @returns {'orderer'|'cook'|''} 未选过身份返回 '' */
@@ -306,6 +375,14 @@ module.exports = {
   cartCount,
   getNickname,
   setNickname,
+  getAvatar,
+  setAvatar,
+  getMood,
+  setMood,
+  getAvoids,
+  setAvoids,
+  addAvoid,
+  removeAvoid,
   getRole,
   setRole,
   getRoleInfo,

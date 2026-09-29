@@ -28,6 +28,11 @@ Page({
   },
 
   onShow() {
+    // 自定义 tabBar：同步选中态 + 按身份重算 tab 列表（做饭人没有点菜 tab）
+    if (typeof this.getTabBar === 'function' && this.getTabBar()) {
+      this.getTabBar().setData({ selected: 'menu' })
+      this.getTabBar().refresh()
+    }
     // 身份守卫：没选过身份 → 送去选择页
     const role = store.ensureRole()
     if (!role) return
@@ -41,9 +46,9 @@ Page({
     this.loadDishes()
   },
 
-  // 头像/身份胶囊：进基本资料页（里面可以换身份）
+  // 头像/身份胶囊：进「我的」tab（基本资料）
   goProfile() {
-    wx.navigateTo({ url: '/pages/profile/profile' })
+    wx.switchTab({ url: '/pages/profile/profile' })
   },
 
   async loadDishes() {

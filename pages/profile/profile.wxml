@@ -1,12 +1,55 @@
 <view class="me">
-  <!-- 头像卡：身份即头像 -->
+  <!-- 头像卡：微信选头像 + 称呼 + 当前状态 -->
   <view class="me-card me-hero">
-    <text class="me-avatar">{{roleInfo.emoji}}</text>
+    <button class="me-avatar-btn" open-type="chooseAvatar" bind:chooseavatar="onChooseAvatar">
+      <image wx:if="{{avatar}}" class="me-avatar-img" src="{{avatar}}" mode="aspectFill" />
+      <text wx:else class="me-avatar">{{roleInfo.emoji}}</text>
+      <view class="me-avatar-edit">📷 换头像</view>
+    </button>
     <view class="me-identity">{{roleInfo.text}}</view>
-    <view class="me-id-desc">{{role === 'cook' ? '掌勺的人：看订单开做，做好标记上菜' : '点菜的人：挑菜下单，写好口味备注'}}</view>
+    <view class="me-id-desc" wx:if="{{moodInfo}}">{{moodInfo.emoji}} 现在{{moodInfo.text}}</view>
+    <view class="me-id-desc" wx:else>选一个当前状态，让TA看见</view>
   </view>
 
-  <!-- 昵称 -->
+  <!-- 当前状态 -->
+  <view class="me-card">
+    <view class="me-label">当前状态</view>
+    <view class="me-moods">
+      <view
+        class="me-mood {{moodKey === item.key ? 'me-mood-on' : ''}}"
+        wx:for="{{moods}}"
+        wx:key="key"
+        data-key="{{item.key}}"
+        bindtap="onMoodTap"
+      >{{item.emoji}} {{item.text}}</view>
+    </view>
+  </view>
+
+  <!-- 忌口清单 -->
+  <view class="me-card">
+    <view class="me-label">忌口清单 <text class="me-count">{{avoids.length}}/{{avoidMax}}</text></view>
+    <view class="me-avoids" wx:if="{{avoids.length > 0}}">
+      <view class="me-avoid" wx:for="{{avoids}}" wx:key="*this">
+        {{item}}
+        <text class="me-avoid-del" data-tag="{{item}}" catchtap="onRemoveAvoid">✕</text>
+      </view>
+    </view>
+    <view class="me-tip" wx:else>还没有忌口，从下面挑几个，或自己输入</view>
+
+    <view class="me-tags">
+      <view
+        class="me-tag"
+        wx:for="{{commonTags}}"
+        wx:key="*this"
+        data-tag="{{item}}"
+        bindtap="onCommonTagTap"
+      >＋ {{item}}</view>
+      <view class="me-tag me-tag-input" bindtap="onAddAvoid">✏️ 自己输入</view>
+    </view>
+    <view class="me-tip">掌勺前照着这份清单避雷，吃的放心</view>
+  </view>
+
+  <!-- 称呼 -->
   <view class="me-card">
     <view class="me-label">我的称呼</view>
     <view class="me-nick-row">

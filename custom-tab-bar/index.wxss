@@ -1,0 +1,40 @@
+/* 自定义 tabBar：白底圆角浮起，粉色选中态 */
+.tabbar {
+  position: fixed;
+  left: 24rpx;
+  right: 24rpx;
+  bottom: 0;
+  /* 底部安全区之上 */
+  padding-bottom: calc(env(safe-area-inset-bottom) + 10rpx);
+  margin-bottom: 0;
+  display: flex;
+  background: #ffffff;
+  border-top: 2rpx solid #F6E3DC;
+  border-radius: 24rpx 24rpx 0 0;
+  box-shadow: 0 -6rpx 24rpx rgba(255, 122, 158, 0.08);
+}
+
+.tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 14rpx 0 6rpx;
+  color: #B9A29B;
+  transition: color 0.15s;
+}
+
+.tab-emoji {
+  font-size: 40rpx;
+  line-height: 1.2;
+}
+
+.tab-text {
+  margin-top: 4rpx;
+  font-size: 22rpx;
+  font-weight: 600;
+}
+
+.tab-on {
+  color: #FF7A9E;
+}
