@@ -1,6 +1,6 @@
 // 订单页：全部订单都能看到，但操作按身份分工——
-//   做饭人：推进状态（待开做 → 开始做 → 做好了标记已上菜）
-//   点餐人：下单 / 改单 / 删单，等大厨开做
+//   掌勺人：推进状态（待开做 → 开始做 → 做好了标记已上菜）
+//   干饭人：下单 / 改单 / 删单，等掌勺人开做
 const api = require('../../utils/api')
 const ui = require('../../utils/ui')
 const dine = require('../../utils/dine')
@@ -15,14 +15,14 @@ Page({
     filters: [
       { key: '全部', emoji: '📋' },
       { key: 'pending', emoji: '📝' },
-      { key: 'cooking', emoji: '👩‍🍳' },
+      { key: 'cooking', emoji: '🧑‍🍳' },
       { key: 'done', emoji: '🎉' },
     ],
     activeFilter: '全部',
     statusMap: ORDER_STATUS,
     loading: true,
     loadError: false,
-    // 身份：cook 才有「开始做 / 做好了」按钮；orderer 看到的是「等大厨开做」提示
+    // 身份：cook 才有「开始做 / 做好了」按钮；orderer 看到的是「等掌勺人开做」提示
     role: '',
     roleInfo: null,
     isCook: false,
@@ -42,7 +42,7 @@ Page({
       roleInfo: store.getRoleInfo(),
       isCook: role === 'cook',
     })
-    // 同一个页面两种身份标题不同：点餐人看的是「我的订单」，做饭人看的是厨房「订单」
+    // 同一个页面两种身份标题不同：干饭人看的是「我的订单」，掌勺人看的是厨房「订单」
     wx.setNavigationBarTitle({ title: role === 'cook' ? '订单' : '我的订单' })
     this.loadOrders()
   },
@@ -153,7 +153,7 @@ Page({
     })
   },
 
-  // 编辑这一单：改菜、改备注、改点菜人、改状态，或整单删除
+  // 编辑这一单：改菜、改备注、改署名、改状态，或整单删除
   // 已上菜 = 终态：不给编辑（列表里也不渲染入口，这里是兜底防误入）
   onEditOrder(e) {
     const order = this.data.filteredOrders[e.currentTarget.dataset.idx]

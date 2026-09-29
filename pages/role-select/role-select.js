@@ -1,5 +1,5 @@
 // 身份选择页：首次进入（或主动切换）时二选一
-// 选完落本地存储，然后直接跳到该身份的默认首页（点餐人→点菜，做饭人→订单）
+// 选完落本地存储，然后直接跳到该身份的默认首页（干饭人→点单，掌勺人→待做）
 const store = require('../../utils/store')
 const { ROLES, roleInfo } = require('../../utils/constants')
 const ui = require('../../utils/ui')

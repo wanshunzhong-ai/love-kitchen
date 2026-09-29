@@ -1,4 +1,6 @@
-// 点菜页：菜单浏览 + 购物车 + 随机帮选
+// 菜单页：一页两用 ——
+//   干饭人看它是「点单页」：浏览 / 搜索菜单、加购物车、随机帮选
+//   掌勺人看它是「菜单管理页」：加菜 / 改菜 / 下架（底栏 tab 也叫「菜单」），但没有点单入口
 const api = require('../../utils/api')
 const { CATEGORIES, SPICE_LEVELS } = require('../../utils/constants')
 const store = require('../../utils/store')
@@ -28,7 +30,8 @@ Page({
   },
 
   onShow() {
-    // 自定义 tabBar：同步选中态 + 按身份重算 tab 列表（做饭人没有点单 tab）
+    // 自定义 tabBar：同步选中态 + 按身份重算 tab 列表
+    // （干饭人的第二项是「点单」，掌勺人的是「菜单」——同一个 key、同一个页面，只是叫法不同）
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
       this.getTabBar().setData({ selected: 'menu' })
       this.getTabBar().refresh()
@@ -36,10 +39,12 @@ Page({
     // 身份守卫：没选过身份 → 送去选择页
     const role = store.ensureRole()
     if (!role) return
+    // 掌勺人进的是「菜单管理」（加菜 / 改菜 / 下架）
+    wx.setNavigationBarTitle({ title: role === 'cook' ? '菜单管理' : '爱心小厨房' })
     this.setData({
       role: role,
       roleInfo: store.getRoleInfo(),
-      // 做饭人不点单：＋ / 随机帮选 / 购物车栏都只给点餐人
+      // 掌勺人不点单：＋ / 随机帮选 / 购物车栏都只给干饭人
       isCook: role === 'cook',
       cartCount: store.cartCount(),
     })
@@ -130,9 +135,9 @@ Page({
 
   // 点「＋」→ 先让他选辣度（默认就是这道菜的推荐辣度）
   onAddTap(e) {
-    // 做饭人不点单（模板已隐藏＋，这里兜底）
+    // 掌勺人不点单（模板已隐藏＋，这里兜底）
     if (this.data.isCook) {
-      ui.toast('做饭人不点单哦，等TA来下单 💕')
+      ui.toast('掌勺人不点单哦，等TA来点单 💕')
       return
     }
     const dish = this.data.filteredDishes[e.currentTarget.dataset.idx]
@@ -168,7 +173,7 @@ Page({
     if (!dish) return
     if (this.data.isCook) {
       this.setData({ 'spicePicker.open': false })
-      ui.toast('做饭人不点单哦，等TA来下单 💕')
+      ui.toast('掌勺人不点单哦，等TA来点单 💕')
       return
     }
     store.addToCart(dish, selected)
@@ -196,7 +201,7 @@ Page({
     wx.navigateTo({ url: '/pages/checkout/checkout' })
   },
 
-  // 「今天吃什么」随机帮选（点菜功能，只给点餐人）
+  // 「今天吃什么」随机帮选（点单功能，只给干饭人）
   onRandom() {
     if (this.data.isCook) return
     const dishes = this.data.dishes

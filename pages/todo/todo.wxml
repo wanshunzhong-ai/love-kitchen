@@ -77,6 +77,6 @@
       </view>
     </view>
 
-    <view class="todo-tip">点「开始做 / 做好了」直接推进；全部订单在中间的「订单」页</view>
+    <view class="todo-tip">点「开始做 / 做好了」直接推进；加菜改菜单去「菜单」页，全部订单在「订单」页</view>
   </view>
 </view>

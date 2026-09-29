@@ -94,7 +94,7 @@
       </view>
     </view>
 
-    <!-- 点菜人 -->
+    <!-- 谁点的 -->
     <view class="card section">
       <view class="section-title">🙋 谁点的</view>
       <input
@@ -109,7 +109,7 @@
 
     <!-- 备注 -->
     <view class="card section">
-      <view class="section-title">💬 想对大厨说<text class="section-hint">（整单的话；单道菜的要求点 ✏️ 写）</text></view>
+      <view class="section-title">💬 想对掌勺人说<text class="section-hint">（整单的话；单道菜的要求点 ✏️ 写）</text></view>
       <textarea
         class="textarea"
         value="{{remark}}"
@@ -120,7 +120,7 @@
       />
     </view>
 
-    <button class="btn-main submit" disabled="{{submitting}}" bindtap="onSubmit">下单给大厨 👨‍🍳（{{totalCount}} 道菜）</button>
+    <button class="btn-main submit" disabled="{{submitting}}" bindtap="onSubmit">下单给掌勺人 🧑‍🍳（{{totalCount}} 道菜）</button>
   </block>
 
   <!-- 逐道菜修改：辣度 / 备注 / 换一道菜 -->

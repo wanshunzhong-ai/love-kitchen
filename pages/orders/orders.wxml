@@ -60,12 +60,12 @@
       <view class="order-foot">
         <text class="order-time">{{item.timeText}}</text>
         <view class="order-actions">
-          <!-- 状态推进是做饭人的活：只有做饭人看得到这两个按钮 -->
+          <!-- 状态推进是掌勺人的活：只有掌勺人看得到这两个按钮 -->
           <block wx:if="{{isCook}}">
             <view wx:if="{{item.status === 'pending'}}" class="act act-main" data-idx="{{index}}" catchtap="onStartCooking">开始做</view>
             <view wx:if="{{item.status === 'cooking'}}" class="act act-main" data-idx="{{index}}" catchtap="onFinishCooking">做好了</view>
           </block>
-          <text wx:elif="{{item.status !== 'done'}}" class="order-wait">等大厨开做哦</text>
+          <text wx:elif="{{item.status !== 'done'}}" class="order-wait">等掌勺人开做哦</text>
           <!-- 已上菜的订单是终态：只留「删掉」，不给编辑入口 -->
           <view wx:if="{{item.status !== 'done'}}" class="act act-ghost" data-idx="{{index}}" catchtap="onEditOrder">✏️ 编辑</view>
           <view class="act act-danger" data-idx="{{index}}" catchtap="onDeleteOrder">🗑️ 删掉</view>

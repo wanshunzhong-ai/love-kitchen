@@ -9,11 +9,12 @@ const CATEGORIES = [
 ]
 
 // 身份（首次进入二选一）：决定默认首页与操作权限
-//   点餐人 → 默认进「点菜」，负责下单 / 改单，不推进做菜状态
-//   做饭人 → 默认进「待做」（按日期看要做的菜），负责「开始做 / 做好了」推进状态
+//   干饭人 → 默认进「点单」，负责下单 / 改单，不推进做菜状态
+//   掌勺人 → 默认进「待做」（按日期看要做的菜），负责推进状态 + 维护菜单
+// 称呼取「干饭人 / 掌勺人」：三字对仗，一个管吃一个管做，比「点餐人 / 做饭人」更像撒娇
 const ROLES = {
-  orderer: { key: 'orderer', text: '点餐人', emoji: '🍽️', home: '/pages/menu/menu' },
-  cook: { key: 'cook', text: '做饭人', emoji: '👩‍🍳', home: '/pages/todo/todo' },
+  orderer: { key: 'orderer', text: '干饭人', emoji: '🍚', home: '/pages/menu/menu' },
+  cook: { key: 'cook', text: '掌勺人', emoji: '🧑‍🍳', home: '/pages/todo/todo' },
 }
 
 /** 身份 key → 展示信息；非法 / 空值返回 null */
@@ -33,14 +34,14 @@ const DISH_EMOJIS = [
 // 订单状态
 const ORDER_STATUS = {
   pending: { text: '待开做', emoji: '📝' },
-  cooking: { text: '开做中', emoji: '👩‍🍳' },
+  cooking: { text: '开做中', emoji: '🧑‍🍳' },
   done: { text: '已上菜', emoji: '🎉' },
 }
 
 // 订单状态下拉选项（编辑订单时用）
 const ORDER_STATUS_OPTIONS = [
   { key: 'pending', text: '待开做', emoji: '📝' },
-  { key: 'cooking', text: '开做中', emoji: '👩‍🍳' },
+  { key: 'cooking', text: '开做中', emoji: '🧑‍🍳' },
   { key: 'done', text: '已上菜', emoji: '🎉' },
 ]
 

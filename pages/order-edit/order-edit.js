@@ -1,4 +1,4 @@
-// 编辑订单页：改菜品、逐道改辣度 / 备注 / 换菜、从菜单加菜、选用餐时间、改备注、改点菜人、改状态，或整单删除
+// 编辑订单页：改菜品、逐道改辣度 / 备注 / 换菜、从菜单加菜、选用餐时间、改备注、改署名、改状态，或整单删除
 const api = require('../../utils/api')
 const ui = require('../../utils/ui')
 const dine = require('../../utils/dine')

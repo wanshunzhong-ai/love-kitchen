@@ -1,4 +1,4 @@
-// 确认订单页：改数量、逐道改辣度 / 备注 / 换菜、选用餐时间、写备注、填点菜人，提交到云端
+// 确认订单页：改数量、逐道改辣度 / 备注 / 换菜、选用餐时间、写备注、填署名，提交到云端
 const api = require('../../utils/api')
 const store = require('../../utils/store')
 const ui = require('../../utils/ui')
@@ -27,9 +27,9 @@ Page({
   },
 
   onShow() {
-    // 做饭人不点单：万一从别的路径进来（购物车已随切身份清空），直接送回订单页
+    // 掌勺人不点单：万一从别的路径进来（购物车已随切身份清空），直接送回订单页
     if (store.getRole() === 'cook') {
-      ui.toast('做饭人不点单哦，等TA来下单 💕')
+      ui.toast('掌勺人不点单哦，等TA来点单 💕')
       wx.switchTab({ url: '/pages/orders/orders' })
       return
     }

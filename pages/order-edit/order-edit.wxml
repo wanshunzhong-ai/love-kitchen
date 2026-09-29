@@ -140,7 +140,7 @@
         </view>
       </view>
 
-      <!-- 点菜人 -->
+      <!-- 谁点的 -->
       <view class="card section">
         <view class="section-title">🙋 谁点的</view>
         <input
@@ -155,7 +155,7 @@
 
       <!-- 备注 -->
       <view class="card section">
-        <view class="section-title">💬 想对大厨说</view>
+        <view class="section-title">💬 想对掌勺人说</view>
         <textarea
           class="textarea"
           value="{{remark}}"

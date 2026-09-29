@@ -1,6 +1,6 @@
 // 「我的」页：两种身份共用的基本资料
 // 内容：头像（微信选头像，saveFile 持久化）、称呼、个人介绍、当前状态、
-//       忌口清单（只有点餐人需要：谁吃饭谁提要求）、当前身份
+//       忌口清单（只有干饭人需要：谁吃饭谁提要求）、当前身份
 // 都存本地 —— 双人小应用，不需要账号体系
 const store = require('../../utils/store')
 const { roleInfo, moodInfo, MOODS, AVOID_COMMON, AVOID_MAX, AVOID_TEXT_MAX, INTRO_MAX } = require('../../utils/constants')
@@ -25,7 +25,7 @@ Page({
   data: {
     role: '',
     roleInfo: null,
-    // 做饭人：谁吃饭谁提要求，做饭人自己的资料页不要忌口清单
+    // 掌勺人：谁吃饭谁提要求，掌勺人自己的资料页不要忌口清单
     isCook: false,
     // 头像
     avatar: '',
@@ -44,7 +44,7 @@ Page({
     }),
     moodKey: '',
     moodInfo: null,
-    // 忌口清单（只有点餐人用）
+    // 忌口清单（只有干饭人用）
     avoids: [],
     avoidMax: AVOID_MAX,
     avoidTextMax: AVOID_TEXT_MAX,
@@ -131,7 +131,7 @@ Page({
     ui.toast('现在' + MOODS[key].text, 'success')
   },
 
-  // ---------- 忌口清单（只给点餐人） ----------
+  // ---------- 忌口清单（只给干饭人） ----------
   // 写操作统一从 store 重新取一遍，保证清单与标签选中态永远一致
   syncAvoids() {
     const avoids = store.getAvoids()

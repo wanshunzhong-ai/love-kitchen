@@ -2,8 +2,8 @@
   <!-- 顶部问候（按身份换文案 + 身份胶囊） -->
   <view class="hero">
     <view class="hero-text">
-      <view class="hero-title">{{role === 'cook' ? '大厨今天掌勺～' : '今天想吃点什么？'}}</view>
-      <view class="hero-sub">{{role === 'cook' ? '菜单由你打理，等TA来点单 💕' : '选好后交给大厨吧 💕'}}</view>
+      <view class="hero-title">{{role === 'cook' ? '菜单由你打理' : '今天想吃点什么？'}}</view>
+      <view class="hero-sub">{{role === 'cook' ? '点菜名可以改菜、下架，右上角「＋ 加菜」上新的' : '选好后交给掌勺人吧 💕'}}</view>
     </view>
     <view class="hero-right">
       <view class="hero-role" bindtap="goProfile">{{roleInfo.emoji}} {{roleInfo.text}}</view>
@@ -83,10 +83,10 @@
     </view>
   </view>
 
-  <!-- 随机帮选（点菜功能，做饭人不显示） -->
+  <!-- 随机帮选（点单功能，掌勺人不显示） -->
   <view wx:if="{{!isCook}}" class="lucky" bindtap="onRandom">🎲 今天吃什么</view>
 
-  <!-- 购物车栏（做饭人不显示，切身份时购物车已清空） -->
+  <!-- 购物车栏（掌勺人不显示，切身份时购物车已清空） -->
   <view class="cart-bar" wx:if="{{cartCount > 0 && !isCook}}" bindtap="goCart">
     <view class="cart-badge">{{cartCount}}</view>
     <text class="cart-label">已选好菜</text>
