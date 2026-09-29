@@ -1,7 +1,8 @@
-// 确认订单页：调整数量、逐道改辣度、写备注、填点菜人，提交到云端
+// 确认订单页：调整数量、逐道改辣度、选用餐时间、写备注、填点菜人，提交到云端
 const api = require('../../utils/api')
 const store = require('../../utils/store')
 const ui = require('../../utils/ui')
+const dine = require('../../utils/dine')
 const { SPICE_LEVELS } = require('../../utils/constants')
 
 Page({
@@ -12,10 +13,60 @@ Page({
     nickname: '',
     submitting: false,
     spiceLevels: SPICE_LEVELS,
+    // 用餐时间：日期（今天～一周内）+ 时段（早/中/晚/夜宵）
+    dineDates: [],
+    dineDate: '',
+    dineSlots: [],
+    dineSlot: '',
   },
 
   onShow() {
     this.refreshCart()
+    this.refreshDine()
+  },
+
+  // 每次进入都按「当前时刻」重建日期与时段：
+  // 跨天 / 时段过期后，之前选的值可能已经不合法
+  refreshDine() {
+    const now = new Date()
+    const dates = dine.buildDateOptions(now)
+    let date = this.data.dineDate
+    const stillValid = dates.some(function (d) {
+      return d.value === date
+    })
+    if (!stillValid) date = dates[0].value
+    const slots = dine.buildSlotOptions(now, date)
+    let slot = this.data.dineSlot
+    const slotHit = slots.find(function (s) {
+      return s.key === slot
+    })
+    if (!slotHit || slotHit.disabled) slot = dine.defaultSlot(now, date)
+    this.setData({
+      dineDates: dates,
+      dineDate: date,
+      dineSlots: slots,
+      dineSlot: slot,
+    })
+  },
+
+  onPickDineDate(e) {
+    const value = e.currentTarget.dataset.value
+    if (!value || value === this.data.dineDate) return
+    const now = new Date()
+    this.setData({
+      dineDate: value,
+      dineSlots: dine.buildSlotOptions(now, value),
+      dineSlot: dine.defaultSlot(now, value),
+    })
+  },
+
+  onPickDineSlot(e) {
+    const key = e.currentTarget.dataset.key
+    const hit = this.data.dineSlots.find(function (s) {
+      return s.key === key
+    })
+    if (!hit || hit.disabled) return
+    this.setData({ dineSlot: key })
   },
 
   refreshCart() {
@@ -85,6 +136,8 @@ Page({
           remark: (this.data.remark || '').trim(),
           order_by: nickname,
           status: 'pending',
+          dine_date: this.data.dineDate,
+          dine_slot: this.data.dineSlot,
         },
       })
       ui.hideLoading()

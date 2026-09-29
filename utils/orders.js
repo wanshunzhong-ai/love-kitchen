@@ -18,6 +18,9 @@ const TABLE = 'orders'
 // 允许的订单状态（与 utils/constants.js 保持一致）
 const ORDER_STATUSES = ['pending', 'cooking', 'done']
 
+// 用餐时间校验（日期范围 / 时段合法性）
+const dine = require('./dine')
+
 // 单次最多拉多少条订单。订单页是一次性拉全再本地筛选，
 // 200 条足够很长一段时间的日常使用，超出后只显示最近的。
 const MAX_ORDERS = 200
@@ -133,8 +136,23 @@ function rowToOrder(row) {
     remark: row.remark || '',
     order_by: row.order_by || '宝贝',
     status: row.status || 'pending',
+    // 用餐时间：老订单可能没有（NULL → 空串），页面层自行兜底
+    dine_date: row.dine_date || '',
+    dine_slot: row.dine_slot || '',
     created_at: toMillis(row.created_at),
     updated_at: toMillis(row.updated_at),
+  }
+}
+
+// 用餐时间 → 只接受合法值，非法直接报错（日期今天～一周内，时段四选一）
+function normalizeDine(payload) {
+  const dineDate = payload.dine_date
+  const dineSlot = payload.dine_slot
+  const err = dine.validate(dineDate, dineSlot, new Date())
+  if (err) throw new Error(err)
+  return {
+    dine_date: dineDate ? dineDate : null,
+    dine_slot: dineSlot ? dineSlot : null,
   }
 }
 
@@ -198,11 +216,14 @@ async function createOrder(event) {
   const items = normalizeItems(payload.items)
   if (!items.length) throw new Error('订单里没有菜品')
 
+  const dineFields = normalizeDine(payload)
   const row = {
     items: items,
     remark: payload.remark || '',
     order_by: payload.order_by || '宝贝',
     status: 'pending',
+    dine_date: dineFields.dine_date,
+    dine_slot: dineFields.dine_slot,
   }
 
   const res = unwrap(await getDB().from(TABLE).insert(row).select())
@@ -230,6 +251,13 @@ async function updateOrder(event) {
   if (payload.status !== undefined) {
     if (ORDER_STATUSES.indexOf(payload.status) < 0) throw new Error('订单状态不合法')
     patch.status = payload.status
+  }
+
+  // 用餐时间：传了才改（保持与编辑页的字段一致）；undefined 表示这次不动它
+  if (payload.dine_date !== undefined || payload.dine_slot !== undefined) {
+    const dineFields = normalizeDine(payload)
+    patch.dine_date = dineFields.dine_date
+    patch.dine_slot = dineFields.dine_slot
   }
 
   const rows = affectedRows(await getDB().from(TABLE).update(patch).eq('id', id).select())

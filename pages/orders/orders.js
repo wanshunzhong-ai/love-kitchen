@@ -1,6 +1,7 @@
 // 订单页：两个人都能看到全部订单，并推进状态（待开做 → 开做中 → 已上菜）
 const api = require('../../utils/api')
 const ui = require('../../utils/ui')
+const dine = require('../../utils/dine')
 const { ORDER_STATUS, SPICE_LEVELS } = require('../../utils/constants')
 const { formatTime } = require('../../utils/format')
 
@@ -47,6 +48,8 @@ Page({
           id: o._id || o.id,
           items: items,
           timeText: formatTime(o.created_at),
+          // 「周三 9/30 · 午餐」；老订单没填 → 「尽快」
+          dineText: dine.formatDine(o.dine_date, o.dine_slot),
         })
       })
       this.setData({ orders: orders, loading: false })

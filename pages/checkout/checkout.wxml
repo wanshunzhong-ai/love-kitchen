@@ -41,6 +41,36 @@
       </view>
     </view>
 
+    <!-- 用餐时间 -->
+    <view class="card section">
+      <view class="section-title">📅 什么时候吃<text class="section-hint">（最多提前一周定）</text></view>
+
+      <scroll-view class="dine-dates" scroll-x enhanced="{{true}}" show-scrollbar="{{false}}">
+        <view
+          class="dine-chip {{dineDate === d.value ? 'dine-chip-on' : ''}}"
+          wx:for="{{dineDates}}"
+          wx:for-item="d"
+          wx:key="value"
+          data-value="{{d.value}}"
+          bindtap="onPickDineDate"
+        >
+          <text class="dc-label">{{d.label}}</text>
+          <text class="dc-sub">{{d.sub}}</text>
+        </view>
+      </scroll-view>
+
+      <view class="dine-slots">
+        <view
+          class="dine-chip dine-chip-wide {{dineSlot === s.key ? 'dine-chip-on' : ''}} {{s.disabled ? 'dine-chip-off' : ''}}"
+          wx:for="{{dineSlots}}"
+          wx:for-item="s"
+          wx:key="key"
+          data-key="{{s.key}}"
+          bindtap="onPickDineSlot"
+        >{{s.emoji}} {{s.text}}</view>
+      </view>
+    </view>
+
     <!-- 点菜人 -->
     <view class="card section">
       <view class="section-title">🙋 谁点的</view>

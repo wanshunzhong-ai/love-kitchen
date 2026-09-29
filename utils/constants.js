@@ -39,4 +39,24 @@ const SPICE_LEVELS = [
   { key: '特辣', level: 3 },
 ]
 
-module.exports = { CATEGORIES, DISH_EMOJIS, ORDER_STATUS, ORDER_STATUS_OPTIONS, SPICE_LEVELS }
+// 用餐时段。endHour 是该时段的截止时刻（24 = 当天结束），
+// 用于判断「今天」还剩哪些时段可以订：当前小时 < endHour 即可订。
+const DINE_SLOTS = [
+  { key: 'breakfast', text: '早餐', emoji: '🌅', endHour: 10 },
+  { key: 'lunch', text: '午餐', emoji: '☀️', endHour: 15 },
+  { key: 'dinner', text: '晚餐', emoji: '🌙', endHour: 21 },
+  { key: 'midnight', text: '夜宵', emoji: '✨', endHour: 24 },
+]
+
+// 点菜可提前的最大天数（含今天，共 8 天可选）
+const DINE_MAX_AHEAD_DAYS = 7
+
+module.exports = {
+  CATEGORIES,
+  DISH_EMOJIS,
+  ORDER_STATUS,
+  ORDER_STATUS_OPTIONS,
+  SPICE_LEVELS,
+  DINE_SLOTS,
+  DINE_MAX_AHEAD_DAYS,
+}

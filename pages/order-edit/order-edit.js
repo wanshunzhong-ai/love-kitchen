@@ -1,6 +1,7 @@
-// 编辑订单页：改菜品、改每道菜的辣度、改备注、改点菜人、改状态，或整单删除
+// 编辑订单页：改菜品、改每道菜的辣度、选用餐时间、改备注、改点菜人、改状态，或整单删除
 const api = require('../../utils/api')
 const ui = require('../../utils/ui')
+const dine = require('../../utils/dine')
 const { CATEGORIES, ORDER_STATUS_OPTIONS, SPICE_LEVELS } = require('../../utils/constants')
 
 /** 订单内条目的唯一键：同一道菜的不同辣度算两条 */
@@ -26,6 +27,11 @@ Page({
     totalCount: 0,
     loading: true,
     saving: false,
+    // 用餐时间（与结算页同一套选项；老订单没存过则给默认值）
+    dineDates: [],
+    dineDate: '',
+    dineSlots: [],
+    dineSlot: '',
   },
 
   onLoad(options) {
@@ -80,12 +86,31 @@ Page({
         return
       }
       const items = this.decorate(order.items)
+      const now = new Date()
+      const dates = dine.buildDateOptions(now)
+      // 老订单没存过用餐时间 → 默认今天 + 当前时段；
+      // 存过但已超出可选范围（比如过期日期）→ 也回落到默认
+      const savedDate = order.dine_date || ''
+      const dateValid = dates.some(function (d) {
+        return d.value === savedDate
+      })
+      const date = dateValid ? savedDate : dates[0].value
+      const slots = dine.buildSlotOptions(now, date)
+      const savedSlot = order.dine_slot || ''
+      const slotHit = slots.find(function (s) {
+        return s.key === savedSlot
+      })
+      const slot = slotHit && !slotHit.disabled ? savedSlot : dine.defaultSlot(now, date)
       this.setData({
         items: items,
         remark: order.remark || '',
         orderBy: order.order_by || '',
         status: order.status || 'pending',
         totalCount: this.countOf(items),
+        dineDates: dates,
+        dineDate: date,
+        dineSlots: slots,
+        dineSlot: slot,
         loading: false,
       })
     } catch (err) {
@@ -109,6 +134,28 @@ Page({
 
   onTapStatus(e) {
     this.setData({ status: e.currentTarget.dataset.status })
+  },
+
+  // ---------- 用餐时间 ----------
+
+  onPickDineDate(e) {
+    const value = e.currentTarget.dataset.value
+    if (!value || value === this.data.dineDate) return
+    const now = new Date()
+    this.setData({
+      dineDate: value,
+      dineSlots: dine.buildSlotOptions(now, value),
+      dineSlot: dine.defaultSlot(now, value),
+    })
+  },
+
+  onPickDineSlot(e) {
+    const key = e.currentTarget.dataset.key
+    const hit = this.data.dineSlots.find(function (s) {
+      return s.key === key
+    })
+    if (!hit || hit.disabled) return
+    this.setData({ dineSlot: key })
   },
 
   onQtyChange(e) {
@@ -264,6 +311,8 @@ Page({
           remark: (this.data.remark || '').trim(),
           order_by: (this.data.orderBy || '').trim() || '宝贝',
           status: this.data.status,
+          dine_date: this.data.dineDate,
+          dine_slot: this.data.dineSlot,
         },
       })
       ui.hideLoading()
