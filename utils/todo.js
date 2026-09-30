@@ -8,6 +8,7 @@
 // 所有函数都接受 todayKey 参数（'YYYY-MM-DD'），方便测试注入固定日期。
 
 const dine = require('./dine')
+const avoidsLib = require('./avoids')
 const { SPICE_LEVELS, DINE_SLOTS } = require('./constants')
 
 const WEEK_LABELS = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
@@ -52,6 +53,9 @@ function toCard(o) {
     items: items,
     // 「尽快要做」格里单子来自哪一天要说清楚，其余格子由格头承担时段文案
     dineText: dine.formatDine(o.dine_date, o.dine_slot),
+    // 忌口快照 → 一句话（「香菜、花生」）。没记忌口就是空串，
+    // 模板据此决定整条要不要渲染，不留一行空的警示条。
+    avoidsText: avoidsLib.textOf(o.avoids),
   })
 }
 

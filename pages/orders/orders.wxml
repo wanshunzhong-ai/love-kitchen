@@ -46,6 +46,9 @@
         <text class="order-status s-{{item.status}}">{{statusMap[item.status].emoji}} {{statusMap[item.status].text}}</text>
       </view>
 
+      <!-- 忌口：掌勺人做菜前最该扫一眼的一行（TA 没记就不出这一条） -->
+      <view class="order-avoids" wx:if="{{item.avoidsText}}">🚫 TA 不吃：{{item.avoidsText}}</view>
+
       <view class="order-dine">📅 {{item.dineText}}</view>
 
       <view class="order-items">

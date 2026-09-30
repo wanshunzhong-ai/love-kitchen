@@ -10,7 +10,9 @@
 // 关于每道菜的备注（note）：它挂在「行」上，跟着这一行一起下单。
 // 整单想说的话请用订单级 remark，两者在下单页各有一块输入区。
 
-const { DISH_NOTE_MAX, ROLES, AVOID_MAX, AVOID_TEXT_MAX, INTRO_MAX } = require('./constants')
+const { DISH_NOTE_MAX, ROLES, AVOID_MAX, INTRO_MAX } = require('./constants')
+// 忌口的收敛规则只有一份定义（utils/avoids.js），本地存储与订单服务端共用
+const avoidsLib = require('./avoids')
 
 const CART_KEY = 'lovekitchen_cart'
 const NICK_KEY = 'lovekitchen_nick'
@@ -305,26 +307,14 @@ function setMood(key) {
   if (key) wx.setStorageSync(MOOD_KEY, key)
 }
 
-/** 忌口清单：永远是字符串数组，脏数据兜底为空 */
+/** 忌口清单：永远是干净字符串数组（收敛规则见 utils/avoids.js） */
 function getAvoids() {
-  const raw = wx.getStorageSync(AVOID_KEY)
-  if (!Array.isArray(raw)) return []
-  return raw.filter(function (it) {
-    return typeof it === 'string' && it.trim()
-  })
+  return avoidsLib.normalize(wx.getStorageSync(AVOID_KEY))
 }
 
+/** 存忌口清单：去重、限长、限量都由 avoids.normalize 保证 */
 function setAvoids(list) {
-  const seen = {}
-  const clean = []
-  const arr = Array.isArray(list) ? list : []
-  for (let i = 0; i < arr.length && clean.length < AVOID_MAX; i++) {
-    const item = String(arr[i] === null || arr[i] === undefined ? '' : arr[i]).trim().slice(0, AVOID_TEXT_MAX)
-    if (item && !seen[item]) {
-      seen[item] = true
-      clean.push(item)
-    }
-  }
+  const clean = avoidsLib.normalize(list)
   wx.setStorageSync(AVOID_KEY, clean)
   return clean
 }
@@ -332,7 +322,7 @@ function setAvoids(list) {
 /** 加一条忌口：去重、限长、限量；已存在或满了返回 false */
 function addAvoid(item) {
   const list = getAvoids()
-  const text = String(item === null || item === undefined ? '' : item).trim().slice(0, AVOID_TEXT_MAX)
+  const text = avoidsLib.cleanOne(item)
   if (!text) return false
   if (list.indexOf(text) >= 0) return false
   if (list.length >= AVOID_MAX) return false

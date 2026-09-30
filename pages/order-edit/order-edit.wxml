@@ -192,6 +192,24 @@
         />
       </view>
 
+      <!-- 忌口清单：掌勺人看的是 TA 下单时冻结的那一份，干饭人看自己的实时清单 -->
+      <view class="card section">
+        <view class="section-title">
+          {{isCook ? '🚫 TA 的忌口' : '🚫 我的忌口'}}
+          <text class="section-hint">{{isCook ? '（下单时告诉你的）' : '（保存时会一起告诉 TA）'}}</text>
+        </view>
+
+        <view class="avoid-wrap" wx:if="{{avoids.length > 0}}">
+          <view class="avoid-chip" wx:for="{{avoids}}" wx:key="*this">{{item}}</view>
+        </view>
+        <view class="avoid-none" wx:else>{{isCook ? 'TA 没说有什么忌口' : '还没记忌口 · 掌勺人不知道你不吃什么'}}</view>
+
+        <view class="avoid-add" wx:if="{{!readonly}}" bindtap="onAddAvoid">
+          <text>＋ 记一条</text>
+          <text class="avoid-count">{{avoids.length}}/{{avoidMax}}</text>
+        </view>
+      </view>
+
       <!-- 备注 -->
       <view class="card section">
         <view class="section-title">💬 想对掌勺人说</view>

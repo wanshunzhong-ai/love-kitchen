@@ -244,6 +244,8 @@
   color: #D8C7C1;
 }
 
+/* 忌口清单卡片的样式是跨页共用的（结算页 / 编辑订单页），见 app.wxss 的 .avoid-* */
+
 /* 提交 */
 .submit {
   margin-top: 16rpx;

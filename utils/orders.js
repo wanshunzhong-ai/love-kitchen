@@ -28,6 +28,10 @@ const reviewLib = require('./review')
 // 驳回的判定与理由收敛（纯函数，与服务端共用同一份）
 const rejectLib = require('./reject')
 
+// 忌口的收敛规则（纯函数，与本地存储共用同一份）—— 忌口随订单一起送到掌勺人手上，
+// 进库前必须再校一遍：本地存储可能是老版本写的、或者是手工改过 storage 的脏数据
+const avoidsLib = require('./avoids')
+
 // 每道菜备注的长度上限（与前端输入框保持一致）
 const { DISH_NOTE_MAX } = require('./constants')
 
@@ -150,6 +154,20 @@ function parseReviews(raw) {
   return {}
 }
 
+// avoids 也是 jsonb 数组（干饭人的忌口清单），兜底成空数组 + 逐条收敛
+// 收敛放在读出来的这一侧：库里万一进了老版本写的脏数据，页面拿到的仍是干净数组
+function parseAvoids(raw) {
+  if (Array.isArray(raw)) return avoidsLib.normalize(raw)
+  if (typeof raw === 'string') {
+    try {
+      return avoidsLib.normalize(JSON.parse(raw))
+    } catch (e) {
+      return []
+    }
+  }
+  return []
+}
+
 // 数据库行 → 页面层期望的结构
 function rowToOrder(row) {
   const id = String(row.id)
@@ -163,6 +181,8 @@ function rowToOrder(row) {
     // 用餐时间：老订单可能没有（NULL → 空串），页面层自行兜底
     dine_date: row.dine_date || '',
     dine_slot: row.dine_slot || '',
+    // 忌口快照：下单那一刻干饭人的清单（落库快照，事后改忌口不倒推历史订单）
+    avoids: parseAvoids(row.avoids),
     // 驳回：reason 只在 status === 'rejected' 时展示，at 是驳回时刻（毫秒，老订单为 0）
     reject_reason: row.reject_reason || '',
     rejected_at: toMillis(row.rejected_at),
@@ -259,6 +279,10 @@ async function createOrder(event) {
     status: 'pending',
     dine_date: dineFields.dine_date,
     dine_slot: dineFields.dine_slot,
+    // 忌口快照：下单那一刻的清单跟着订单一起冻结。
+    // 掌勺人手机读不到干饭人的本地存储，忌口只有上云对方才看得见；
+    // 没记忌口就是空数组，掌勺人那边什么都不显示（不留空壳）。
+    avoids: avoidsLib.normalize(payload.avoids),
   }
 
   const res = unwrap(await getDB().from(TABLE).insert(row).select())
@@ -267,7 +291,7 @@ async function createOrder(event) {
   return { id: String(inserted.id) }
 }
 
-// 编辑订单：菜品清单全量替换（页面每次提交完整清单）+ 备注 / 署名 / 用餐时间
+// 编辑订单：菜品清单全量替换（页面每次提交完整清单）+ 备注 / 署名 / 用餐时间 / 忌口
 //
 // 谁能改：只有下单的人（干饭人）。掌勺人只推进状态或驳回，改内容一律不认 ——
 // 这条规则由页面层拦（订单页不给入口、编辑页对掌勺人退化成只读），
@@ -314,6 +338,12 @@ async function updateOrder(event) {
     const dineFields = normalizeDine(payload)
     patch.dine_date = dineFields.dine_date
     patch.dine_slot = dineFields.dine_slot
+  }
+
+  // 忌口：同样「传了才改」。编辑页会带上最新清单（改完菜顺手把忌口也更新一遍），
+  // 而万一有别的调用方不带这个字段，也不该把已有忌口抹成空 —— 那等于告诉掌勺人「TA 什么都吃」。
+  if (payload.avoids !== undefined) {
+    patch.avoids = avoidsLib.normalize(payload.avoids)
   }
 
   const rows = affectedRows(await getDB().from(TABLE).update(patch).eq('id', id).select())

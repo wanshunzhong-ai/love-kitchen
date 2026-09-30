@@ -14,6 +14,7 @@ const dine = require('../../utils/dine')
 const store = require('../../utils/store')
 const review = require('../../utils/review')
 const rejectLib = require('../../utils/reject')
+const avoidsLib = require('../../utils/avoids')
 const live = require('../../utils/live')
 const { ORDER_STATUS, spiceInfo } = require('../../utils/constants')
 const { formatTime } = require('../../utils/format')
@@ -154,6 +155,8 @@ Page({
         // 驳回：理由只在「已驳回」时露出来；顺手算一封能渲染的兜底文案
         rejectText: rejected ? o.reject_reason || '没写理由' : '',
         rejectTimeText: rejected && o.rejected_at ? formatTime(o.rejected_at) : '',
+        // 忌口快照 → 一句话；空串表示 TA 没记忌口，卡片上就不出这一条
+        avoidsText: avoidsLib.textOf(o.avoids),
         // 按钮显隐交给数据算，wxml 里只读布尔值（模板里堆逻辑最难查）
         canReject: rejectLib.canReject(status),
       })

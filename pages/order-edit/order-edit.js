@@ -15,7 +15,7 @@ const dine = require('../../utils/dine')
 const store = require('../../utils/store')
 const rejectLib = require('../../utils/reject')
 const live = require('../../utils/live')
-const { CATEGORIES, ORDER_STATUS, SPICE_LEVELS, spiceInfo, DISH_NOTE_MAX } = require('../../utils/constants')
+const { CATEGORIES, ORDER_STATUS, SPICE_LEVELS, spiceInfo, DISH_NOTE_MAX, AVOID_MAX, AVOID_TEXT_MAX } = require('../../utils/constants')
 
 /** 订单内条目的唯一键：同一道菜的不同辣度算两条 */
 function itemKey(it) {
@@ -103,6 +103,10 @@ Page({
     dineDate: '',
     dineSlots: [],
     dineSlot: '',
+    // 忌口清单：掌勺人看订单里的快照，干饭人看自己当前的清单（保存时一并更新）
+    avoids: [],
+    avoidMax: AVOID_MAX,
+    avoidTextMax: AVOID_TEXT_MAX,
   },
 
   onLoad(options) {
@@ -210,6 +214,10 @@ Page({
         dineDate: date,
         dineSlots: slots,
         dineSlot: slot,
+        // 忌口：掌勺人看的是**订单里冻结的快照** —— 他本地压根没有对方的清单，
+        // 能看到忌口全靠它跟着订单上了云；而干饭人看的是自己**当前**的清单，
+        // 保存时会一并更新上去（所以两边读的不是同一个来源，别合并成一处）。
+        avoids: isCook ? order.avoids || [] : store.getAvoids(),
         loading: false,
       })
     } catch (err) {
@@ -264,6 +272,36 @@ Page({
 
   onRemarkInput(e) {
     this.setData({ remark: e.detail.value })
+  },
+
+  // 改单时临时补一条忌口（完整维护在「我的」页）。
+  // 和结算页一样走弹窗输入：本页任何改动都要 setData 重画列表，
+  // 行内受控 input 回写 value 会把光标顶到末尾。
+  onAddAvoid() {
+    if (this.data.readonly) return
+    if (this.data.avoids.length >= AVOID_MAX) {
+      ui.toast('忌口最多 ' + AVOID_MAX + ' 条')
+      return
+    }
+    const self = this
+    wx.showModal({
+      title: '不吃什么？',
+      editable: true,
+      placeholderText: '比如：芥末（最多 ' + AVOID_TEXT_MAX + ' 字）',
+      confirmText: '记下',
+      cancelText: '算了',
+      success: function (res) {
+        if (!res.confirm) return
+        const text = String(res.content || '').trim()
+        if (!text) return
+        if (!store.addAvoid(text)) {
+          ui.toast('已经在清单里啦')
+          return
+        }
+        self.setData({ avoids: store.getAvoids() })
+        ui.toast('记下了，保存时会一起告诉 TA 🙅', 'success')
+      },
+    })
   },
 
   // 注意：本页**没有**改状态的入口。状态由掌勺人在订单页 / 待做页推进，
@@ -567,6 +605,9 @@ Page({
           // 服务端会把它自动退回「待开做」—— 这一次保存就等于「重新提交」。
           dine_date: this.data.dineDate,
           dine_slot: this.data.dineSlot,
+          // 忌口：改完菜顺手把最新清单也同步上去 ——
+          // 别让掌勺人照着改单前的旧忌口做菜
+          avoids: store.getAvoids(),
         },
       })
       ui.hideLoading()

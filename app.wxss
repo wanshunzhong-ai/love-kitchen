@@ -150,6 +150,78 @@ page {
 }
 
 /* ------------------------------------------------------------
+   忌口清单卡片（结算页 / 编辑订单页共用）
+   ------------------------------------------------------------
+   忌口是「会跟着订单送到掌勺人手上」的硬信息，所以用实心粉牌强调，
+   跟「我的」页那份清单是同一套视觉语言（那边每条可点即删，这边只展示）。
+   排版用负外边距容器，不用 flex gap（见文件头兼容性约定第 1 条）。
+   ------------------------------------------------------------ */
+.avoid-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  margin: -7rpx;
+}
+
+.avoid-chip {
+  margin: 7rpx;
+  background: linear-gradient(135deg, #FFF0F4, #FFE6EE);
+  border: 2rpx solid #FFD3E0;
+  border-radius: 999rpx;
+  padding: 10rpx 24rpx;
+  font-size: 25rpx;
+  font-weight: 600;
+  color: #B4435E;
+  max-width: 340rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.avoid-none {
+  font-size: 24rpx;
+  color: #C4B2AC;
+  line-height: 1.6;
+}
+
+.avoid-add {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 18rpx;
+  padding-top: 18rpx;
+  border-top: 2rpx dashed #FFE0D6;
+  font-size: 25rpx;
+  font-weight: 600;
+  color: #FF7A9E;
+}
+
+.avoid-count {
+  font-size: 22rpx;
+  font-weight: 400;
+  color: #C4B2AC;
+}
+
+/* ------------------------------------------------------------
+   忌口警示条（待做页 / 订单页共用）
+   ------------------------------------------------------------
+   掌勺人开火前最该扫到的一行，所以用暖红底 + 左侧粗边条，
+   跟卡片上其它浅灰信息（用餐时间、备注）明确区分。
+   word-break 兜底：忌口是自由文本，长词不截断会撑破卡片。
+   ------------------------------------------------------------ */
+.order-avoids {
+  margin-top: 14rpx;
+  padding: 14rpx 20rpx;
+  background: linear-gradient(135deg, #FFF4F0, #FFE8E0);
+  border-left: 6rpx solid #FF6B6B;
+  border-radius: 12rpx;
+  font-size: 25rpx;
+  font-weight: 600;
+  color: #C0392B;
+  line-height: 1.5;
+  word-break: break-all;
+}
+
+/* ------------------------------------------------------------
    实时变化提示条（待做页 / 订单页共用，见 utils/live.js）
    ------------------------------------------------------------
    浮在内容之上、6 秒后自动消失，点一下去对应的页面。

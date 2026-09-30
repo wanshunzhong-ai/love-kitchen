@@ -1,9 +1,13 @@
 // 确认订单页：改数量、逐道改辣度 / 备注 / 换菜、选用餐时间、写备注、填署名，提交到云端
+//
+// 关于忌口：这一页会把「我的忌口清单」一起提交上去（payload.avoids）。
+// 掌勺人的手机读不到干饭人的本地存储，忌口只有随订单上云对方才看得到 ——
+// 所以清单在这里再露一次脸，既让人确认「这些会告诉 TA」，也方便临时补一条。
 const api = require('../../utils/api')
 const store = require('../../utils/store')
 const ui = require('../../utils/ui')
 const dine = require('../../utils/dine')
-const { SPICE_LEVELS, spiceInfo, DISH_NOTE_MAX } = require('../../utils/constants')
+const { SPICE_LEVELS, spiceInfo, DISH_NOTE_MAX, AVOID_MAX, AVOID_TEXT_MAX } = require('../../utils/constants')
 
 Page({
   data: {
@@ -13,6 +17,10 @@ Page({
     nickname: '',
     submitting: false,
     spiceLevels: SPICE_LEVELS,
+    // 忌口清单（随订单一起送给掌勺人；这里只演示 + 临时补记，完整维护在「我的」页）
+    avoids: [],
+    avoidMax: AVOID_MAX,
+    avoidTextMax: AVOID_TEXT_MAX,
     // 辣度平时只显示「当前选的那一档」；这一行是正在展开重选的那道菜
     spiceOpenUid: '',
     // 逐道菜修改面板（辣度 / 备注 / 换菜）
@@ -105,6 +113,36 @@ Page({
       totalCount: store.cartCount(),
       nickname: store.getNickname(),
       spiceOpenUid: spiceOpenUid,
+      avoids: store.getAvoids(),
+    })
+  },
+
+  // 下单前临时补一条忌口（想管理整份清单去「我的」页）。
+  // 用弹窗输入而不是行内 input：本页任何改动都会 refreshCart 重画列表，
+  // 受控 input 回写 value 会把光标顶到末尾 —— 这也是本页备注一律走弹窗的原因。
+  onAddAvoid() {
+    if (this.data.avoids.length >= AVOID_MAX) {
+      ui.toast('忌口最多 ' + AVOID_MAX + ' 条')
+      return
+    }
+    const self = this
+    wx.showModal({
+      title: '不吃什么？',
+      editable: true,
+      placeholderText: '比如：芥末（最多 ' + AVOID_TEXT_MAX + ' 字）',
+      confirmText: '记下',
+      cancelText: '算了',
+      success: function (res) {
+        if (!res.confirm) return
+        const text = String(res.content || '').trim()
+        if (!text) return
+        if (!store.addAvoid(text)) {
+          ui.toast('已经在清单里啦')
+          return
+        }
+        self.refreshCart()
+        ui.toast('记下了，会一起告诉 TA 🙅', 'success')
+      },
     })
   },
 
@@ -300,6 +338,10 @@ Page({
           // （状态只由掌勺人推进 / 驳回，客户端不是状态的主人）
           dine_date: this.data.dineDate,
           dine_slot: this.data.dineSlot,
+          // 忌口清单跟着订单一起送给掌勺人。
+          // 提交这一刻现取 storage，而不是用 data 里的副本：storage 才是唯一真相，
+          // 顺序上也不会出现「刚补了一条、data 还没来得及刷新就提交」的缝隙。
+          avoids: store.getAvoids(),
         },
       })
       ui.hideLoading()

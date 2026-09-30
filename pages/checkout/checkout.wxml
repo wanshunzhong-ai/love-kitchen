@@ -107,6 +107,21 @@
       />
     </view>
 
+    <!-- 忌口清单：随订单一起送到掌勺人手上，TA 做菜时照着避雷 -->
+    <view class="card section">
+      <view class="section-title">🚫 我的忌口<text class="section-hint">（会一起告诉 TA）</text></view>
+
+      <view class="avoid-wrap" wx:if="{{avoids.length > 0}}">
+        <view class="avoid-chip" wx:for="{{avoids}}" wx:key="*this">{{item}}</view>
+      </view>
+      <view class="avoid-none" wx:else>还没记忌口 · 掌勺人不知道你不吃什么</view>
+
+      <view class="avoid-add" bindtap="onAddAvoid">
+        <text>＋ 记一条</text>
+        <text class="avoid-count">{{avoids.length}}/{{avoidMax}}</text>
+      </view>
+    </view>
+
     <!-- 备注 -->
     <view class="card section">
       <view class="section-title">💬 想对掌勺人说<text class="section-hint">（整单的话；单道菜的要求点 ✏️ 写）</text></view>
