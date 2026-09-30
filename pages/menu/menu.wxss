@@ -232,6 +232,49 @@
   white-space: nowrap;
 }
 
+/* 排序条（掌勺人专属）：左边一颗可点的胶囊，右边一句说明 */
+.sortbar {
+  display: flex;
+  align-items: center;
+  margin-bottom: 18rpx;
+  padding: 0 8rpx;
+}
+
+.sort-chip {
+  flex-shrink: 0;
+  padding: 10rpx 26rpx;
+  border-radius: 999rpx;
+  font-size: 24rpx;
+  line-height: 36rpx;
+  color: #8A7772;
+  background: #ffffff;
+  border: 2rpx solid #F6E3DC;
+}
+
+.sort-chip-on {
+  color: #E0533F;
+  background: #FFF0E8;
+  border-color: #FFD8C0;
+  font-weight: 600;
+}
+
+.sort-tip {
+  margin-left: 16rpx;
+  flex: 1;
+  font-size: 22rpx;
+  color: #B9A29B;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 常点标记：给掌勺人看「TA 点过几次」 */
+.dish-hot {
+  margin-top: 8rpx;
+  font-size: 22rpx;
+  color: #E0533F;
+}
+
 .dish-add {
   width: 56rpx;
   height: 56rpx;

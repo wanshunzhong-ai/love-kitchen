@@ -42,6 +42,14 @@
     >{{item.emoji}} {{item.key}}</view>
   </scroll-view>
 
+  <!-- 排序（掌勺人专属）：默认按干饭人点过的次数排，常点的在最前面 -->
+  <view wx:if="{{isCook && freqReady}}" class="sortbar">
+    <view class="sort-chip {{sortByFreq ? 'sort-chip-on' : ''}}" bindtap="onToggleSort">
+      {{sortByFreq ? '🔥 按常点排' : '📜 按默认排'}}
+    </view>
+    <text class="sort-tip">{{freqTip}}</text>
+  </view>
+
   <!-- 菜品列表 -->
   <view wx:if="{{loading}}" class="state">
     <text class="state-emoji">🍽️</text>
@@ -82,6 +90,8 @@
           <text class="dish-spice spice-{{item.spiceIdx}}">{{item.spiceText}}</text>
         </view>
         <view class="dish-desc" wx:if="{{item.description}}">{{item.description}}</view>
+        <!-- 常点标记：给掌勺人看的（TA 点过几次），点过 1 次不标，太吵 -->
+        <view class="dish-hot" wx:if="{{isCook && item.hot}}">🔥 TA 点过 {{item.orderTimes}} 次</view>
       </view>
       <view wx:if="{{!isCook}}" class="dish-add" data-idx="{{index}}" catchtap="onAddTap">＋</view>
     </view>
