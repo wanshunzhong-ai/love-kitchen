@@ -17,9 +17,13 @@
 //     本项目用的环境 WxAppId 为空，绑不上，整体换成了 WorkBuddy 云服务。
 const localDishes = require('./dishes')
 const localOrders = require('./orders')
+const localLogs = require('./dish-logs')
 
 // 菜品 action：由 utils/dishes.js 接管
 const DISH_ACTIONS = ['listDishes', 'getDish', 'saveDish', 'deleteDish', 'importDishes']
+
+// 菜单日志 action：由 utils/dish-logs.js 接管（日志必须上云，本地读不到对方的改动）
+const LOG_ACTIONS = ['listDishLogs']
 
 // 订单 action：由 utils/orders.js 接管
 const ORDER_ACTIONS = [
@@ -53,6 +57,10 @@ async function call(action, payload) {
     return localOrders.handle(action, args)
   }
 
+  if (LOG_ACTIONS.indexOf(action) >= 0) {
+    return localLogs.handle(action, args)
+  }
+
   throw new Error('未知的 action: ' + action)
 }
 
@@ -60,4 +68,5 @@ module.exports = {
   call,
   DISH_ACTIONS,
   ORDER_ACTIONS,
+  LOG_ACTIONS,
 }

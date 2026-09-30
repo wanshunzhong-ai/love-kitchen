@@ -18,6 +18,13 @@ const seed = require('../data/dishes.js')
 // 避免「页面按 A 校验、服务按 B 校验」两边漂移。
 const csv = require('./csv')
 
+// 菜品操作日志：把「谁在什么时候动了菜单」传上云，掌勺人才看得到干饭人的改动。
+//
+// 为什么埋在这里而不是页面层：这里是**所有**改动的必经之路（加菜页、批量导入页、
+// 将来任何新入口都走这几个 action），埋在这里才能保证「只要菜单变了就有日志」。
+// 埋点的调用一律不 await —— record 内部全静默，写失败不影响本地改动。
+const dishLogs = require('./dish-logs')
+
 const STORAGE_KEY = 'dishes_override_v1'
 const DELETED_KEY = 'dishes_deleted_v1'
 
@@ -189,6 +196,18 @@ function saveDish(event) {
       saveDeletedIds(deleted)
     }
 
+    // 记日志：只列**真的变了**的字段。点了保存但什么都没改就不记 ——
+    // 否则日志里会堆一串「什么都没发生」的记录，真正要紧的改动被淹掉
+    const changes = dishLogs.fieldDiff(base, patch)
+    if (changes.length) {
+      dishLogs.record({
+        action: 'update',
+        dish_id: id,
+        dish_name: patch.name,
+        changes: changes,
+      })
+    }
+
     return { ok: true, id: String(id), created: false }
   }
 
@@ -206,6 +225,7 @@ function saveDish(event) {
   }
   override.push(doc)
   saveOverride(override)
+  dishLogs.record({ action: 'add', dish_id: id, dish_name: doc.name })
   return { ok: true, id: String(id), created: true }
 }
 
@@ -215,6 +235,10 @@ function deleteDish(event) {
   if (!id && id !== 0) throw new Error('缺少菜品 id')
   const n = Number(id)
   if (isNaN(n)) throw new Error('菜品 id 不合法')
+
+  // 菜名快照必须在删掉**之前**取：删完再查就查不到了（override 里已移除，
+  // seed 那条也可能刚被拉黑），日志就只剩一个光秃秃的 id，谁也看不懂
+  const victim = findById(n)
 
   const override = loadOverride()
   const deleted = loadDeletedIds()
@@ -240,6 +264,16 @@ function deleteDish(event) {
       deleted.push(n)
       saveDeletedIds(deleted)
     }
+  }
+
+  // 真的删掉了才记日志：removed 为 0 说明这道菜本来就不在（重复删除是幂等的），
+  // 这种情况记一笔「下架了 XX」就是假的
+  if (removed > 0) {
+    dishLogs.record({
+      action: 'delete',
+      dish_id: n,
+      dish_name: (victim && victim.name) || '',
+    })
   }
 
   // 幂等：重复删除返回 removed:0（对齐云函数 remove 的 stats.removed）
@@ -356,6 +390,14 @@ function importDishes(event) {
 
   if (added.length || updated.length) saveOverride(override)
   if (deleted.length !== deletedBefore) saveDeletedIds(deleted)
+
+  // 整批只记**一条**汇总日志，不逐道记：一次导 200 道菜若逐条写，
+  // 日志瞬间被淹没，而掌勺人真正想知道的是「TA 一次往菜单里塞了两百道菜」。
+  // skipped（格式不合被跳过）不算改动，不记。
+  const touched = added.length + updated.length
+  if (touched) {
+    dishLogs.record({ action: 'import', dish_count: touched })
+  }
 
   return {
     ok: true,

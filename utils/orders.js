@@ -39,84 +39,10 @@ const { DISH_NOTE_MAX } = require('./constants')
 // 200 条足够很长一段时间的日常使用，超出后只显示最近的。
 const MAX_ORDERS = 200
 
-// ---------------------------------------------------------------------------
-// 云服务初始化参数
-//
-// 这两个值是「公开发布密钥」和「环境网关地址」，可以放在前端代码里：
-//   · publishableKey 只标识「是哪个应用」，本身不带任何权限；
-//   · endpoint 是小程序专用固定网关，不能改写成别的域名。
-// 真正有权力的密钥全部留在服务端，永远不会下发到小程序。
-//
-// ⚠️ 这两个值只能来自云服务开通结果，不要手工改写、不要从别处猜。
-// ---------------------------------------------------------------------------
-const PUBLIC_CONFIG = {
-  endpoint: 'https://mp-api.app.workbuddy.host',
-  publishableKey: 'wbpk_Q7J8UvVewXzjOG0IpQ4004_YvTgzvQz246XbF58PqpMDb7AO7mrwPjs',
-}
-
-// 数据库 SDK 的加载。
-//
-// 优先用相对路径直接指向构建产物（miniprogram_npm/...），这样完全不依赖
-// 微信工具的 npm 解析规则 —— 万一「构建 npm」状态异常也不会报
-// 「暂不支持 npm 模块」。只有该文件缺失时才回退到按包名加载。
-//
-// 注意：require 的路径必须是静态字符串，小程序才能做依赖分析。
-function loadSDK() {
-  try {
-    // 小程序专用子路径（含 wx.request / 存储 / polyfill 的完整装配，顺序由 SDK 保证）
-    return require('../miniprogram_npm/@tencent-ai/workbuddy-cloud-sdk/index.js')
-  } catch (e) {
-    // 回退：交给小程序的 npm 解析
-    try {
-      return require('@tencent-ai/workbuddy-cloud-sdk/miniprogram')
-    } catch (e2) {
-      throw new Error(
-        '找不到云服务 SDK。请确认项目里存在 ' +
-          'miniprogram_npm/@tencent-ai/workbuddy-cloud-sdk/index.js' +
-          '（或在开发者工具执行「工具 → 构建 npm」）。原始错误：' +
-          ((e2 && e2.message) || e2)
-      )
-    }
-  }
-}
-
-// 诊断包装：把失败的云请求打到手机 vConsole，方便真机排查。
-// 它只记录失败摘要（方法/地址/状态码/错误码），不记录请求体、凭据和完整响应。
-const { createDiagnosticWx } = require('./workbuddy-cloud-diagnostics')
-
-const { createMiniProgramWorkBuddyCloud } = loadSDK()
-
-let _cloud = null
-
-// 懒初始化：首次调用时才建立客户端；同一个实例被所有 action 复用
-function getCloud() {
-  if (_cloud) return _cloud
-
-  if (typeof wx === 'undefined' || !wx) {
-    throw new Error('当前不在小程序环境里（找不到 wx 对象），云服务无法初始化。')
-  }
-
-  try {
-    _cloud = createMiniProgramWorkBuddyCloud({
-      // 两个值都必传：小程序没有 location.origin，SDK 的同源兜底在这里不存在，
-      // 漏掉 endpoint 会在初始化阶段直接失败。
-      endpoint: PUBLIC_CONFIG.endpoint,
-      publishableKey: PUBLIC_CONFIG.publishableKey,
-      // 只包这一层，不改全局 wx.request，也不碰 SDK 的请求/鉴权逻辑
-      wx: createDiagnosticWx(wx),
-    })
-  } catch (err) {
-    // 初始化失败不缓存，允许下次重试
-    _cloud = null
-    throw new Error('云服务初始化失败：' + ((err && (err.message || err.errMsg)) || err))
-  }
-
-  return _cloud
-}
-
-function getDB() {
-  return getCloud().database
-}
+// 云服务连接（SDK 加载 / 客户端实例 / 网关参数）统一由 utils/cloud.js 提供。
+// 菜品操作日志（utils/dish-logs.js）用的是同一个实例，两边不要再各自初始化 ——
+// 两套连接迟早出现「订单连得上、日志连不上」这种极难排查的问题。
+const { PUBLIC_CONFIG, getDB, unwrap } = require('./cloud')
 
 // PG 的 timestamptz 取回来是 ISO 字符串，而页面层 formatTime 期望毫秒数
 function toMillis(v) {
@@ -229,15 +155,9 @@ function normalizeItems(raw) {
 //
 // 除了 SDK 自己报的 error，这里还识别一类「静默失败」：
 // 写操作（更新/删除）被 RLS 拦截时，SDK 返回的 data 是空数组而不是错误，
-// 如果不额外判断，页面会误以为成功了 —— 所以写操作另用 requireAffected 校验。
-function unwrap(res) {
-  if (res && res.error) {
-    const e = res.error
-    const msg = (e && (e.message || e.code)) || '数据库操作失败'
-    throw new Error(msg)
-  }
-  return res || {}
-}
+// 如果不额外判断，页面会误以为成功了 —— 所以写操作另用 affectedRows 校验。
+//
+// unwrap 本身来自 utils/cloud.js（与菜品操作日志共用一份）。
 
 // 写操作用：确认真的影响了行数，空数组说明没改到（多半是权限或记录不存在）
 function affectedRows(res) {

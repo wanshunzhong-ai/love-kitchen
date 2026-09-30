@@ -50,6 +50,17 @@
     <text class="sort-tip">{{freqTip}}</text>
   </view>
 
+  <!-- 菜单日志入口（掌勺人专属）：TA 对菜单做过的加 / 改 / 下架都记在那里。
+       菜单存在各自手机本地，不专门记一笔，掌勺人永远不会知道 TA 动过什么。 -->
+  <view wx:if="{{isCook}}" class="log-bar" bindtap="goDishLogs">
+    <text class="log-bar-icon">📋</text>
+    <view class="log-bar-body">
+      <view class="log-bar-title">菜单日志</view>
+      <view class="log-bar-sub">看 TA 加过 / 改过 / 下架过哪些菜</view>
+    </view>
+    <text class="log-bar-arrow">›</text>
+  </view>
+
   <!-- 菜品列表 -->
   <view wx:if="{{loading}}" class="state">
     <text class="state-emoji">🍽️</text>

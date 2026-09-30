@@ -1,0 +1,66 @@
+<view class="page">
+  <!-- 说明 -->
+  <view class="lg-intro">
+    <view class="lg-intro-title">📋 菜单日志</view>
+    <view class="lg-intro-sub">{{isCook ? '这是 TA 对菜单做过的改动。菜单存在各自手机里，不记下来就看不见。' : '这里记着你俩对菜单做过的改动。'}}</view>
+  </view>
+
+  <!-- 筛选 -->
+  <view class="lg-filters">
+    <view
+      class="lg-chip {{filter === 'all' ? 'lg-chip-on' : ''}}"
+      data-key="all"
+      bindtap="onFilterTap"
+    >全部</view>
+    <view
+      class="lg-chip {{filter === 'orderer' ? 'lg-chip-on' : ''}}"
+      data-key="orderer"
+      bindtap="onFilterTap"
+    >只看 TA 动的</view>
+  </view>
+
+  <!-- 加载 / 错误 / 空 -->
+  <view wx:if="{{loading}}" class="state">
+    <text class="state-emoji">📋</text>
+    <text class="state-tip">正在翻记录…</text>
+  </view>
+
+  <view wx:elif="{{loadError}}" class="state">
+    <text class="state-emoji">🍽️</text>
+    <text class="state-tip">日志没加载出来</text>
+    <text class="state-sub">日志走的是云数据库，网络恢复后点「重试」即可；菜单本身不受影响</text>
+    <button class="btn-retry" bindtap="onRetry">重试</button>
+  </view>
+
+  <view wx:elif="{{total === 0}}" class="state">
+    <text class="state-emoji">🍃</text>
+    <text class="state-tip">{{filter === 'orderer' ? 'TA 还没动过菜单' : '还没有人动过菜单'}}</text>
+    <text class="state-sub">从今往后，加菜 / 改菜 / 下架都会被记在这里</text>
+  </view>
+
+  <!-- 按天分组的流水 -->
+  <block wx:else>
+    <view class="lg-day" wx:for="{{groups}}" wx:key="key" wx:for-item="day">
+      <view class="lg-day-label">{{day.label}}</view>
+
+      <view
+        class="lg-row card {{item.isOrderer ? 'lg-row-ta' : ''}}"
+        wx:for="{{day.logs}}"
+        wx:key="id"
+        wx:for-item="item"
+      >
+        <view class="lg-icon">{{item.view.emoji}}</view>
+
+        <view class="lg-body">
+          <view class="lg-line">
+            <text class="lg-who {{item.isOrderer ? 'lg-who-ta' : ''}}">{{item.by_name}}</text>
+            <text class="lg-title">{{item.view.title}}</text>
+          </view>
+          <view class="lg-detail" wx:for="{{item.view.detailLines}}" wx:key="*this" wx:for-item="line">{{line}}</view>
+        </view>
+
+        <view class="lg-time">{{item.timeText}}</view>
+      </view>
+    </view>
+  </block>
+</view>

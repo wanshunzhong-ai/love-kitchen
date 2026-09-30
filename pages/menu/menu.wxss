@@ -268,6 +268,47 @@
   white-space: nowrap;
 }
 
+/* 菜单日志入口（掌勺人专属）：要看得见，但别抢走菜品列表的注意力 */
+.log-bar {
+  display: flex;
+  align-items: center;
+  background: #ffffff;
+  border-radius: 20rpx;
+  padding: 22rpx 26rpx;
+  margin-bottom: 24rpx;
+  box-shadow: 0 6rpx 24rpx rgba(255, 122, 158, 0.08);
+}
+
+.log-bar-icon {
+  font-size: 34rpx;
+  margin-right: 18rpx;
+}
+
+.log-bar-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.log-bar-title {
+  font-size: 27rpx;
+  font-weight: 700;
+  color: #4A3B36;
+}
+
+.log-bar-sub {
+  margin-top: 4rpx;
+  font-size: 22rpx;
+  color: #B9A29B;
+}
+
+.log-bar-arrow {
+  flex-shrink: 0;
+  padding-left: 12rpx;
+  font-size: 32rpx;
+  line-height: 1;
+  color: #E4C4CC;
+}
+
 /* 常点标记：给掌勺人看「TA 点过几次」 */
 .dish-hot {
   margin-top: 8rpx;

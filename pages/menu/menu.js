@@ -330,6 +330,11 @@ Page({
     wx.navigateTo({ url: '/pages/dish-import/dish-import' })
   },
 
+  // 菜单日志：看干饭人对菜单做过哪些增删改（日志走云端，本地读不到对方的改动）
+  goDishLogs() {
+    wx.navigateTo({ url: '/pages/dish-logs/dish-logs' })
+  },
+
   goCart() {
     if (this.data.isCook) return
     if (this.data.cartCount <= 0) return

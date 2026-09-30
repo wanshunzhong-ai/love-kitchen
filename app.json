@@ -9,6 +9,7 @@
     "pages/dish-import/dish-import",
     "pages/order-edit/order-edit",
     "pages/review/review",
+    "pages/dish-logs/dish-logs",
     "pages/profile/profile"
   ],
   "window": {
