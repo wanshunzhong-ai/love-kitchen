@@ -253,12 +253,55 @@ function cartCount() {
 }
 
 /**
- * 称呼按身份分开存：两个人在同一台手机上各有一份资料，
+ * 资料按身份分开存：两个人在同一台手机上各有一份资料，
  * 以前共用一个 key，掌勺人一改会把干饭人下单的署名也带歪。
- * @param {string} role 'cook' | 'orderer'；空串按干饭人算（老数据语义）
+ *
+ * 归一规则：只认 'cook' / 'orderer'；不传或没选过身份时按干饭人算
+ * （老数据的语义就是干饭人那一份）。
+ * @param {string} [role] 'cook' | 'orderer'
+ * @returns {'cook'|'orderer'}
+ */
+function roleKey(role) {
+  const r = role === 'cook' || role === 'orderer' ? role : getRole()
+  return r === 'cook' ? 'cook' : 'orderer'
+}
+
+/**
+ * 称呼存储 key（历史遗留命名，资料类字段统一用 profileKey）
+ * @param {string} [role] 'cook' | 'orderer'
  */
 function nickKeyOf(role) {
-  return NICK_KEY + '_' + (role === 'cook' ? 'cook' : 'orderer')
+  return NICK_KEY + '_' + roleKey(role)
+}
+
+/**
+ * 资料字段的存储 key：全局 key + 身份后缀。
+ * @param {string} base 旧版全局 key（也是字段基名）
+ * @param {string} [role] 身份；不传用当前身份
+ */
+function profileKey(base, role) {
+  return base + '_' + roleKey(role)
+}
+
+/**
+ * 读一份按身份存的资料。自己那份没设置过时，把旧版全局值迁给**干饭人**
+ * （只迁一次，迁完就把旧 key 删掉 —— 否则干饭人清空忌口后旧值会把它「复活」）；
+ * 掌勺人从空开始，各存各的。
+ * @param {string} base 旧版全局 key
+ * @param {string} [role] 身份；不传用当前身份
+ * @param {function} isSet 判定「设置过」的谓词（'' / null / 空数组都算没设置过）
+ */
+function readProfile(base, role, isSet) {
+  const r = roleKey(role)
+  const own = wx.getStorageSync(profileKey(base, r))
+  if (isSet(own)) return own
+  const legacy = wx.getStorageSync(base)
+  if (r === 'orderer' && isSet(legacy)) {
+    wx.setStorageSync(profileKey(base, r), legacy)
+    if (typeof wx.removeStorageSync === 'function') wx.removeStorageSync(base)
+    return legacy
+  }
+  return own
 }
 
 /**
@@ -286,68 +329,85 @@ function setNickname(nick, role) {
   wx.setStorageSync(nickKeyOf(r), nick)
 }
 
-// ---------- 基本资料：头像 / 状态 / 忌口 ----------
+// ---------- 基本资料：头像 / 状态 / 忌口 / 介绍 ----------
+// 全部按身份分开存（store.setAvatar 只写当前身份那一份），
+// 于是「编辑其中一方的基本信息不会改动另一方」。
 
 /** 头像路径（选完微信头像后已 saveFile 持久化；没设置过返回 ''） */
-function getAvatar() {
-  return wx.getStorageSync(AVATAR_KEY) || ''
+function getAvatar(role) {
+  return (
+    readProfile(AVATAR_KEY, role, function (v) {
+      return !!v
+    }) || ''
+  )
 }
 
-function setAvatar(path) {
-  if (path) wx.setStorageSync(AVATAR_KEY, path)
+function setAvatar(path, role) {
+  if (path) wx.setStorageSync(profileKey(AVATAR_KEY, role), path)
 }
 
 /** 当前状态 key（'' = 还没选过） */
-function getMood() {
-  const mood = wx.getStorageSync(MOOD_KEY)
+function getMood(role) {
+  const mood = readProfile(MOOD_KEY, role, function (v) {
+    return !!v
+  })
   return mood && typeof mood === 'string' ? mood : ''
 }
 
-function setMood(key) {
-  if (key) wx.setStorageSync(MOOD_KEY, key)
+function setMood(key, role) {
+  if (key) wx.setStorageSync(profileKey(MOOD_KEY, role), key)
 }
 
 /** 忌口清单：永远是干净字符串数组（收敛规则见 utils/avoids.js） */
-function getAvoids() {
-  return avoidsLib.normalize(wx.getStorageSync(AVOID_KEY))
+function getAvoids(role) {
+  return avoidsLib.normalize(
+    readProfile(AVOID_KEY, role, function (v) {
+      return Array.isArray(v) && v.length > 0
+    })
+  )
 }
 
 /** 存忌口清单：去重、限长、限量都由 avoids.normalize 保证 */
-function setAvoids(list) {
+function setAvoids(list, role) {
   const clean = avoidsLib.normalize(list)
-  wx.setStorageSync(AVOID_KEY, clean)
+  wx.setStorageSync(profileKey(AVOID_KEY, role), clean)
   return clean
 }
 
 /** 加一条忌口：去重、限长、限量；已存在或满了返回 false */
-function addAvoid(item) {
-  const list = getAvoids()
+function addAvoid(item, role) {
+  const list = getAvoids(role)
   const text = avoidsLib.cleanOne(item)
   if (!text) return false
   if (list.indexOf(text) >= 0) return false
   if (list.length >= AVOID_MAX) return false
   list.push(text)
-  setAvoids(list)
+  setAvoids(list, role)
   return true
 }
 
 /** 按文本删一条忌口 */
-function removeAvoid(item) {
+function removeAvoid(item, role) {
   setAvoids(
-    getAvoids().filter(function (it) {
+    getAvoids(role).filter(function (it) {
       return it !== item
-    })
+    }),
+    role
   )
 }
 
 /** 个人介绍（一句话自我介绍，没写过返回 ''） */
-function getIntro() {
-  return wx.getStorageSync(INTRO_KEY) || ''
+function getIntro(role) {
+  return (
+    readProfile(INTRO_KEY, role, function (v) {
+      return !!v
+    }) || ''
+  )
 }
 
-function setIntro(text) {
+function setIntro(text, role) {
   const clean = String(text === null || text === undefined ? '' : text).trim().slice(0, INTRO_MAX)
-  wx.setStorageSync(INTRO_KEY, clean)
+  wx.setStorageSync(profileKey(INTRO_KEY, role), clean)
   return clean
 }
 

@@ -29,6 +29,7 @@
       <text class="me-count">{{intro.length}}/{{introMax}}</text>
     </view>
     <view wx:if="{{introDirty}}" class="me-save" bindtap="saveIntro">保存一下</view>
+    <view class="me-tip">你俩的资料各存各的，改这里不会影响 TA</view>
   </view>
 
   <!-- 当前状态 -->
@@ -114,6 +115,7 @@
       <text class="me-role-switch">切换身份 →</text>
     </view>
     <view class="me-tip">换身份不影响已有订单；分工是：掌勺人不点单，干饭人不掌勺</view>
+    <view class="me-tip">身份两边的资料（头像 / 介绍 / 状态 / 称呼 / 忌口）各存各的，改一边不会动另一边</view>
   </view>
 
   <view class="me-foot">💕 爱心小厨房 · 记录每一次开饭</view>
