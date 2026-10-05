@@ -7,6 +7,7 @@ page {
   padding: 32rpx 32rpx 32rpx;
   /* 让开自定义 tabBar（110rpx + 安全区） */
   padding-bottom: 200rpx;
+  padding-bottom: calc(150rpx + constant(safe-area-inset-bottom));
   padding-bottom: calc(150rpx + env(safe-area-inset-bottom));
 }
 

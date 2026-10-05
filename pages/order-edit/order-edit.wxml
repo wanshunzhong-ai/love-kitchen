@@ -4,6 +4,14 @@
     <text class="state-tip">正在打开这一单…</text>
   </view>
 
+  <!-- 加载失败：停在页内让用户决定重试还是返回（不再 toast 完就踢回上一页） -->
+  <view wx:elif="{{loadError}}" class="state">
+    <text class="state-emoji">😵</text>
+    <text class="state-tip">这一单没打开</text>
+    <text class="state-sub">网络开小差了，检查一下再试</text>
+    <button class="btn-retry" bindtap="onRetry">重试</button>
+  </view>
+
   <block wx:else>
     <!-- ===== 只读态：掌勺人（这一单不是他点的）+ 已上菜的终态 ===== -->
     <block wx:if="{{readonly}}">

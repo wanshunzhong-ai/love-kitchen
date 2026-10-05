@@ -121,12 +121,19 @@ function urgency(orders, role) {
   let cooking = 0
   let done = 0
   let rejected = 0
+  // 认不出来的状态单独计数，**不算进任何一档**。
+  // 早先这里是 `else pending += 1` 兜底，于是将来新增任何状态都会被静默算成
+  // 「待开做」—— 角标常亮 + 永远按 15 秒轮询，而且不报错，很难查。
+  // 改成白名单后，新增状态只会落进 unknown（不打扰用户），漏改一眼看得出来。
+  let unknown = 0
   list.forEach(function (o) {
+    // 缺 status 的老订单按「待开做」处理（早期数据没有这个字段）
     const s = (o && o.status) || 'pending'
-    if (s === 'done') done += 1
+    if (s === 'pending') pending += 1
     else if (s === 'cooking') cooking += 1
+    else if (s === 'done') done += 1
     else if (s === 'rejected') rejected += 1
-    else pending += 1
+    else unknown += 1
   })
   // 「手上有活」= 有待开做 / 正在做；已驳回的不算（那是等 TA 改单的）
   const active = pending + cooking > 0
@@ -137,6 +144,7 @@ function urgency(orders, role) {
       cooking: cooking,
       done: done,
       rejected: rejected,
+      unknown: unknown,
       active: active,
       // 角标 = 有几单等着开做（「该我动手了」的量）
       badge: pending,
@@ -153,6 +161,7 @@ function urgency(orders, role) {
     cooking: cooking,
     done: done,
     rejected: rejected,
+    unknown: unknown,
     active: active,
     // 角标 = 有几单正在做 + 有几单被驳回
     badge: mine,

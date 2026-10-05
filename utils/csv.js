@@ -21,6 +21,9 @@ const NAME_MAX = 20
 const DESC_MAX = 60
 // 预览区最多列多少行（再多折叠，页面不至于卡）
 const PREVIEW_MAX = 30
+// 粘贴/选文件进来的原始文本上限（字符数）。阈值与提示文案共用这一个常量，
+// 免得改了一处漏了另一处（页面里的「20 万字符」由此派生）。
+const TEXT_MAX = 200000
 
 const CATEGORY_KEYS = CATEGORIES.map(function (c) {
   return c.key
@@ -642,6 +645,7 @@ module.exports = {
   NAME_MAX,
   DESC_MAX,
   PREVIEW_MAX,
+  TEXT_MAX,
   COMMENT_PREFIX,
   HEADER_ALIASES,
   POSITIONAL,

@@ -37,6 +37,8 @@ Page({
     // 解析结果里的提示文案（分隔符、空结果原因…）
     hint: '',
     menuCount: 0,
+    // 拉菜单失败：预览里的「同名菜」判断可能不准，页面上要看得见
+    existingFailed: false,
     // 格式说明（从常量派生，避免和实际可选项漂移）
     categoryHint: CATEGORIES.map(function (c) {
       return c.key
@@ -53,19 +55,43 @@ Page({
     this.existing = []
     this.rawText = ''
     this.writes = []
-    this.loadExisting()
+    // 「菜单是否已就绪」的 Promise：解析前必须 await 它。
+    // 不 await 的话，用户手快在菜单拉回来之前就粘贴解析 —— 此时 existing 还是空数组，
+    // 所有同名菜都会被判成「新增」，用户看到的预览是错的（「更新」被报成「新增」）。
+    this.existingReady = this.loadExisting()
   },
 
   async loadExisting() {
     try {
       const res = await api.call('listDishes')
       this.existing = res.dishes || []
-      this.setData({ menuCount: this.existing.length })
+      this.existingFailed = false
+      this.setData({ menuCount: this.existing.length, existingFailed: false })
     } catch (err) {
-      // 读不到现有菜单不影响导入（只是没法识别同名菜），照常让用户往下走
+      // 读不到现有菜单不影响「能不能导入」，但会让同名菜失去判据 —— 记下失败，
+      // 解析时明确告诉用户「这份预览的同名判断可能不准」，而不是静默给个错的结果。
       console.warn('[dish-import] 读菜单失败', err)
       this.existing = []
+      this.existingFailed = true
+      this.setData({ menuCount: 0, existingFailed: true })
     }
+  },
+
+  /**
+   * 解析前确保菜单已就绪。
+   * 首次进页面时 loadExisting 可能还在飞；失败过的话再给一次机会（本地读失败多半是暂时的）。
+   * @returns {Promise<Array>} 现有菜单（拿不到时是空数组，但 existingFailed 会是 true）
+   */
+  async ensureExisting() {
+    if (this.existingReady) {
+      try {
+        await this.existingReady
+      } catch (e) {
+        // loadExisting 内部已经兜住，这里只防御 Promise 意外 reject
+      }
+    }
+    if (this.existingFailed) await this.loadExisting()
+    return this.existing || []
   },
 
   // ---------- 入口一：从微信聊天选文件 ----------
@@ -160,14 +186,14 @@ Page({
    * 统一入口：拿到一段文本 → 解析 → 进预览。
    * 切换「同名怎么处理」时也会回到这里重解析（因为它会改变每一行的去留）。
    */
-  applyText(text, sourceLabel) {
+  async applyText(text, sourceLabel) {
     const raw = String(text == null ? '' : text)
     if (!raw.trim()) {
       ui.toast('内容还是空的')
       return
     }
-    if (raw.length > 200000) {
-      ui.toast('内容太长了，一次别超过 20 万字符')
+    if (raw.length > csv.TEXT_MAX) {
+      ui.toast('内容太长了，一次别超过 ' + csv.TEXT_MAX / 10000 + ' 万字符')
       return
     }
     // Excel 在中文 Windows 上默认存 GBK，按 utf-8 读出来会是满屏「�」
@@ -176,11 +202,15 @@ Page({
       return
     }
 
+    // 解析要靠 existing 认「同名菜」——所以必须等菜单就绪再解析。
+    // 否则菜单还没拉回来时，所有同名菜都会被当成「新增」，预览是错的。
+    const existing = await this.ensureExisting()
+
     this.rawText = raw
 
     let res = null
     try {
-      res = csv.parseDishes(raw, { existing: this.existing, mode: this.data.mode })
+      res = csv.parseDishes(raw, { existing: existing, mode: this.data.mode })
     } catch (err) {
       console.error('[dish-import] 解析失败', err)
       ui.toast('这段内容没解析出来，检查一下格式')
@@ -190,8 +220,10 @@ Page({
     this.writes = res.writes
 
     const sepText = res.delimiter === '\t' ? '制表符分隔（从 Excel 复制的）' : '逗号分隔'
-    let hint = '识别为' + sepText + '，现有菜单 ' + this.existing.length + ' 道'
+    let hint = '识别为' + sepText + '，现有菜单 ' + existing.length + ' 道'
     if (!res.writes.length && res.emptyReason) hint = res.emptyReason
+    // 菜单没拉回来 → 同名判断没有依据，这份预览必须打上警告，不能让用户误以为是对的
+    if (this.existingFailed) hint = '⚠️ 菜单没拉回来，同名菜可能被算成「新增」 · ' + hint
 
     this.setData({
       stage: 'preview',

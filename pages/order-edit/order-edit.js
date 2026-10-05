@@ -76,6 +76,8 @@ Page({
     pickerLoading: false,
     totalCount: 0,
     loading: true,
+    // 加载失败：不再把用户直接踢回上一页，改为页内错误态 + 重试
+    loadError: false,
     saving: false,
     // 身份与视图形态
     isCook: false,
@@ -154,7 +156,7 @@ Page({
   },
 
   async loadOrder(id) {
-    this.setData({ loading: true })
+    this.setData({ loading: true, loadError: false })
     try {
       const res = await api.call('getOrder', { id: id })
       const order = res.order
@@ -222,11 +224,15 @@ Page({
       })
     } catch (err) {
       console.error('[order-edit] 加载订单失败', err)
-      ui.toast('网络开小差了')
-      setTimeout(function () {
-        wx.navigateBack()
-      }, 800)
+      // 失败不再 toast 完就把人踢回上一页（那样用户只能自己再点一次进来，
+      // 没有重试入口）；改为页内错误态，由用户决定重试还是返回。
+      this.setData({ loading: false, loadError: true })
     }
+  },
+
+  onRetry() {
+    if (!this.data.id) return
+    this.loadOrder(this.data.id)
   },
 
   /**

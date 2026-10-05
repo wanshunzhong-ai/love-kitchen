@@ -475,7 +475,14 @@ Page({
       this._deleteTimer = null
       const prev = this._pendingDelete
       this._pendingDelete = null
-      if (prev) api.call('deleteOrder', { id: prev.id }).catch(function () {})
+      if (prev) {
+        // 这条是真删失败也**不会**再出现在列表里（本地已移除），所以要出声 ——
+        // 静默失败会让用户以为删掉了，其实云上还在
+        api.call('deleteOrder', { id: prev.id }).catch(function (err) {
+          console.error('[orders] 删除订单失败', err)
+          ui.toast('有一单没删干净，稍后再试一次')
+        })
+      }
     }
     this._pendingDelete = order
     this.showNotice({
