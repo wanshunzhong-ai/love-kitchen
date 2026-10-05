@@ -1,0 +1,54 @@
+<!-- 选菜弹层：加菜 / 换菜共用。遮罩与弹层壳来自 styles/sheet.wxss -->
+<view wx:if="{{visible}}" class="mask" bindtap="onClose">
+  <view class="sheet" catchtap="noop">
+    <view class="sheet-head">
+      <text class="sheet-title">{{title}}</text>
+      <text wx:if="{{backText}}" class="sheet-back" bindtap="onClose">← {{backText}}</text>
+      <text wx:else class="sheet-close" bindtap="onClose">✕</text>
+    </view>
+
+    <!-- 搜索：三百多道菜，靠分类翻太慢。规则与菜单页同一套（utils/dish-search.js） -->
+    <view class="ps {{searchFocus ? 'ps-on' : ''}}">
+      <text class="ps-icon">🔍</text>
+      <input
+        class="ps-input"
+        value="{{keyword}}"
+        placeholder="搜菜名、食材、分类…"
+        placeholder-class="ps-ph"
+        confirm-type="search"
+        bindinput="onSearchInput"
+        bindfocus="onSearchFocus"
+        bindblur="onSearchBlur"
+      />
+      <text wx:if="{{keyword}}" class="ps-clear" bindtap="clearSearch">✕</text>
+    </view>
+
+    <scroll-view class="cats" scroll-x enhanced="{{true}}" show-scrollbar="{{false}}">
+      <view
+        class="cat {{activeCategory === item.key ? 'cat-active' : ''}}"
+        wx:for="{{categories}}"
+        wx:key="key"
+        data-cat="{{item.key}}"
+        bindtap="onTapCategory"
+      >{{item.emoji}} {{item.key}}</view>
+    </scroll-view>
+
+    <scroll-view class="picker-list" scroll-y>
+      <view wx:if="{{loading}}" class="picker-state">正在翻菜单…</view>
+      <view wx:elif="{{dishes.length === 0 && keyword}}" class="picker-state">没找到「{{keyword}}」</view>
+      <view wx:elif="{{dishes.length === 0}}" class="picker-state">{{emptyText}}</view>
+      <view
+        class="pick-item"
+        wx:for="{{dishes}}"
+        wx:key="id"
+        data-idx="{{index}}"
+        bindtap="onPick"
+      >
+        <text class="pick-emoji">{{item.emoji}}</text>
+        <text class="pick-name">{{item.name}}</text>
+        <text class="pick-spice">{{item.spice || '不辣'}}</text>
+        <text class="pick-add">＋</text>
+      </view>
+    </scroll-view>
+  </view>
+</view>

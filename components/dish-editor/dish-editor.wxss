@@ -47,13 +47,6 @@
   padding: 0 12rpx;
 }
 
-.de-back {
-  font-size: 26rpx;
-  color: #FF5C8A;
-  font-weight: 600;
-  padding: 0 8rpx;
-}
-
 /* 当前这道菜 */
 .de-cur {
   display: flex;
@@ -189,78 +182,5 @@
   background: var(--grad-main);
 }
 
-/* 换菜：分类 + 列表 */
-.de-cats {
-  white-space: nowrap;
-  margin-bottom: 20rpx;
-}
-
-.de-cat {
-  display: inline-block;
-  padding: 12rpx 28rpx;
-  margin-right: 16rpx;
-  background: #ffffff;
-  border-radius: var(--radius-pill);
-  font-size: 24rpx;
-  color: #8A7772;
-  border: 2rpx solid #F6E3DC;
-}
-
-.de-cat-on {
-  background: var(--grad-main);
-  color: #ffffff;
-  border-color: transparent;
-  font-weight: 600;
-}
-
-.de-list {
-  flex: 1;
-  max-height: 56vh;
-}
-
-.de-list-state {
-  padding: 60rpx 0;
-  text-align: center;
-  font-size: 24rpx;
-  color: #B9A29B;
-}
-
-.de-pick {
-  display: flex;
-  align-items: center;
-  background: #ffffff;
-  border-radius: 20rpx;
-  padding: 20rpx 24rpx;
-  margin-bottom: 16rpx;
-}
-
-.de-pick-emoji {
-  font-size: 44rpx;
-  width: 64rpx;
-  text-align: center;
-  flex-shrink: 0;
-}
-
-.de-pick-name {
-  flex: 1;
-  font-size: 28rpx;
-  color: #4A3B38;
-  padding-left: 8rpx;
-}
-
-.de-pick-spice {
-  font-size: 22rpx;
-  color: #C97B8E;
-  background: #FFF0F4;
-  padding: 4rpx 14rpx;
-  border-radius: var(--radius-pill);
-  flex-shrink: 0;
-}
-
-.de-pick-go {
-  font-size: 24rpx;
-  color: #FF5C8A;
-  font-weight: 600;
-  padding-left: 20rpx;
-  flex-shrink: 0;
-}
+/* 「换一道菜」的弹层（分类条 / 列表 / 遮罩）已交给 components/dish-picker，
+   这里不再保留 .de-cat* / .de-list* / .de-pick* 那一套。 */

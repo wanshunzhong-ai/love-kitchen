@@ -1,7 +1,9 @@
 {
   "navigationBarTitleText": "编辑订单",
   "usingComponents": {
+    "cart-list": "/components/cart-list/cart-list",
     "dish-editor": "/components/dish-editor/dish-editor",
+    "dish-picker": "/components/dish-picker/dish-picker",
     "state-block": "/components/state-block/state-block"
   }
 }

@@ -13,58 +13,15 @@
     <view class="card section">
       <view class="section-title">🧺 选好的菜<text class="section-hint">（点辣度改口味，点备注写要求）</text></view>
 
-      <view class="cart-item" wx:for="{{cart}}" wx:key="uid">
-        <view class="ci-main">
-          <text class="ci-emoji">{{item.emoji}}</text>
-          <view class="ci-info">
-            <view class="ci-name-row">
-              <text class="ci-name">{{item.name}}</text>
-              <!-- 打开「改这道菜」面板：辣度 / 备注 / 换菜 -->
-              <text class="ci-edit" data-uid="{{item.uid}}" catchtap="openEditor">✏️</text>
-            </view>
-            <!-- 辣度：平时只显示当前选定的那一档，点一下就地展开四档重选 -->
-            <view class="ci-spice">
-              <view
-                wx:if="{{spiceOpenUid !== item.uid}}"
-                class="ci-spice-cur splv-{{item.spiceLevel}}"
-                data-uid="{{item.uid}}"
-                catchtap="onOpenSpice"
-              >
-                <text>{{item.spiceLabel}}</text>
-                <text class="csc-caret">▾</text>
-              </view>
-              <view wx:else class="ci-spices">
-                <text
-                  class="ci-chip {{item.spice === sp ? 'ci-chip-on' : ''}}"
-                  wx:for="{{spiceLevels}}"
-                  wx:for-item="sp"
-                  wx:key="key"
-                  data-uid="{{item.uid}}"
-                  data-spice="{{sp.key}}"
-                  catchtap="onTapSpice"
-                >{{sp.key}}</text>
-              </view>
-            </view>
-            <!-- 这一道菜的备注：点一下就写，不用打开面板 -->
-            <view
-              class="ci-note {{item.note ? '' : 'ci-note-empty'}}"
-              data-uid="{{item.uid}}"
-              catchtap="onTapNote"
-            >{{item.note ? '📝 ' + item.note : '＋ 写一句这道菜的备注'}}</view>
-          </view>
-        </view>
-
-        <view class="ci-actions">
-          <view class="ci-stepper">
-            <view class="step" data-uid="{{item.uid}}" data-delta="-1" catchtap="onQtyChange">−</view>
-            <text class="step-num">{{item.qty}}</text>
-            <view class="step step-plus" data-uid="{{item.uid}}" data-delta="1" catchtap="onQtyChange">＋</view>
-          </view>
-          <text class="ci-remove" data-uid="{{item.uid}}" catchtap="onRemoveItem">✕</text>
-        </view>
-      </view>
-
-      <view class="add-more" bindtap="goBackMenu">＋ 再加几个菜</view>
+      <!-- 菜品行统一由 cart-list 组件渲染（与编辑订单页共用同一份结构 / 样式） -->
+      <cart-list
+        items="{{cart}}"
+        spice-levels="{{spiceLevels}}"
+        open-key="{{spiceOpenUid}}"
+        add-text="＋ 再加几个菜"
+        bind:act="onCartAct"
+        bind:add="goBackMenu"
+      />
     </view>
 
     <!-- 用餐时间 -->

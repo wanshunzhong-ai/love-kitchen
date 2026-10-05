@@ -11,11 +11,11 @@
 //
 // 备注的提交时机：输入过程中只更新本地草稿（受控 value 每敲一个字就回写会让光标跳到末尾），
 // 失焦 / 点快捷短语 / 清空 / 点「好了」时才提交一次。
-const api = require('../../utils/api')
+//
+// 「换一道菜」不在组件里实现了 —— 直接用 components/dish-picker
+// （与编辑订单页的「＋ 从菜单加菜」是同一个弹层，含搜索）。
 const ui = require('../../utils/ui')
-const { CATEGORIES, SPICE_LEVELS, DISH_NOTE_MAX, DISH_NOTE_TAGS } = require('../../utils/constants')
-
-const ALL = { key: '全部', emoji: '📜' }
+const { SPICE_LEVELS, DISH_NOTE_MAX, DISH_NOTE_TAGS } = require('../../utils/constants')
 
 Component({
   properties: {
@@ -30,13 +30,8 @@ Component({
     // 草稿
     spice: '不辣',
     note: '',
-    // 换菜（菜单选择）
+    // 换菜：只留开关，取菜单 / 分类 / 搜索都在 dish-picker 里
     pickerOpen: false,
-    pickerLoading: false,
-    categories: [ALL].concat(CATEGORIES),
-    activeCategory: '全部',
-    allDishes: [],
-    pickerDishes: [],
   },
 
   lifetimes: {
@@ -101,54 +96,24 @@ Component({
       this.emitChange({ note: note })
     },
 
-    // ---------- 换一道菜 ----------
+    // ---------- 换一道菜（交给 dish-picker 组件） ----------
 
     openPicker() {
       this.setData({ pickerOpen: true })
-      if (this.data.allDishes.length) {
-        this.applyPickerFilter()
-        return
-      }
-      const self = this
-      this.setData({ pickerLoading: true })
-      api
-        .call('listDishes')
-        .then(function (res) {
-          self.setData({ allDishes: res.dishes || [], pickerLoading: false })
-          self.applyPickerFilter()
-        })
-        .catch(function (err) {
-          console.error('[dish-editor] 菜单加载失败', err)
-          self.setData({ pickerLoading: false })
-          ui.toast('菜单没加载出来，稍后再试')
-        })
     },
 
     closePicker() {
       this.setData({ pickerOpen: false })
     },
 
-    onTapCategory(e) {
-      this.setData({ activeCategory: e.currentTarget.dataset.cat })
-      this.applyPickerFilter()
-    },
-
-    applyPickerFilter() {
-      const { allDishes, activeCategory } = this.data
-      this.setData({
-        pickerDishes:
-          activeCategory === '全部'
-            ? allDishes
-            : allDishes.filter(function (d) {
-                return d.category === activeCategory
-              }),
-      })
-    },
-
-    onPickDish(e) {
-      const dish = this.data.pickerDishes[e.currentTarget.dataset.idx]
+    /**
+     * dish-picker 抛回来的选中项。
+     * 换成新菜后辣度跟着新菜的推荐值走，避免「清蒸鱼·特辣」这种意外；
+     * 选完收起弹层回到编辑态（编辑订单页那边是连加几道，所以不关 —— 关闭时机归调用方）。
+     */
+    onPickerPick(e) {
+      const dish = (e.detail || {}).dish
       if (!dish) return
-      // 换成新菜后辣度跟着新菜的推荐值走，避免「清蒸鱼·特辣」这种意外
       const spice = dish.spice || '不辣'
       this.setData({ spice: spice, pickerOpen: false })
       this.emitChange({

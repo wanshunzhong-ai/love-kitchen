@@ -1,96 +1,70 @@
-<!-- 改这道菜：辣度 / 备注 / 换菜 -->
-<view class="de-mask" bindtap="onClose">
+<!-- 换菜：整个面板交给 dish-picker（它自带遮罩 / 弹层 / 分类 / 搜索）。
+     头部用「← 返回」而不是 ✕ —— 关掉它是回编辑态，不是关掉整个改菜面板。 -->
+<dish-picker
+  wx:if="{{pickerOpen}}"
+  visible="{{true}}"
+  title="🔄 换一道菜"
+  back-text="返回"
+  bind:pick="onPickerPick"
+  bind:close="closePicker"
+/>
+
+<!-- 改这道菜：辣度 / 备注 -->
+<view wx:else class="de-mask" bindtap="onClose">
   <view class="de-sheet" catchtap="noop">
     <view class="de-head">
-      <text class="de-title" wx:if="{{pickerOpen}}">🔄 换一道菜</text>
-      <text class="de-title" wx:else>✏️ 改这道菜</text>
-      <text class="de-back" wx:if="{{pickerOpen}}" bindtap="closePicker">← 返回</text>
-      <text class="de-close" wx:else bindtap="onClose">✕</text>
+      <text class="de-title">✏️ 改这道菜</text>
+      <text class="de-close" bindtap="onClose">✕</text>
     </view>
 
-    <!-- 编辑态 -->
-    <block wx:if="{{!pickerOpen}}">
-      <view class="de-cur">
-        <text class="de-cur-emoji">{{item.emoji}}</text>
-        <view class="de-cur-info">
-          <text class="de-cur-name">{{item.name}}</text>
-          <text class="de-cur-sub">{{spice}}{{note ? ' · ' + note : ''}}</text>
-        </view>
+    <view class="de-cur">
+      <text class="de-cur-emoji">{{item.emoji}}</text>
+      <view class="de-cur-info">
+        <text class="de-cur-name">{{item.name}}</text>
+        <text class="de-cur-sub">{{spice}}{{note ? ' · ' + note : ''}}</text>
       </view>
+    </view>
 
-      <view class="de-field">
-        <view class="de-label">🌶️ 辣度</view>
-        <view class="de-chips">
-          <text
-            class="de-chip {{spice === sp.key ? 'de-chip-on' : ''}}"
-            wx:for="{{spiceLevels}}"
-            wx:for-item="sp"
-            wx:key="key"
-            data-spice="{{sp.key}}"
-            bindtap="onTapSpice"
-          >{{sp.key}}</text>
-        </view>
-      </view>
-
-      <view class="de-field">
-        <view class="de-label">📝 这道菜的备注<text class="de-hint">（{{noteMax}} 字以内）</text></view>
-        <input
-          class="de-input"
-          value="{{note}}"
-          placeholder="比如：少放盐、不放葱"
-          placeholder-class="de-ph"
-          maxlength="{{noteMax}}"
-          confirm-type="done"
-          bindinput="onNoteInput"
-          bindblur="onNoteBlur"
-        />
-        <view class="de-chips">
-          <text
-            class="de-chip de-chip-tag"
-            wx:for="{{noteTags}}"
-            wx:for-item="tag"
-            wx:key="*this"
-            data-tag="{{tag}}"
-            bindtap="onTapNoteTag"
-          >{{tag}}</text>
-          <text class="de-chip de-chip-clear" wx:if="{{note}}" bindtap="onClearNote">清空</text>
-        </view>
-      </view>
-
-      <view class="de-swap" bindtap="openPicker">🔄 换一道菜</view>
-      <view class="de-done" bindtap="onClose">好了</view>
-    </block>
-
-    <!-- 换菜态 -->
-    <block wx:else>
-      <scroll-view class="de-cats" scroll-x enhanced="{{true}}" show-scrollbar="{{false}}">
-        <view
-          class="de-cat {{activeCategory === c.key ? 'de-cat-on' : ''}}"
-          wx:for="{{categories}}"
-          wx:for-item="c"
+    <view class="de-field">
+      <view class="de-label">🌶️ 辣度</view>
+      <view class="de-chips">
+        <text
+          class="de-chip {{spice === sp.key ? 'de-chip-on' : ''}}"
+          wx:for="{{spiceLevels}}"
+          wx:for-item="sp"
           wx:key="key"
-          data-cat="{{c.key}}"
-          bindtap="onTapCategory"
-        >{{c.emoji}} {{c.key}}</view>
-      </scroll-view>
+          data-spice="{{sp.key}}"
+          bindtap="onTapSpice"
+        >{{sp.key}}</text>
+      </view>
+    </view>
 
-      <scroll-view class="de-list" scroll-y>
-        <view wx:if="{{pickerLoading}}" class="de-list-state">正在翻菜单…</view>
-        <view wx:elif="{{pickerDishes.length === 0}}" class="de-list-state">这个分类下还没有菜</view>
-        <view
-          class="de-pick"
-          wx:for="{{pickerDishes}}"
-          wx:for-item="d"
-          wx:key="id"
-          data-idx="{{index}}"
-          bindtap="onPickDish"
-        >
-          <text class="de-pick-emoji">{{d.emoji}}</text>
-          <text class="de-pick-name">{{d.name}}</text>
-          <text class="de-pick-spice">{{d.spice || '不辣'}}</text>
-          <text class="de-pick-go">选它</text>
-        </view>
-      </scroll-view>
-    </block>
+    <view class="de-field">
+      <view class="de-label">📝 这道菜的备注<text class="de-hint">（{{noteMax}} 字以内）</text></view>
+      <input
+        class="de-input"
+        value="{{note}}"
+        placeholder="比如：少放盐、不放葱"
+        placeholder-class="de-ph"
+        maxlength="{{noteMax}}"
+        confirm-type="done"
+        bindinput="onNoteInput"
+        bindblur="onNoteBlur"
+      />
+      <view class="de-chips">
+        <text
+          class="de-chip de-chip-tag"
+          wx:for="{{noteTags}}"
+          wx:for-item="tag"
+          wx:key="*this"
+          data-tag="{{tag}}"
+          bindtap="onTapNoteTag"
+        >{{tag}}</text>
+        <text class="de-chip de-chip-clear" wx:if="{{note}}" bindtap="onClearNote">清空</text>
+      </view>
+    </view>
+
+    <view class="de-swap" bindtap="openPicker">🔄 换一道菜</view>
+    <view class="de-done" bindtap="onClose">好了</view>
   </view>
 </view>

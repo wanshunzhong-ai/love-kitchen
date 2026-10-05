@@ -14,13 +14,9 @@ const store = require('../../utils/store')
 const ui = require('../../utils/ui')
 const live = require('../../utils/live')
 const freq = require('../../utils/frequency')
+const dishSearch = require('../../utils/dish-search')
 
-const ALL = { key: '全部', emoji: '📜' }
-
-// 搜索防抖窗口。三百多道菜，每敲一个字都全量过滤 + 整列表 setData 不划算，
-// 叠上掌勺人的频率排序还要每字符 sort 一次。200ms 是「打字手感」与
-// 「少算几次」的折中：正常语速连打一个字间隔都小于它，一串输入只会过滤一次。
-const SEARCH_DEBOUNCE = 200
+const ALL = { key: dishSearch.ALL, emoji: '📜' }
 
 Page({
   data: {
@@ -185,8 +181,8 @@ Page({
           id: d._id || d.id,
           spiceIdx: level,
           spiceText: level > 0 ? '🌶️'.repeat(level) : '不辣',
-          // 预生成小写检索串，避免每次输入都重复 toLowerCase
-          _hay: ((d.name || '') + ' ' + (d.description || '') + ' ' + (d.category || '')).toLowerCase(),
+          // 预生成小写检索串（公式在 utils/dish-search.js 里，别在这里再写一遍）
+          _hay: dishSearch.hay(d),
         })
       })
       // 挂上点菜频率（掌勺人排序要用）。注意：**保持菜单原顺序**，
@@ -212,13 +208,15 @@ Page({
     this.scheduleFilter()
   },
 
-  /** 排一次防抖后的过滤；窗口内再次输入就把上一次顶掉 */
+  /** 排一次防抖后的过滤；窗口内再次输入就把上一次顶掉。
+      窗口长度（dishSearch.DEBOUNCE = 200ms）与弹层里的搜索是同一个值 ——
+      两处手感必须一致，所以不在这里写死数字。 */
   scheduleFilter() {
     this.cancelSearchDebounce()
     this._searchTimer = setTimeout(() => {
       this._searchTimer = null
       this.applyFilter()
-    }, SEARCH_DEBOUNCE)
+    }, dishSearch.DEBOUNCE)
   },
 
   /**
@@ -252,25 +250,8 @@ Page({
   applyFilter() {
     const { dishes, activeCategory, keyword } = this.data
 
-    let list =
-      activeCategory === '全部'
-        ? dishes
-        : dishes.filter(function (d) {
-            return d.category === activeCategory
-          })
-
-    // 关键词：菜名 / 介绍 / 分类 都参与匹配（多关键词用空格分隔，需全部命中）
-    const kw = (keyword || '').trim().toLowerCase()
-    if (kw) {
-      const parts = kw.split(/\s+/).filter(function (p) {
-        return p
-      })
-      list = list.filter(function (d) {
-        return parts.every(function (p) {
-          return d._hay.indexOf(p) >= 0
-        })
-      })
-    }
+    // 分类 + 关键词的规则在 utils/dish-search.js（选菜弹层用的是同一份）
+    let list = dishSearch.filterBy(dishes, activeCategory, keyword)
 
     // 掌勺人：默认按「TA 点过的次数」排，常点的在上面（可点胶囊切回默认顺序）
     // 干饭人不排 —— 点单页的位置天天变反而难找

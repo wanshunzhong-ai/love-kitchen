@@ -3,6 +3,7 @@
   "navigationBarBackgroundColor": "#FFF7F3",
   "navigationBarTextStyle": "black",
   "usingComponents": {
+    "cart-list": "/components/cart-list/cart-list",
     "dish-editor": "/components/dish-editor/dish-editor",
     "state-block": "/components/state-block/state-block"
   }

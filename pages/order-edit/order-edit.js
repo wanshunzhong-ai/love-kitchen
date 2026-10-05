@@ -15,7 +15,7 @@ const dine = require('../../utils/dine')
 const store = require('../../utils/store')
 const rejectLib = require('../../utils/reject')
 const live = require('../../utils/live')
-const { CATEGORIES, ORDER_STATUS, SPICE_LEVELS, spiceInfo, DISH_NOTE_MAX, AVOID_MAX, AVOID_TEXT_MAX } = require('../../utils/constants')
+const { ORDER_STATUS, SPICE_LEVELS, spiceInfo, DISH_NOTE_MAX, AVOID_MAX, AVOID_TEXT_MAX } = require('../../utils/constants')
 
 /** 订单内条目的唯一键：同一道菜的不同辣度算两条 */
 function itemKey(it) {
@@ -68,12 +68,10 @@ Page({
     spiceLevels: SPICE_LEVELS,
     // 辣度平时只显示「当前选的那一档」；这一条是正在展开重选的那道菜
     spiceOpenKey: '',
-    categories: [{ key: '全部', emoji: '📜' }].concat(CATEGORIES),
-    activeCategory: '全部',
-    allDishes: [],
-    pickerDishes: [],
+    // 加菜弹层：取菜单 / 分类 / 搜索三件事都在 components/dish-picker 里，
+    // 本页只留一个开关（原先这里还存着 allDishes / pickerDishes / categories，
+    // 与改菜面板各存一份，改一处不连带改另一处）
     pickerOpen: false,
-    pickerLoading: false,
     totalCount: 0,
     loading: true,
     // 加载失败：不再把用户直接踢回上一页，改为页内错误态 + 重试
@@ -340,10 +338,25 @@ Page({
   },
 
   // ---------- 菜品行 ----------
+  //
+  // cart-list 组件把点击翻成一个通用 act 事件，这里统一分发。
+  // 「按 key 定位」这件事只在这一层做一次，下面每个 handler 都直接收 key 参数 ——
+  // 免得每个 handler 都要自己去 e.currentTarget.dataset 里掏。
+  onCartAct(e) {
+    const d = e.detail || {}
+    const key = d.key
+    if (!key) return
+    if (d.act === 'edit') return this.openEditor(key)
+    if (d.act === 'open-spice') return this.onOpenSpice(key)
+    if (d.act === 'spice') return this.onTapSpice(key, d.spice)
+    if (d.act === 'note') return this.onTapNote(key)
+    if (d.act === 'qty') return this.onQtyChange(key, d.delta)
+    if (d.act === 'remove') return this.onRemoveItem(key)
+  },
 
-  onQtyChange(e) {
-    const key = e.currentTarget.dataset.key
-    const delta = Number(e.currentTarget.dataset.delta)
+  onQtyChange(key, delta) {
+    delta = Number(delta)
+    if (!delta) return
     const items = this.data.items
       .map(function (it) {
         return it.key === key ? Object.assign({}, it, { qty: it.qty + delta }) : it
@@ -354,8 +367,7 @@ Page({
     this.setData({ items: items, totalCount: this.countOf(items) })
   },
 
-  onRemoveItem(e) {
-    const key = e.currentTarget.dataset.key
+  onRemoveItem(key) {
     const items = this.data.items.filter(function (it) {
       return it.key !== key
     })
@@ -367,16 +379,14 @@ Page({
   },
 
   // 辣度：平时只显示选定的那一档，点一下才就地展开四档重选
-  onOpenSpice(e) {
-    const key = e.currentTarget.dataset.key
+  onOpenSpice(key) {
     if (!key) return
     this.setData({ spiceOpenKey: key })
   },
 
   // 列表里直接改辣度：选中即收起，回到「只显示选定的辣度」
-  onTapSpice(e) {
-    const key = e.currentTarget.dataset.key
-    const spice = e.currentTarget.dataset.spice
+  onTapSpice(key, spice) {
+    if (!spice) return
     const r = applyRowChange(this.data.items, key, { spice: spice })
     if (!r.found) return
     this.setData({ items: r.items, totalCount: this.countOf(r.items), spiceOpenKey: '' })
@@ -388,8 +398,7 @@ Page({
 
   // 单道菜的备注：点备注行直接写，不必打开面板（与确认订单页同一套交互）
   // 用弹窗输入而非行内 input —— 本页改动都会重设 items，行内受控 input 会把光标顶到末尾
-  onTapNote(e) {
-    const key = e.currentTarget.dataset.key
+  onTapNote(key) {
     const row = this.data.items.find(function (it) {
       return it.key === key
     })
@@ -429,8 +438,7 @@ Page({
 
   // ---------- 逐道菜修改面板 ----------
 
-  openEditor(e) {
-    const key = e.currentTarget.dataset.key
+  openEditor(key) {
     const row = this.data.items.find(function (it) {
       return it.key === key
     })
@@ -496,51 +504,23 @@ Page({
   },
 
   // ---------- 从菜单加菜 ----------
+  //
+  // 弹层的取菜单 / 分类 / 搜索都在 components/dish-picker 里
+  // （与改菜面板的「换一道菜」共用同一份，别在这里再写一遍）。
+  // 这一层只管三件事：开、关、把选中的那一道并进 items。
 
-  async openPicker() {
+  openPicker() {
     this.setData({ pickerOpen: true })
-    if (this.data.allDishes.length) {
-      this.applyPickerFilter()
-      return
-    }
-    this.setData({ pickerLoading: true })
-    try {
-      const res = await api.call('listDishes')
-      const dishes = res.dishes || []
-      this.setData({ allDishes: dishes, pickerLoading: false })
-      this.applyPickerFilter()
-    } catch (err) {
-      console.error('[order-edit] 加载菜单失败', err)
-      this.setData({ pickerLoading: false })
-      ui.toast('菜单没加载出来，稍后再试')
-    }
   },
 
   closePicker() {
     this.setData({ pickerOpen: false })
   },
 
-  // 弹层内容区不穿透关闭
-  noop() {},
-
-  onTapPickerCategory(e) {
-    this.setData({ activeCategory: e.currentTarget.dataset.cat })
-    this.applyPickerFilter()
-  },
-
-  applyPickerFilter() {
-    const { allDishes, activeCategory } = this.data
-    const pickerDishes =
-      activeCategory === '全部'
-        ? allDishes
-        : allDishes.filter(function (d) {
-            return d.category === activeCategory
-          })
-    this.setData({ pickerDishes: pickerDishes })
-  },
-
-  onPickDish(e) {
-    const dish = this.data.pickerDishes[e.currentTarget.dataset.idx]
+  // 组件抛回来的选中项。刻意**不关闭弹层** —— 一单常常要连加好几道，
+  // 关不关由用户点 ✕ 决定（组件不知道这个业务判断，所以它也不自己关）。
+  onPickerPick(e) {
+    const dish = (e.detail || {}).dish
     if (!dish) return
     const spice = dish.spice || '不辣'
 

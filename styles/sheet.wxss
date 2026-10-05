@@ -1,0 +1,135 @@
+/* ============================================================
+   爱心小厨房 · 弹层基座（遮罩 + 底部弹层 + 分类胶囊条）
+   ------------------------------------------------------------
+   为什么单独一份：
+     同一套 .mask / .sheet / .sheet-head / .sheet-close / .cats / .cat
+     原先在 menu.wxss 与 order-edit.wxss 各写一遍（dish-editor 里又一套
+     .de-mask / .de-sheet / .de-cat）。三处数值已经开始漂移：
+     底色 #FFFCFB vs #FFF7F3、padding 32/32/48 vs 28/24/40、
+     头部间距 8rpx vs 20rpx。改一处不会连带改另两处。
+     现在只此一份，页面 @import、组件也 @import（组件默认样式隔离，
+     页面与全局样式都进不来，所以必须自己 import 一次）。
+
+   两条与 styles/common.wxss 一致、但结论相反的规矩：
+     1) 本文件**不含 page 选择器** —— 组件的 wxss 里 page 不匹配任何节点，
+        而组件又必须能 import 它。（common.wxss 的 token 段是 page 选择器，
+        所以 token 与零件只能拆两个文件。）
+     2) 可以放心用 var(--radius-pill) / var(--grad-main)：
+        CSS 变量是**继承属性**，能穿透自定义组件边界，组件内照样解析得出来
+        （components/dish-editor 早就在这么用，已跑在设计稿上）。
+   ============================================================ */
+
+/* ------------------------------------------------------------
+   遮罩 + 底部弹层
+   ------------------------------------------------------------ */
+.mask {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background: rgba(63, 47, 44, 0.45);
+  z-index: 100;
+  display: flex;
+  align-items: flex-end;
+}
+
+.sheet {
+  width: 100%;
+  background: #FFF7F3;
+  border-radius: 32rpx 32rpx 0 0;
+  padding: 28rpx 24rpx 40rpx;
+  /* 安全区双写：全面屏底部横条会压住弹层里最后一个按钮。
+     第一行是不认 env() 的老内核兜底，后两行才是正解（见 app.wxss 兼容性约定 2）。 */
+  padding-bottom: 40rpx;
+  padding-bottom: calc(40rpx + constant(safe-area-inset-bottom));
+  padding-bottom: calc(40rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+  /* 列表型弹层（选菜）要靠 flex + max-height 撑出滚动区；
+     内容短的弹层（选辣度）高度由内容决定，这两条不会生效。 */
+  max-height: 78vh;
+  display: flex;
+  flex-direction: column;
+  animation: sheet-up 0.22s ease-out;
+}
+
+@keyframes sheet-up {
+  from { transform: translateY(40rpx); opacity: 0.4; }
+  to   { transform: translateY(0);     opacity: 1; }
+}
+
+.sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20rpx;
+}
+
+.sheet-title {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #4A3B38;
+}
+
+/* 头部右侧的关闭；也兼任「← 返回」位（见 .sheet-back） */
+.sheet-close {
+  font-size: 32rpx;
+  color: #B9A29B;
+  /* 8rpx 纵向留白纯粹是为了把点击热区撑大一点 */
+  padding: 8rpx 12rpx;
+}
+
+/* 用「返回」而不是「关闭」时（改菜面板里的换菜态）：点它是回上一层，不是关整个面板 */
+.sheet-back {
+  font-size: 26rpx;
+  color: #FF5C8A;
+  font-weight: 600;
+  padding: 8rpx 12rpx;
+}
+
+/* 头部左侧「当前这道菜」：emoji + 菜名（选辣度弹层在用） */
+.sheet-dish {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.sheet-emoji {
+  font-size: 48rpx;
+  margin-right: 16rpx;
+}
+
+.sheet-name {
+  font-size: 34rpx;
+  font-weight: 700;
+  color: #4A3B38;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------
+   分类胶囊条（菜单页顶部筛选 / 选菜弹层里都用同一套）
+   ------------------------------------------------------------ */
+.cats {
+  white-space: nowrap;
+  margin-bottom: 20rpx;
+}
+
+.cat {
+  display: inline-block;
+  padding: 12rpx 30rpx;
+  margin-right: 16rpx;
+  background: #ffffff;
+  border-radius: var(--radius-pill);
+  font-size: 26rpx;
+  color: #8A7772;
+  border: 2rpx solid #F6E3DC;
+}
+
+.cat-active {
+  background: var(--grad-main);
+  color: #ffffff;
+  border-color: transparent;
+  font-weight: 600;
+}

@@ -101,60 +101,16 @@
           <text class="title-count">共 {{totalCount}} 道</text>
         </view>
 
-        <view class="cart-item" wx:for="{{items}}" wx:key="key">
-          <view class="ci-main">
-            <text class="ci-emoji">{{item.emoji}}</text>
-            <view class="ci-info">
-              <view class="ci-name-row">
-                <text class="ci-name">{{item.name}}</text>
-                <!-- 打开「改这道菜」面板：辣度 / 备注 / 换菜 -->
-                <text class="ci-edit" data-key="{{item.key}}" catchtap="openEditor">✏️</text>
-              </view>
-              <!-- 辣度：平时只显示当前选定的那一档，点一下就地展开四档重选 -->
-              <view class="ci-spice">
-                <view
-                  wx:if="{{spiceOpenKey !== item.key}}"
-                  class="ci-spice-cur splv-{{item.spiceIdx}}"
-                  data-key="{{item.key}}"
-                  catchtap="onOpenSpice"
-                >
-                  <text>{{item.spiceLabel}}</text>
-                  <text class="csc-caret">▾</text>
-                </view>
-                <view wx:else class="ci-spices">
-                  <text
-                    class="ci-chip {{item.spice === sp ? 'ci-chip-on' : ''}}"
-                    wx:for="{{spiceLevels}}"
-                    wx:for-item="sp"
-                    wx:key="key"
-                    data-key="{{item.key}}"
-                    data-spice="{{sp.key}}"
-                    catchtap="onTapSpice"
-                  >{{sp.key}}</text>
-                </view>
-              </view>
-              <!-- 这一道菜的备注：点一下就写，不用打开面板 -->
-              <view
-                class="ci-note {{item.note ? '' : 'ci-note-empty'}}"
-                data-key="{{item.key}}"
-                catchtap="onTapNote"
-              >{{item.note ? '📝 ' + item.note : '＋ 写一句这道菜的备注'}}</view>
-            </view>
-          </view>
-
-          <view class="ci-actions">
-            <view class="ci-stepper">
-              <view class="step" data-key="{{item.key}}" data-delta="-1" catchtap="onQtyChange">−</view>
-              <text class="step-num">{{item.qty}}</text>
-              <view class="step step-plus" data-key="{{item.key}}" data-delta="1" catchtap="onQtyChange">＋</view>
-            </view>
-            <text class="ci-remove" data-key="{{item.key}}" catchtap="onRemoveItem">✕</text>
-          </view>
-        </view>
-
-        <view wx:if="{{items.length === 0}}" class="empty-hint">这一单已经空了，从下面加几道菜吧</view>
-
-        <view class="add-dish" bindtap="openPicker">＋ 从菜单加菜</view>
+        <!-- 菜品行统一由 cart-list 组件渲染（与确认订单页共用同一份结构 / 样式） -->
+        <cart-list
+          items="{{items}}"
+          spice-levels="{{spiceLevels}}"
+          open-key="{{spiceOpenKey}}"
+          hint="{{items.length === 0 ? '这一单已经空了，从下面加几道菜吧' : ''}}"
+          add-text="＋ 从菜单加菜"
+          bind:act="onCartAct"
+          bind:add="openPicker"
+        />
       </view>
 
       <!-- 用餐时间 -->
@@ -245,42 +201,14 @@
     </block>
   </block>
 
-  <!-- 加菜弹层 -->
-  <view wx:if="{{pickerOpen}}" class="mask" bindtap="closePicker">
-    <view class="sheet" catchtap="noop">
-      <view class="sheet-head">
-        <text class="sheet-title">加菜</text>
-        <text class="sheet-close" bindtap="closePicker">✕</text>
-      </view>
-
-      <scroll-view class="cats" scroll-x enhanced="{{true}}" show-scrollbar="{{false}}">
-        <view
-          class="cat {{activeCategory === item.key ? 'cat-active' : ''}}"
-          wx:for="{{categories}}"
-          wx:key="key"
-          data-cat="{{item.key}}"
-          bindtap="onTapPickerCategory"
-        >{{item.emoji}} {{item.key}}</view>
-      </scroll-view>
-
-      <scroll-view class="picker-list" scroll-y>
-        <view wx:if="{{pickerLoading}}" class="picker-state">正在翻菜单…</view>
-        <view wx:elif="{{pickerDishes.length === 0}}" class="picker-state">这个分类下还没有菜</view>
-        <view
-          class="pick-item"
-          wx:for="{{pickerDishes}}"
-          wx:key="id"
-          data-idx="{{index}}"
-          bindtap="onPickDish"
-        >
-          <text class="pick-emoji">{{item.emoji}}</text>
-          <text class="pick-name">{{item.name}}</text>
-          <text class="pick-spice">{{item.spice || '不辣'}}</text>
-          <text class="pick-add">＋</text>
-        </view>
-      </scroll-view>
-    </view>
-  </view>
+  <!-- 加菜弹层：组件自带遮罩 / 弹层 / 分类 / 搜索（C25）。
+       选完不自动关闭 —— 一单常常要连加几道，关不关由用户决定。 -->
+  <dish-picker
+    visible="{{pickerOpen}}"
+    title="加菜"
+    bind:pick="onPickerPick"
+    bind:close="closePicker"
+  />
 
   <!-- 逐道菜修改：辣度 / 备注 / 换一道菜 -->
   <dish-editor

@@ -4,11 +4,12 @@
 > v1 清单（`page-optimization-checklist.md`）的 H1-H7 已实施；本清单**取代 v1 的第二、三节**，并补上审查新发现的**布局一致性 / 逻辑健壮性 / 架构层**三块。
 > 共 **30 条**，按 `P0 → P5` 排序。每条可直接引用编号（例：「做 C1-C5」）。
 
-**进度**：`16 / 30`　🔴 高优先 `5 → 0`　🟠 中 `8`　🟡 低 `3`　⚪ 待拍板 `3`
+**进度**：`19 / 30`　🔴 高优先 `5 → 0`　🟠 中 `5`　🟡 低 `3`　⚪ 待拍板 `3`
 
 > **第 1 批（C1–C5）已于 2026-10-05 实施完成**，全量 1676 项断言全绿。
 > **第 2 批（C9–C11 + C12）已于 2026-10-05 实施完成**：新增 `styles/common.wxss`（token）+ `styles/state.wxss`（空态）两个公共层与 `components/state-block` 组件，新增 `test_batch2.js` 91 项，全量断言全绿。
 > **第 3 批（C6 + C19–C24）已于 2026-10-05 实施完成**：搜索防抖 / 随机尊重筛选 / 改菜标题 / tabBar 早退 / toast 延时唯一来源 / 打星过渡 / loading 禁用，新增 `test_batch3.js` 37 项（含行为测试），全量断言全绿。
+> **第 4 批（C13 + C14 + C25）已于 2026-10-05 实施完成**：组件化三件套 —— `styles/sheet.wxss`（弹层基座）+ `utils/dish-search.js`（搜索规则唯一来源）+ `components/cart-list` + `components/dish-picker`（含搜索），新增 `test_batch4.js` 132 项，全量 **1949 项**断言全绿。
 
 ---
 
@@ -99,17 +100,20 @@
   - 做法：`components/state-block`（properties：`emoji` / `tip` / `sub` / `retry`，event：`retry`；`retry` 是按钮文案，留空即不出按钮）。**替换 8 个页面共 20 处**；`dish-import` 的成功页只借 `.state` 做居中布局、结构不是三态，**保留全局类不套组件**（否则得给它开 slot，得不偿失）。
   - 验收：`audit_wxml.py` 通过；8 页 `usingComponents` 注册齐全；8 页 wxml 不再出现 `class="state"` / `class="btn-retry"` / 裸 `bindtap="onRetry"`。
 
-- [ ] **C13 · 抽 `cart-list` 组件** — `中` 🟠
-  - 位置：`checkout.wxml` ↔ `order-edit.wxml`（**26 个同名类整块重复**：`.cart-item` / `.ci-*` / `.step` / `.mask` / `.sheet` …）
-  - 现状：两个页面在渲染同一套「购物车行 + 选菜弹层」，样式几乎逐块复制。
-  - 改法：抽组件承载渲染与样式，两页只传数据与事件。
-  - 验收：两页的购物车行外观逐像素一致（截图对比）。
+- [x] **C13 · 抽 `cart-list` 组件** — `中` ✅
+  - 位置：`checkout.wxml` ↔ `order-edit.wxml`（**26 个同名类整块重复**：`.cart-item` / `.ci-*` / `.step` / `.add-more`）
+  - 现状：两个页面在渲染同一套「购物车行」，样式逐块复制。
+  - **已实施**：新增 `components/cart-list`。props = `items` / `spiceLevels` / `openKey` / `addText` / `hint`；事件 = `act`（`detail { act, key, spice, delta }`，`act ∈ edit|open-spice|spice|note|qty|remove`）+ `add`。
+  - 两页的数据字段名在页面侧归一：结算页补 `key = uid`、`spiceLevel → spiceIdx`；编辑订单页本来就是 `key` / `spiceIdx`。页面新增 `onCartAct` 分发器，下面每个 handler 改成**直接收 key**（不再各自掏 dataset）。
+  - 验收：两页 wxss 分别 3.9KB → 0.9KB、9.7KB → 4.4KB；`test_batch4.js` E 组钉住「全仓库只有一处渲染 `class="cart-item"`」。
 
-- [ ] **C14 · 抽 `dish-picker` 组件** — `中` 🟠
-  - 位置：`menu.wxss:393+` ↔ `order-edit.wxss:529+`；`dish-editor.wxml:65-94`
-  - 现状：选菜弹层三处重复（`.mask` / `.sheet` / `.sheet-head` / `.sheet-close` / `.cats` / `.cat`）。
-  - 改法：抽组件，并把 C15 的搜索框一并做进去。
-  - 验收：三处弹层行为一致。
+- [x] **C14 · 抽 `dish-picker` 组件** — `中` ✅
+  - 位置：`order-edit` 的「＋ 从菜单加菜」↔ `dish-editor` 的「🔄 换一道菜」（两处各自加载菜单、各自写一遍分类过滤）
+  - **已实施**：新增 `components/dish-picker`，组件自己负责**取菜单 + 分类 + 搜索 + 空态**；选完只抛 `pick`（detail 带整道菜）**不自己关闭** —— 编辑订单页要连加几道、改菜面板要选一道就回编辑态，关闭时机归调用方。
+  - `backText` 属性：有值时头部出「← 返回」而非 ✕（改菜面板用它回编辑态）。
+  - 顺带新增 `styles/sheet.wxss` 承载弹层基座（`.mask` / `.sheet` / `.sheet-head*` / `.cats` / `.cat*`），`menu.wxss` 与组件都 `@import` 同一份 → 全仓库只剩一处 `.sheet` 定义。菜单页的辣度弹层因此拿到了上滑动画，底色/padding 与选菜弹层统一。
+  - 验收：`test_batch4.js` B/D 组；`audit_wxml.py` 通过（16 个 wxml）。
+  - **C25（选菜弹层加搜索框）一并做了**，搜索框就落在这个组件里，见下方 P4 段的 C25 条目。
 
 ---
 
@@ -173,9 +177,11 @@
   - 位置：`pages/menu/menu.wxml:112`（loading 时仍可点，且基于旧 `dishes`）。
   - **已实施**：`onRandom` 开头挡 `loading`；按钮加 `.lucky-off`（opacity .45）示意不可点。
 
-- [ ] **C25 · M7 选菜弹层加搜索框** — `中` 🟡
-  - 位置：`pages/order-edit/order-edit.wxml:240-275`、`components/dish-editor/dish-editor.wxml:65-94`
-  - 改法：复用 menu 搜索实现（含 C6 的防抖）；建议与 C14 一并做。
+- [ ] **C25 · M7 选菜弹层加搜索框** — `中` ✅
+  - 位置：`pages/order-edit/order-edit.wxml:248-283`、`components/dish-editor/dish-editor.wxml:65-94`
+  - **已实施**：搜索框落在新抽的 `components/dish-picker` 里（与 C14 一并做的），两个入口（加菜 / 换菜）同时受益。
+  - 规则与防抖都取自新抽的 `utils/dish-search.js`（`DEBOUNCE = 200` 与菜单页**同一个值**）：`hay()` 拼检索串并缓存、`filterBy(list, category, keyword)` 分类 + 多关键词。**menu.js 里那份复刻实现已删除**；`test_menu_search.js` 也从「测副本」改为「测真实现」（原先它复刻了一份算法，真实现漂移了它不会红）。
+  - 验收：`test_batch4.js` D 组行为测试（连打 5 个字符只过滤 1 次 / 清空立即生效且迟到的定时器作废 / 切分类立即生效 / 关掉时清关键词但保留分类）。
 
 - [ ] **C26 · 全局按压反馈（`hover-class`）** — `小` 🟡
   - 位置：全项目 **0 处** `hover-class`；89 个 `bindtap` 中约 **69 个**落在 `view`/`text` 上（`menu.wxml:9/12/13/47/55/98/112/115`、`todo.wxml:71/72/73` …）
@@ -217,7 +223,7 @@
 | M4 视觉不一致 | ✅ **已修（C9/C10/C11）** | token 收敛、辣度皮肤合一、todo 本地重写删除 |
 | M5 dish-edit 标题 | ✅ **已修（C20）** | `dish-edit.js` 的 `onLoad` 带 id 时设「改菜」 |
 | M6 profile toast 过频 | ✅ **已修** | `profile.js:36,103-112` |
-| M7 选菜弹层无搜索 | 仍然存在 → **C25** | `order-edit.wxml:240-275` |
+| M7 选菜弹层无搜索 | ✅ **已修（C25）** | 搜索框做进 `components/dish-picker`，两个入口共享 |
 | M8 import 时序 | ✅ **已修（C3）** | `dish-import.js` 的 `ensureExisting` 先等菜单就绪 |
 | M9 tabBar 重复 switchTab | ✅ **已修（C21）** | `index.wxml` 补 `data-key`，`onTap` 早退 |
 | L1 无 hover-class | 仍然存在 → **C26** | 全仓库 0 处 |
@@ -237,7 +243,7 @@
 | 第 1 批 ✅ | C1–C5 | **已完成 2026-10-05**，全量 1676 项断言全绿 |
 | 第 2 批 ✅ | C9–C11 + C12 | **已完成 2026-10-05**：token 层 + 空态公共层 + state-block 组件（8 页 20 处），新增 91 项 |
 | 第 3 批 ✅ | C6 + C22–C24 + C19–C21 | **已完成 2026-10-05**：搜索防抖 + 7 项体验微调，新增 37 项（含行为测试） |
-| 第 4 批 | C13 + C14 + C25 | 组件化三件套（cart-list / dish-picker + 搜索） |
+| 第 4 批 ✅ | C13 + C14 + C25 | **已完成 2026-10-05**：`styles/sheet.wxss` + `utils/dish-search.js` + `components/cart-list` + `components/dish-picker`（含搜索），新增 132 项 |
 | 第 5 批 | C7 + C15–C18 + C26 + C27 + C29 | 分页、健壮性与无障碍收尾 |
 | 待定 | C28 → 决定 C30 | 需要拍板 |
 

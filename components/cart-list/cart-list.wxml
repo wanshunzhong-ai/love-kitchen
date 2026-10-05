@@ -1,0 +1,57 @@
+<!-- 逐道菜的菜品行（结算页 / 编辑订单页共用） -->
+<view class="cart-item" wx:for="{{items}}" wx:key="key">
+  <view class="ci-main">
+    <text class="ci-emoji">{{item.emoji}}</text>
+    <view class="ci-info">
+      <view class="ci-name-row">
+        <text class="ci-name">{{item.name}}</text>
+        <!-- 打开「改这道菜」面板：辣度 / 备注 / 换菜 -->
+        <text class="ci-edit" data-key="{{item.key}}" catchtap="onEdit">✏️</text>
+      </view>
+      <!-- 辣度：平时只显示当前选定的那一档，点一下就地展开四档重选 -->
+      <view class="ci-spice">
+        <view
+          wx:if="{{openKey !== item.key}}"
+          class="ci-spice-cur splv-{{item.spiceIdx}}"
+          data-key="{{item.key}}"
+          catchtap="onOpenSpice"
+        >
+          <text>{{item.spiceLabel}}</text>
+          <text class="csc-caret">▾</text>
+        </view>
+        <view wx:else class="ci-spices">
+          <text
+            class="ci-chip {{item.spice === sp ? 'ci-chip-on' : ''}}"
+            wx:for="{{spiceLevels}}"
+            wx:for-item="sp"
+            wx:key="key"
+            data-key="{{item.key}}"
+            data-spice="{{sp.key}}"
+            catchtap="onTapSpice"
+          >{{sp.key}}</text>
+        </view>
+      </view>
+      <!-- 这一道菜的备注：点一下就写，不用打开面板 -->
+      <view
+        class="ci-note {{item.note ? '' : 'ci-note-empty'}}"
+        data-key="{{item.key}}"
+        catchtap="onTapNote"
+      >{{item.note ? '📝 ' + item.note : '＋ 写一句这道菜的备注'}}</view>
+    </view>
+  </view>
+
+  <view class="ci-actions">
+    <view class="ci-stepper">
+      <view class="step" data-key="{{item.key}}" data-delta="-1" catchtap="onQty">−</view>
+      <text class="step-num">{{item.qty}}</text>
+      <view class="step step-plus" data-key="{{item.key}}" data-delta="1" catchtap="onQty">＋</view>
+    </view>
+    <text class="ci-remove" data-key="{{item.key}}" catchtap="onRemove">✕</text>
+  </view>
+</view>
+
+<!-- 列表为空时的说明（结算页不用，编辑订单页用「这一单已经空了」） -->
+<view wx:if="{{hint}}" class="cart-hint">{{hint}}</view>
+
+<!-- 追加菜品的入口：结算页回菜单页、编辑订单页开选菜弹层 -->
+<view wx:if="{{addText}}" class="add-more" bindtap="onAdd">{{addText}}</view>

@@ -97,11 +97,14 @@ Page({
   },
 
   refreshCart() {
-    // 每行补上辣度展示信息：列表里只渲染「选定的那一档」
+    // 每行补上辣度展示信息：列表里只渲染「选定的那一档」。
+    // `key` 就是 uid —— cart-list 组件只认 key 这一个行身份，
+    // 两页的字段名在这里归一（编辑订单页的 key 是 dishId|辣度）。
     const cart = store.getCart().map(function (it) {
       const info = spiceInfo(it.spice)
       return Object.assign({}, it, {
-        spiceLevel: info.level,
+        key: it.uid,
+        spiceIdx: info.level,
         spiceLabel: info.label,
       })
     })
@@ -151,12 +154,28 @@ Page({
     })
   },
 
+  // ---------- 菜品行 ----------
+  //
+  // cart-list 组件把点击翻成一个通用 act 事件，这里统一分发（与编辑订单页同款）。
+  // 下面每个 handler 都直接收 uid，不再各自去 e.currentTarget.dataset 里掏。
+  onCartAct(e) {
+    const d = e.detail || {}
+    const uid = d.key
+    if (!uid) return
+    if (d.act === 'edit') return this.openEditor(uid)
+    if (d.act === 'open-spice') return this.onOpenSpice(uid)
+    if (d.act === 'spice') return this.onTapSpice(uid, d.spice)
+    if (d.act === 'note') return this.onTapNote(uid)
+    if (d.act === 'qty') return this.onQtyChange(uid, d.delta)
+    if (d.act === 'remove') return this.onRemoveItem(uid)
+  },
+
   // 数量加减：按行身份（uid）定位，同菜不同辣度互不影响。
   // qty=1 时点「−」不许静默删行——历史上这一下会把菜悄悄删掉，找回都没处找；
   // 改成弹确认，用户真想删就删得明明白白。
-  onQtyChange(e) {
-    const uid = e.currentTarget.dataset.uid
-    const delta = Number(e.currentTarget.dataset.delta)
+  onQtyChange(uid, delta) {
+    delta = Number(delta)
+    if (!delta) return
     if (delta < 0) {
       const row = this.data.cart.find(function (it) {
         return it.uid === uid
@@ -183,8 +202,7 @@ Page({
   },
 
   // 直接删行：同样给个确认，误触不再无法挽回
-  onRemoveItem(e) {
-    const uid = e.currentTarget.dataset.uid
+  onRemoveItem(uid) {
     const row = this.data.cart.find(function (it) {
       return it.uid === uid
     })
@@ -207,8 +225,7 @@ Page({
   // 单道菜的备注：点列表里那一行备注就能直接写，不必打开面板。
   // 用 wx.showModal 的输入模式，而不是行内 input —— 本页每次改动都会 refreshCart 刷新列表，
   // 行内受控 input 回写 value 会把光标顶到末尾，弹窗输入没有这个毛病。
-  onTapNote(e) {
-    const uid = e.currentTarget.dataset.uid
+  onTapNote(uid) {
     const row = this.data.cart.find(function (it) {
       return it.uid === uid
     })
@@ -233,16 +250,14 @@ Page({
   },
 
   // 辣度：平时只显示选定的那一档，点一下才就地展开四档重选
-  onOpenSpice(e) {
-    const uid = e.currentTarget.dataset.uid
+  onOpenSpice(uid) {
     if (!uid) return
     this.setData({ spiceOpenUid: uid })
   },
 
   // 选中某一档：落库后立刻收起，回到「只显示选定的辣度」
-  onTapSpice(e) {
-    const uid = e.currentTarget.dataset.uid
-    const spice = e.currentTarget.dataset.spice
+  onTapSpice(uid, spice) {
+    if (!spice) return
     const newUid = store.changeSpice(uid, spice)
     // 先收起再刷新，refreshCart 会保留当前值
     this.setData({ spiceOpenUid: '' })
@@ -255,8 +270,7 @@ Page({
 
   // ---------- 逐道菜修改面板 ----------
 
-  openEditor(e) {
-    const uid = e.currentTarget.dataset.uid
+  openEditor(uid) {
     const row = this.data.cart.find(function (it) {
       return it.uid === uid
     })

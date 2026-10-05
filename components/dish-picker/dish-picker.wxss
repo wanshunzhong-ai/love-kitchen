@@ -1,0 +1,104 @@
+/* 选菜弹层的遮罩 / 弹层壳 / 分类胶囊条都在 styles/sheet.wxss（与菜单页共用一份）。
+   组件默认样式隔离，页面与全局样式都进不来，所以必须自己 @import 一次。 */
+@import "../../styles/sheet.wxss";
+
+/* ---------- 搜索框（弹层里比菜单页那根矮一点） ---------- */
+.ps {
+  display: flex;
+  align-items: center;
+  background: #ffffff;
+  border-radius: var(--radius-pill);
+  padding: 0 24rpx;
+  margin-bottom: 16rpx;
+  border: 2rpx solid #F6E3DC;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.ps-on {
+  border-color: #FFB3C7;
+  box-shadow: 0 4rpx 16rpx rgba(255, 122, 158, 0.15);
+}
+
+.ps-icon {
+  font-size: 24rpx;
+  margin-right: 12rpx;
+  flex-shrink: 0;
+}
+
+.ps-input {
+  flex: 1;
+  height: 68rpx;
+  font-size: 26rpx;
+  color: #4A3B38;
+}
+
+.ps-ph {
+  color: #C4B2AC;
+  font-size: 24rpx;
+}
+
+.ps-clear {
+  width: 44rpx;
+  text-align: center;
+  color: #C4B2AC;
+  font-size: 26rpx;
+  flex-shrink: 0;
+}
+
+/* ---------- 列表 ---------- */
+.picker-list {
+  flex: 1;
+  max-height: 52vh;
+}
+
+.picker-state {
+  padding: 60rpx 0;
+  text-align: center;
+  font-size: 24rpx;
+  color: #B9A29B;
+}
+
+.pick-item {
+  display: flex;
+  align-items: center;
+  background: #ffffff;
+  border-radius: 20rpx;
+  padding: 20rpx 24rpx;
+  margin-bottom: 16rpx;
+}
+
+.pick-emoji {
+  font-size: 44rpx;
+  width: 64rpx;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.pick-name {
+  flex: 1;
+  font-size: 28rpx;
+  color: #4A3B38;
+  padding-left: 8rpx;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.pick-spice {
+  font-size: 22rpx;
+  color: #C97B8E;
+  background: #FFF0F4;
+  padding: 4rpx 14rpx;
+  border-radius: var(--radius-pill);
+  flex-shrink: 0;
+}
+
+.pick-add {
+  width: 56rpx;
+  text-align: center;
+  font-size: 34rpx;
+  color: #FF5C8A;
+  font-weight: 700;
+  flex-shrink: 0;
+}

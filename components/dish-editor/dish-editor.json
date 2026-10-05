@@ -1,4 +1,6 @@
 {
   "component": true,
-  "usingComponents": {}
+  "usingComponents": {
+    "dish-picker": "/components/dish-picker/dish-picker"
+  }
 }
