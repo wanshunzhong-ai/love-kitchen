@@ -4,7 +4,9 @@
 // 因此 pages/ 下所有页面无需关心底层到底是哪一种：
 //
 //   1) 菜品（菜单）→ 内置在小程序端（utils/dishes.js）
-//      菜单是静态数据（101 道菜），内置进代码最快：零后台配置、离线可用、读取零延迟。
+//      菜单主体是静态数据（303 道菜），内置进代码最快：零后台配置、离线可用、读取零延迟。
+//      只有「掌勺人新增的菜」走云端（utils/dish-cloud.js，清单 C28），
+//      因为干饭人的点单页也得看得到，而两台手机的本地存储互不可见。
 //
 //   2) 订单 → WorkBuddy 云服务 PostgreSQL（utils/orders.js，小程序直连）
 //      订单要两个人共享，必须进真数据库。
@@ -20,7 +22,8 @@ const localOrders = require('./orders')
 const localLogs = require('./dish-logs')
 
 // 菜品 action：由 utils/dishes.js 接管
-const DISH_ACTIONS = ['listDishes', 'getDish', 'saveDish', 'deleteDish', 'importDishes']
+// syncDishes 是共享菜单同步（C28）：掌勺人新增的菜上云，干饭人点单页也能看到
+const DISH_ACTIONS = ['listDishes', 'getDish', 'saveDish', 'deleteDish', 'importDishes', 'syncDishes']
 
 // 菜单日志 action：由 utils/dish-logs.js 接管（日志必须上云，本地读不到对方的改动）
 const LOG_ACTIONS = ['listDishLogs']

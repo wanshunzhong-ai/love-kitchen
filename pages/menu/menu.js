@@ -73,6 +73,10 @@ Page({
       cartCount: store.cartCount(),
     })
     this.loadDishes()
+    // 共享菜单同步（清单 C28）：把掌勺人新增的菜拉过来，让干饭人点单页也看得到。
+    // **放在 loadDishes 之后**：先把本机已有的菜单画出来（离线也有内容），
+    // 同步回来真变了再重画一次 —— 不能让一个网络请求挡住首屏。
+    this.syncShared()
     // 只有掌勺人的列表要按频率排 —— 干饭人那边连订单都不必读
     if (role === 'cook') {
       this.loadFrequency()
@@ -205,6 +209,21 @@ Page({
       this.setData({ loading: false })
     } finally {
       this._loadingDishes = false
+    }
+  },
+
+  // 共享菜单同步（清单 C28，只单向：掌勺人新增 → 两台手机都看得到）
+  //
+  // 静默失败是刻意的：菜单是本地功能，云端不可用时「读到的还是本机那份」，
+  // 绝不能变成打不开或弹错。只有真的拉到了新菜 / 有菜被改过才重画，
+  // 否则每次 onShow 都会白刷一遍列表（滚动位置也会跳）。
+  async syncShared() {
+    try {
+      const res = await api.call('syncDishes')
+      if (res && (res.added || res.updated)) this.loadDishes()
+      return res
+    } catch (err) {
+      return null
     }
   },
 

@@ -181,6 +181,23 @@ const NOTICE_MS = 6000
 // 删单后的「撤销」窗口：这段时间内真删请求还没发出去，点了撤销就当没删
 const UNDO_MS = 5000
 
+// ---------- 共享菜单的 id 分界（C28/C30，改之前务必读完） ----------
+//
+// 菜品 id 有两个互不重叠的号段，这道分界线是「两台手机不撞号」的唯一保证：
+//
+//   < CLOUD_ID_BASE  →  本地号段：内置 seed（1..303）+ 本机自己加的菜。
+//                       两台手机各自独立发号，**从不互换**，撞了也没关系。
+//   ≥ CLOUD_ID_BASE  →  云端号段：由云表 dishes 的 identity 发号（START WITH 100001），
+//                       两台手机拿到的是同一个 id。
+//
+// 为什么必须有这条线：本地自增（utils/dishes.js::nextId）在两台手机上会从同一个数起步，
+// 一旦把本地 id 直接当云端 id 用，第二个人加菜必然撞上第一个人的 id。
+// 所以掌勺人新增的菜一律由云端发号，落到本地后 id 就在云端号段里。
+//
+// nextId() 与 importDishes 的 cursor 都必须**跳过**这个号段，否则本机加菜会从
+// 100000+ 往后排，和云端发出来的号撞上。
+const CLOUD_ID_BASE = 100001
+
 module.exports = {
   CATEGORIES,
   ROLES,
@@ -207,4 +224,5 @@ module.exports = {
   DEFAULT_NAME,
   NOTICE_MS,
   UNDO_MS,
+  CLOUD_ID_BASE,
 }

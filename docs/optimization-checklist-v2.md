@@ -4,14 +4,15 @@
 > v1 清单（`page-optimization-checklist.md`）的 H1-H7 已实施；本清单**取代 v1 的第二、三节**，并补上审查新发现的**布局一致性 / 逻辑健壮性 / 架构层**三块。
 > 共 **30 条**，按 `P0 → P5` 排序。每条可直接引用编号（例：「做 C1-C5」）。
 
-**进度**：`27 / 30`　🔴 高优先 `5 → 0`　🟠 中 `1`　🟡 低 `0`　⚪ 待拍板 `2`
+**进度**：`29 / 30`　🔴 高优先 `5 → 0`　🟠 中 `1`　🟡 低 `0`　⚪ 待拍板 `0`
 
 > **第 1 批（C1–C5）已于 2026-10-05 实施完成**，全量 1676 项断言全绿。
 > **第 2 批（C9–C11 + C12）已于 2026-10-05 实施完成**：新增 `styles/common.wxss`（token）+ `styles/state.wxss`（空态）两个公共层与 `components/state-block` 组件，新增 `test_batch2.js` 91 项，全量断言全绿。
 > **第 3 批（C6 + C19–C24）已于 2026-10-05 实施完成**：搜索防抖 / 随机尊重筛选 / 改菜标题 / tabBar 早退 / toast 延时唯一来源 / 打星过渡 / loading 禁用，新增 `test_batch3.js` 37 项（含行为测试），全量断言全绿。
 > **第 4 批（C13 + C14 + C25）已于 2026-10-05 实施完成**：组件化三件套 —— `styles/sheet.wxss`（弹层基座）+ `utils/dish-search.js`（搜索规则唯一来源）+ `components/cart-list` + `components/dish-picker`（含搜索），新增 `test_batch4.js` 132 项，全量 **1949 项**断言全绿。
 > **第 5 批（C7 + C15–C18 + C26 + C27 + C29）已于 2026-10-05 实施完成**：`utils/paging.js`（长列表分页）+ `constants.STATUS`（状态枚举唯一来源，js / wxml 双向收口）+ `styles/tap.wxss`（按压反馈）+ 并发保护 + id 定位 + 魔法值收口 + `dish_logs` 时间窗，新增 `test_batch5.js` 100 项，全量 **2050 项**断言全绿。
-> 余下 3 条：`C8`（轮询瘦身）与 `C28` / `C30`（菜单是否上云共享，**需拍板**）。
+> **第 6 批（C28 + C30）已于 2026-10-05 实施完成（用户拍板：只单向同步「掌勺人新增」）**：新增 `utils/dish-cloud.js`（共享菜品增量层）+ `constants.CLOUD_ID_BASE`（双号段隔离）+ `syncDishes` 路由 + 菜单页 onShow 静默同步；云端 `public.dishes` **保留并改造**（清残骸 + identity 从 100001 发号 + `by_name` / `updated_at` + 序列授权），新增 `test_dish_cloud.js` 87 项，全量 **2139 项**断言全绿。
+> 余下 1 条：`C8`（轮询瘦身，可独立做）。
 
 ---
 
@@ -208,11 +209,21 @@
 
 ## P5 · 架构与决策（需拍板，不宜顺手做）
 
-- [ ] **C28 · 菜单是否上云共享** — `大` ⚪ **需拍板**
-  - 位置：`data/dishes.js`（303 道内置）+ `dishes_override_v1` / `dishes_deleted_v1`（本地 storage，不上云）
-  - 现状：干饭人加菜 / 改名 / 下架，**掌勺人手机不会变、也收不到**。菜单日志只让他**看得见**，对不齐。菜单页对两种身份都开维护入口 → 两边在维护**两份互不相干的清单**。
-  - 两条路：**A. 保持本地**（0 代价，永远对不齐）／**B. 上云共享**（含双向同步、冲突处理、离线编辑——需新建 dishes 表、改写 `utils/dishes.js` 本地优先策略）。
-  - 影响：会**放大**其他问题（两边菜单不同 → 日志越重要 → 云表越不可省 → 数据层越重）。
+- [x] **C28 · 菜单是否上云共享** — `大` ⚪ ✅ 第 6 批（**已拍板：只单向同步「掌勺人新增」**）
+  - 位置：`data/dishes.js`（303 道内置）+ `dishes_override_v1` / `dishes_deleted_v1`（本地 storage）+ 新增 `utils/dish-cloud.js`
+  - **拍板依据（先看云上真实数据再决定，没凭清单推测）**：当时云上只有 **1 张订单、1 条菜单日志**；且 **303 道内置菜本来就在两台手机上各有一份、完全相同** —— 对不齐的只有「应用内加的菜」。真正断掉的只有一条链：
+    | 方向 | 结论 |
+    | --- | --- |
+    | 干饭人加菜 → 掌勺人 | **本来就通**（`orders.items` 是快照，菜名跟单过去；另有 `dish_logs`） |
+    | 掌勺人加菜 → 干饭人 | **完全不通**（干饭人点单页读自己手机的菜单，看不到） |
+  - 所以选了**只补后面那一条**，而不是完整双向同步：只加不减、没有冲突处理，成本约为方案 B 的 1/4。
+  - **四条落地约定**（细节见 `utils/dish-cloud.js` 顶部注释）：
+    1. **只单向**：只有掌勺人的新增会推上云；干饭人加的菜仍只在他本机（他要吃的话下单时带过去）。
+    2. **双号段隔离**：`constants.CLOUD_ID_BASE = 100001`。本地自增（`nextId`）在两台手机上会从同一个数起步，直接当云端 id 用**必然撞号** —— 所以云端菜一律由云表 identity 发号，本地新菜先按本地号段落盘（**离线可用**），推上去之后换成云端 id（`flushPending` 里的 rekey）。`nextId()` 与 `importDishes` 的 cursor 都显式跳过云端号段。
+    3. **网络失败一律静默**：菜单是本地功能，云端挂了必须还能读、能改内置菜。所有网络函数失败返回 `null`/`false`，从不抛错；推不上去的行留 `pendingSync`，下一轮 `sync()` 补推。
+    4. **合并规则只有一份**（`dish-cloud.js::mergeInto`，纯函数）：本地拉黑过 → 跳过（不复活）；本地 `localEdited` → 不覆盖（本地优先）；否则没有就插入、有就按云端更新。
+  - 页面侧：菜单页 `onShow` 调 `syncShared()`（**放在 `loadDishes()` 之后**，别让网络请求挡住首屏；只有 `added`/`updated` 非零才重画，否则每次 onShow 白刷一遍）。
+  - 验收：`test_dish_cloud.js` 87 项（A 号段判定 / B 行↔菜转换 / C 合并规则含四类脏输入与「不改入参」 / D 号段隔离含 `nextId` 与导入 cursor / E 写路径标记 / F 同步行为含失败静默、rekey、干饭人不推、并发不重复插 / G 接线 / H 迁移文件）。
 
 - [x] **C29 · `dish_logs` 归档 / 分页** — `小` ⚪ ✅ 第 5 批
   - 位置：`utils/dish-logs.js::list`（原全量拉 + 按天分组）
@@ -220,9 +231,11 @@
   - 日志页把 `days` 传下去，底部给「只显示最近 N 天（已达条数上限，只列最新的）」提示；「看更早的」一次把窗口 **×3**（30 → 90 → 270 → 封顶 365），不一次拉到头 —— 绝大多数时候只看最近的，窗口够用时不必付那份流量。
   - 验收：`test_batch5.js` J 组（导出 + 默认值 + `clampDays` 六种脏输入 + `.gte` 在案 + 页面传参 + 扩窗逻辑 + wxml 提示）。
 
-- [ ] **C30 · 清理云上残留 `dishes` 表** — `小` ⚪
-  - 位置：云库 `public.dishes`（**101 行**，早期「菜单放云端」方案残骸，当前代码零引用）
-  - 改法：若走 C28-A → `DROP TABLE`；若走 C28-B → 它是起点，保留。
+- [x] **C30 · 清理云上残留 `dishes` 表** — `小` ⚪ ✅ 第 6 批（结论：**保留并改造，不 DROP**）
+  - 位置：云库 `public.dishes`（原 **101 行**，早期「菜单放云端」方案残骸，当前代码零引用）
+  - **为什么不是 DROP**：C28 走的是共享路线，而这张表的字段（name / category / emoji / spice / description）正好够用，**权限（`dishes_couple_all` RLS 策略 + anon/authenticated 的 GRANT）也已经配好了** —— 重建反而要把权限重配一遍。所以直接改造成「掌勺人新增菜的共享层」。
+  - **已实施**（`cloudbase/migrations/20261005170000_dishes_shared_additions.sql`）：`TRUNCATE` 掉 101 行残骸 → `id RESTART WITH 100001`（原本已是 identity 列，只需重置起点）→ 加 `by_name`（知道是谁加的）与 `updated_at` → 补 `GRANT USAGE ON ALL SEQUENCES`（identity 列通常不用单独授权，显式补上以免 PG 版本行为不一）→ `COMMENT ON TABLE` 改成真实职责。
+  - 云端复核：迁移后在真库插了一条自检行，拿到 `id = 100001`（号段正确），随即删除；`pg_class` 确认 `rls_on = true` 且有 1 条策略。
 
 ---
 
@@ -258,6 +271,7 @@
 | 第 3 批 ✅ | C6 + C22–C24 + C19–C21 | **已完成 2026-10-05**：搜索防抖 + 7 项体验微调，新增 37 项（含行为测试） |
 | 第 4 批 ✅ | C13 + C14 + C25 | **已完成 2026-10-05**：`styles/sheet.wxss` + `utils/dish-search.js` + `components/cart-list` + `components/dish-picker`（含搜索），新增 132 项 |
 | 第 5 批 ✅ | C7 + C15–C18 + C26 + C27 + C29 | **已完成 2026-10-05**：`utils/paging.js` 分页 + `constants.STATUS` 状态枚举 + `styles/tap.wxss` 按压反馈 + 并发保护 + id 定位 + 魔法值收口 + 日志时间窗，新增 100 项 |
-| 待定 | C8 → 之后是 C28 → 决定 C30 | `C8`（轮询瘦身）可独立做；`C28` 需要拍板 |
+| 第 6 批 ✅ | C28 + C30 | **已完成 2026-10-05（已拍板）**：`utils/dish-cloud.js` 共享菜品增量层 + `constants.CLOUD_ID_BASE` 双号段隔离 + 云端 `dishes` 表保留改造，新增 `test_dish_cloud.js` 87 项 |
+| 待定 | C8 | 轮询瘦身，可独立做（唯一剩余项） |
 
 > 每批完成后跑：全量 `test_*.js` + `audit_wxml.py` + `audit_pack.py` + `test_style_compat.js`。

@@ -1,16 +1,20 @@
-// 爱心小厨房 · 本地菜品服务（零后台可用）
+// 爱心小厨房 · 菜品服务（本地优先，离线可用）
 //
-// 为什么需要它：云开发数据库里的菜单需要「开通云开发 → 部署云函数 → 建集合 → 导数据」，
-// 对零基础用户门槛太高。这里把 101 道菜内置进代码（seed），用户自己加的菜存本地（override），
-// 两层合并后对外提供与云函数完全一致的 5 个 action，所以页面层代码一行都不用改。
+// 为什么本地优先：云开发数据库里的菜单需要「开通云开发 → 部署云函数 → 建集合 → 导数据」，
+// 对零基础用户门槛太高。这里把 303 道菜内置进代码（seed），用户自己加的菜存本地（override），
+// 两层合并后对外提供与云函数完全一致的 action，所以页面层代码一行都不用改。
 //
 // 数据分层：
-//   seed         = data/dishes.js 里内置的 101 道菜（只读，永不被改写）
+//   seed         = data/dishes.js 里内置的 303 道菜（只读，永不被改写）
 //   override     = 用户在应用内新增/编辑的菜（存 wx storage，按 id 覆盖 seed）
-//   deletedIds   = 用户删掉的 seed 菜 id 黑名单（否则刷新后 seed 会让它「复活」）
+//                  其中**掌勺人**新增的菜还会推上云端共享（清单 C28/C30），
+//                  见 utils/dish-cloud.js；干饭人新增的只留本机。
+//   deletedIds   = 用户删掉的菜 id 黑名单（否则刷新后 seed 会让它「复活」；
+//                  云端菜被删也一样要拉黑，否则下一次 sync 又拉回来）
 //
 // 约定：id 一律为纯数字（Number）。pages/checkout 用 Number(dataset.id) 做购物车加减，
 //       字符串 id 会得到 NaN 导致加减失效，务必不要改成 "d001" 这类格式。
+//       数字 id 还分两个号段（本地 / 云端），见 constants.CLOUD_ID_BASE 的说明。
 
 const seed = require('../data/dishes.js')
 
@@ -24,10 +28,21 @@ const csv = require('./csv')
 // 将来任何新入口都走这几个 action），埋在这里才能保证「只要菜单变了就有日志」。
 // 埋点的调用一律不 await —— record 内部全静默，写失败不影响本地改动。
 const dishLogs = require('./dish-logs')
-const { DEFAULT_SPICE } = require('./constants')
+const { DEFAULT_SPICE, CLOUD_ID_BASE } = require('./constants')
+
+// 共享菜品增量层（清单 C28/C30）：掌勺人新增的菜上云，干饭人点单页也能看到。
+// 详见 utils/dish-cloud.js 顶部说明 —— 只单向、id 由云端发号、失败静默。
+const dishCloud = require('./dish-cloud')
+
+// 身份：决定「谁的新增要推上云」（只有掌勺人）
+const store = require('./store')
 
 const STORAGE_KEY = 'dishes_override_v1'
 const DELETED_KEY = 'dishes_deleted_v1'
+
+// 待推送到云端的删除（云端号段的菜）。删完本地行就没了，没地方挂标记，
+// 只能单独存一份 id 队列，由 sync() 重试推上去。
+const CLOUD_DEL_KEY = 'dishes_cloud_deleted_v1'
 
 // ---------- storage 读写（容错：storage 不可用时退化为纯内存，不影响当次会话） ----------
 
@@ -68,6 +83,15 @@ function loadDeletedIds() {
 
 function saveDeletedIds(list) {
   writeJSON(DELETED_KEY, list)
+}
+
+function loadCloudDeleted() {
+  const v = readJSON(CLOUD_DEL_KEY, [])
+  return Array.isArray(v) ? v.map(Number).filter(function (n) { return !isNaN(n) }) : []
+}
+
+function saveCloudDeleted(list) {
+  writeJSON(CLOUD_DEL_KEY, list)
 }
 
 // ---------- 合并 ----------
@@ -123,10 +147,146 @@ function nextId() {
   let max = 0
   merged().forEach(function (d) {
     const n = Number(d.id) || 0
-    if (n > max) max = n
+    // **必须跳过云端号段**：云端发出来的 id（≥ CLOUD_ID_BASE）不是本机发的号，
+    // 拿来当自增起点会一路往后排，早晚跟云端下发的号撞上
+    if (n > max && n < CLOUD_ID_BASE) max = n
   })
-  // 兜底：即使本地数据被清空，也不与 seed 的 1..101 冲突
+  // 兜底：即使本地数据被清空，也不与内置 seed 的 1..303 冲突
   return Math.max(max, seed.length) + 1
+}
+
+// ---------- 共享菜单的同步（清单 C28/C30，唯一实现） ----------
+
+function isCook() {
+  try {
+    return store.getRole() === 'cook'
+  } catch (err) {
+    return false
+  }
+}
+
+/** 当前是谁（写进云端表的 by_name，日志页 / 调试看得到是谁加的这道菜） */
+function myName() {
+  try {
+    return store.getNickname('cook') || ''
+  } catch (err) {
+    return ''
+  }
+}
+
+/**
+ * 掌勺人：把本地攒下的改动推上云。两类：
+ *
+ *   · `pendingSync` 且 id 还在**本地号段** → 这是本机新加的菜：pushAdd，拿到云端 id 后
+ *     把本地这一行换成云端 id（rekey）。换完两台手机上这道菜就是同一个 id 了。
+ *   · `pendingSync` 且 id 已是**云端号段** → 这是对云端菜的修改：直接 pushUpdate。
+ *
+ * 推成功的行会清掉 pendingSync；推失败（离线 / 云端不可用）原样留着，
+ * 下一次 sync() 再试 —— 这就是「离线加菜也能事后补上」的全部机制。
+ *
+ * @returns {{override:Array, changed:boolean}}
+ */
+async function flushPending(override) {
+  const list = override.slice()
+  let changed = false
+
+  // 一个本地 id 上的改动只允许有一个推送在飞：不然「加完立刻 sync」和
+  // 「页面 onShow 的 sync」会并发把同一道菜插两遍
+  for (let i = 0; i < list.length; i++) {
+    const d = list[i]
+    if (!d || !d[dishCloud.PENDING]) continue
+    if (_pushing[d.id]) continue
+    _pushing[d.id] = true
+
+    try {
+      if (dishCloud.isCloudId(d.id)) {
+        const ok = await dishCloud.pushUpdate(d.id, d, myName())
+        if (ok) {
+          const next = Object.assign({}, d)
+          delete next[dishCloud.PENDING]
+          list[i] = next
+          changed = true
+        }
+      } else {
+        const row = await dishCloud.pushAdd(d, myName())
+        if (row && row.id !== undefined && row.id !== null) {
+          // rekey：本地行换成云端 id，并清掉「来自本地号段」的痕迹
+          const next = Object.assign({}, d, { id: Number(row.id), fromCloud: true })
+          delete next[dishCloud.PENDING]
+          list[i] = next
+          changed = true
+        }
+      }
+    } finally {
+      delete _pushing[d.id]
+    }
+  }
+
+  // 待推的删除（云端菜被下架）
+  const delQ = loadCloudDeleted()
+  if (delQ.length) {
+    const left = []
+    for (let i = 0; i < delQ.length; i++) {
+      const ok = await dishCloud.pushRemove(delQ[i])
+      if (!ok) left.push(delQ[i])
+    }
+    if (left.length !== delQ.length) saveCloudDeleted(left)
+  }
+
+  return { override: list, changed: changed }
+}
+
+// 正在推送中的本地 id（防并发重复插入）
+const _pushing = {}
+
+/**
+ * 合并云端增量 + （掌勺人）推送本地改动。
+ *
+ * 两台手机跑同一套合并规则（utils/dish-cloud.js::mergeInto），失败一律静默：
+ * 菜单是本地功能，云端不可用时「读到的还是本机那份」，不能变成打不开。
+ *
+ * @returns {Promise<{ok:boolean, added:number, updated:number, total:number}>}
+ */
+async function sync() {
+  const raw = loadOverride()
+
+  // ① 先把本地攒的改动推上去（只有掌勺人推）。换 id 后要立刻落盘，
+  //    否则这一步白做 —— 下次读盘还是旧 id
+  if (isCook()) {
+    const pushed = await flushPending(raw)
+    if (pushed.changed) saveOverride(pushed.override)
+  }
+
+  // ② 再把云端增量拉下来合并
+  const rows = await dishCloud.listRemote()
+  if (!rows) return { ok: false, added: 0, updated: 0, total: merged().length }
+
+  const m = dishCloud.mergeInto(loadOverride(), loadDeletedIds(), rows)
+  if (m.changed) {
+    saveOverride(m.override)
+    saveDeletedIds(m.deleted)
+  }
+  return { ok: true, added: m.added, updated: m.updated, total: merged().length }
+}
+
+// 写操作之后安排一次同步。**不 await**（与 dishLogs.record 同款）：
+// 加菜 / 改菜是本地动作，必须立刻成功、离线也能用，不能等网络。
+// 攒到 microtask 里合并触发，一次「批量导入 200 道」只推一轮。
+let _syncScheduled = false
+function scheduleSync() {
+  if (_syncScheduled) return
+  _syncScheduled = true
+  const run = function () {
+    _syncScheduled = false
+    sync().catch(function () { /* 静默：见 sync() 顶部说明 */ })
+  }
+  if (typeof setTimeout === 'function') setTimeout(run, 0)
+  else run()
+}
+
+/** 同步一遍并返回结果（页面在菜单 onShow 调，用于把对方的改动拉过来） */
+function syncDishes() {
+  return sync()
 }
 
 // ---------- 5 个 action（返回值结构与云函数逐一对齐） ----------
@@ -186,6 +346,14 @@ function saveDish(event) {
     if (payload.description !== undefined) patch.description = payload.description
     patch.updated_at = Date.now()
 
+    // 云端号段的菜：本机改过就标记「别再被云端覆盖」（本地优先），
+    // 掌勺人的改动还要推回云端 —— 他改自己加的菜，对方得跟着变
+    const cloudId = dishCloud.isCloudId(id)
+    if (cloudId) {
+      patch[dishCloud.EDITED] = true
+      if (isCook()) patch[dishCloud.PENDING] = true
+    }
+
     if (idx >= 0) override[idx] = patch
     else override.push(patch)
     saveOverride(override)
@@ -209,6 +377,8 @@ function saveDish(event) {
       })
     }
 
+    if (cloudId && isCook()) scheduleSync()
+
     return { ok: true, id: String(id), created: false }
   }
 
@@ -224,9 +394,16 @@ function saveDish(event) {
     created_at: Date.now(),
     updated_at: Date.now(),
   }
+
+  // 掌勺人新增 → 待同步标记。先本地落盘（离线必须能用），
+  // 推上去之后 sync() 会把这一行的 id 换成云端发号（见 flushPending 的 rekey）。
+  // 干饭人新增仍只留本机：他点的菜下单时会带过去，不需要进菜单。
+  if (isCook()) doc[dishCloud.PENDING] = true
+
   override.push(doc)
   saveOverride(override)
   dishLogs.record({ action: 'add', dish_id: id, dish_name: doc.name })
+  if (isCook()) scheduleSync()
   return { ok: true, id: String(id), created: true }
 }
 
@@ -277,6 +454,25 @@ function deleteDish(event) {
     })
   }
 
+  // 云端号段的菜要额外处理（内置 seed 与本地菜不参与共享）：
+  //   · 一律进本地黑名单 —— 否则下一次 sync() 拉回云端行又会「复活」
+  //   · 掌勺人删的是他加的菜 → 推上去真的删掉云端行，干饭人那边也跟着消失
+  //     干饭人删的只是「我不想看到」→ 不推，只在本机拉黑（单向同步的必然结果）
+  if (dishCloud.isCloudId(n)) {
+    if (deleted.indexOf(n) < 0) {
+      deleted.push(n)
+      saveDeletedIds(deleted)
+    }
+    if (isCook()) {
+      const q = loadCloudDeleted()
+      if (q.indexOf(n) < 0) {
+        q.push(n)
+        saveCloudDeleted(q)
+      }
+      scheduleSync()
+    }
+  }
+
   // 幂等：重复删除返回 removed:0（对齐云函数 remove 的 stats.removed）
   return { ok: true, removed: removed }
 }
@@ -324,16 +520,19 @@ function importDishes(event) {
 
   // 新 id 从当前最大 id 往后排。批内用 cursor 递增，
   // 不能每条都调 nextId()（那会重算一遍 merged 并重复读盘）
-  let cursor = seed.length
+  // **必须跳过云端号段**：云端发出来的 id 不能当作本机自增的起点（见 nextId 的说明）
+  let cursor = Math.min(seed.length, CLOUD_ID_BASE - 1)
   Object.keys(byName).forEach(function (k) {
     const n = Number(byName[k].id) || 0
-    if (n > cursor) cursor = n
+    if (n > cursor && n < CLOUD_ID_BASE) cursor = n
   })
 
   const now = Date.now()
+  const cook = isCook()
   const added = []
   const updated = []
   const skipped = []
+  let touchedCloud = false
 
   list.forEach(function (it, i) {
     const s = csv.sanitizeDish(it)
@@ -357,6 +556,8 @@ function importDishes(event) {
     if (isNaN(targetId)) {
       cursor += 1
       doc = Object.assign({}, dish, { id: cursor, created_at: now + i, updated_at: now + i })
+      // 掌勺人导入的新菜要进共享层（与 saveDish 的新增分支同一套约定）
+      if (cook) doc[dishCloud.PENDING] = true
       override.push(doc)
       posOf[cursor] = override.length - 1
       added.push(dish.name)
@@ -375,6 +576,12 @@ function importDishes(event) {
         created_at: Number(base.created_at) || now + i,
         updated_at: now + i,
       })
+      // 动到云端号段的菜：本机改过就别被云端覆盖；掌勺人还要推回去
+      if (dishCloud.isCloudId(targetId)) {
+        doc[dishCloud.EDITED] = true
+        if (cook) doc[dishCloud.PENDING] = true
+        touchedCloud = true
+      }
       if (at === undefined) {
         override.push(doc)
         posOf[targetId] = override.length - 1
@@ -399,6 +606,10 @@ function importDishes(event) {
   if (touched) {
     dishLogs.record({ action: 'import', dish_count: touched })
   }
+
+  // 整批导完之后安排一轮同步（不 await）。一次导 200 道也只推一轮 ——
+  // scheduleSync 会把同一批的多次触发合并掉
+  if (cook && (added.length || touchedCloud)) scheduleSync()
 
   return {
     ok: true,
@@ -426,6 +637,9 @@ const ACTIONS = {
   deleteDish: deleteDish,
   importDishes: importDishes,
   stats: stats,
+  // 共享菜单同步（清单 C28）：把云端增量拉下来合并 + （掌勺人）把本地改动推上去。
+  // 菜单页 onShow 调它，静默失败 —— 云端不可用时读到的仍是本机那份。
+  syncDishes: syncDishes,
 }
 
 /**
@@ -445,5 +659,13 @@ module.exports = {
   handle: handle,
   ACTIONS: ACTIONS,
   // 供测试 / 调试使用
-  _internal: { merged: merged, nextId: nextId, loadOverride: loadOverride, loadDeletedIds: loadDeletedIds },
+  _internal: {
+    merged: merged,
+    nextId: nextId,
+    loadOverride: loadOverride,
+    loadDeletedIds: loadDeletedIds,
+    loadCloudDeleted: loadCloudDeleted,
+    flushPending: flushPending,
+    isCook: isCook,
+  },
 }
