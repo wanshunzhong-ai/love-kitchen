@@ -136,6 +136,35 @@ function askReason(quick, options) {
   })
 }
 
+/**
+ * 弹一个纯提示框（不问内容，就两个按钮）。
+ * 用 Promise 包一层的原因同 askText：调用方要按「用户点了哪个按钮」决定下一步。
+ * @param {object} options { title, content, confirmText, cancelText, showCancel }
+ * @returns {Promise<boolean>} 点了主按钮（确认）给 true；点取消 / 环境不支持给 false
+ */
+function alert(options) {
+  const api = getWx()
+  const opts = options || {}
+  return new Promise(function (resolve) {
+    if (!api || typeof api.showModal !== 'function') return resolve(false)
+    api.showModal({
+      title: opts.title || '提示',
+      content: opts.content || '',
+      // 只有一个按钮时（showCancel: false）用户没有别的选择，按确认收场
+      showCancel: opts.showCancel !== false,
+      confirmText: opts.confirmText || '好的',
+      cancelText: opts.cancelText || '知道了',
+      success: function (res) {
+        resolve(!!(res && res.confirm))
+      },
+      fail: function () {
+        resolve(false)
+      },
+      complete: function () {},
+    })
+  })
+}
+
 // 轻触感反馈。type: 'light'（轻点，默认）/ 'medium' / 'heavy'（重确认）。
 // 真机才有振动器，工具与老基础库上静默跳过，绝不影响主流程。
 function haptic(type) {
@@ -149,4 +178,4 @@ function haptic(type) {
   })
 }
 
-module.exports = { showLoading, hideLoading, toast, askText, askReason, haptic }
+module.exports = { showLoading, hideLoading, toast, askText, askReason, alert, haptic }

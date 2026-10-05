@@ -21,6 +21,12 @@ const AVATAR_KEY = 'lovekitchen_avatar'
 const MOOD_KEY = 'lovekitchen_mood'
 const AVOID_KEY = 'lovekitchen_avoids'
 const INTRO_KEY = 'lovekitchen_intro'
+// 已经提醒过的单（截止提醒去重用），见 utils/deadline.js
+const REMINDED_KEY = 'lovekitchen_reminded'
+
+// 「已提醒」列表的上限：它只用来去重，留长了没意义。
+// 一单一次、一天至多几单，60 条足够覆盖任何还在窗口里的单。
+const REMIND_MAX = 60
 
 let _seq = 0
 
@@ -411,6 +417,39 @@ function setIntro(text, role) {
   return clean
 }
 
+// ---------- 已提醒过的单（截止提醒去重） ----------
+
+/** 已提醒过的键列表：永远是字符串数组，脏数据兜底为空 */
+function getRemindedKeys() {
+  const raw = wx.getStorageSync(REMINDED_KEY)
+  if (!Array.isArray(raw)) return []
+  return raw.filter(function (k) {
+    return typeof k === 'string' && k
+  })
+}
+
+/** 这一单提醒过没有 */
+function hasReminded(key) {
+  if (!key) return false
+  return getRemindedKeys().indexOf(String(key)) >= 0
+}
+
+/**
+ * 记下「这一单已经提醒过」。
+ * @returns {boolean} true 表示这次是新记上的（之前没提醒过）
+ */
+function markReminded(key) {
+  const k = String(key === null || key === undefined ? '' : key).trim()
+  if (!k) return false
+  const list = getRemindedKeys()
+  if (list.indexOf(k) >= 0) return false
+  list.push(k)
+  // 超上限就从最早的开始丢：这些键对应的单早已过窗口，留着也没用
+  while (list.length > REMIND_MAX) list.shift()
+  wx.setStorageSync(REMINDED_KEY, list)
+  return true
+}
+
 // ---------- 身份（干饭人 / 掌勺人） ----------
 
 /** @returns {'orderer'|'cook'|''} 未选过身份返回 '' */
@@ -473,6 +512,9 @@ module.exports = {
   removeAvoid,
   getIntro,
   setIntro,
+  getRemindedKeys,
+  hasReminded,
+  markReminded,
   getRole,
   setRole,
   getRoleInfo,

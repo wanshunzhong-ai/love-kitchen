@@ -78,13 +78,16 @@ function spiceInfo(spice) {
   }
 }
 
-// 用餐时段。endHour 是该时段的截止时刻（24 = 当天结束），
-// 用于判断「今天」还剩哪些时段可以订：当前小时 < endHour 即可订。
+// 用餐时段。endHour / endMinute 是该时段的「点单截止时刻」（本地时间），
+// 有两个用途：
+//   ① 判断「今天」还剩哪些时段可以订 —— 当前时刻 ≥ 截止时刻即不可订；
+//   ② 截止前 REMIND_BEFORE_MIN 分钟，单子还没开做就提醒掌勺人（utils/deadline.js）。
+// 时刻用「时 + 分」两个字段而不是 'HH:MM' 字符串：比较时不用解析，也就不会解析错。
 const DINE_SLOTS = [
-  { key: 'breakfast', text: '早餐', emoji: '🌅', endHour: 10 },
-  { key: 'lunch', text: '午餐', emoji: '☀️', endHour: 15 },
-  { key: 'dinner', text: '晚餐', emoji: '🌙', endHour: 21 },
-  { key: 'midnight', text: '夜宵', emoji: '✨', endHour: 24 },
+  { key: 'breakfast', text: '早餐', emoji: '🌅', endHour: 10, endMinute: 0 },
+  { key: 'lunch', text: '午餐', emoji: '☀️', endHour: 14, endMinute: 30 },
+  { key: 'dinner', text: '晚餐', emoji: '🌙', endHour: 19, endMinute: 30 },
+  { key: 'midnight', text: '夜宵', emoji: '✨', endHour: 23, endMinute: 30 },
 ]
 
 // 点菜可提前的最大天数（含今天，共 8 天可选）

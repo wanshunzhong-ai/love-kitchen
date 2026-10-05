@@ -14,7 +14,11 @@
 //   好处是「底栏角标」在任何 tab 页都实时 —— 掌勺人在菜单页翻菜谱时也能看到
 //   待做数往上跳，干饭人在资料页也能看到「正在做」的单数。
 //   页面各自只负责订阅数据、画列表、弹一句提示（见 pages/todo、pages/orders）。
+//
+// 「快到点还没开做」的提醒也挂在这条轮询上（utils/deadline.js）：
+//   它是全局的、不属于任何页面 —— 掌勺人翻菜单时也该被提醒到。
 const live = require('./utils/live')
+const deadline = require('./utils/deadline')
 const store = require('./utils/store')
 const ui = require('./utils/ui')
 
@@ -40,6 +44,10 @@ App({
       live.watch({
         role: function () {
           return store.getRole()
+        },
+        // 每轮成功拉到订单后检查一次「快截止了还没开做」的单（内部自己判身份、自己判去重）
+        onTick: function (d, orders) {
+          deadline.check(orders)
         },
       })
     }

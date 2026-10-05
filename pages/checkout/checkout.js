@@ -53,10 +53,11 @@ Page({
     const now = new Date()
     const dates = dine.buildDateOptions(now)
     let date = this.data.dineDate
+    // 选中的那天可能已经不可选了（比如 23:30 之后「今天」四个时段全关）
     const stillValid = dates.some(function (d) {
-      return d.value === date
+      return d.value === date && !d.disabled
     })
-    if (!stillValid) date = dates[0].value
+    if (!stillValid) date = dine.defaultDate(now)
     const slots = dine.buildSlotOptions(now, date)
     let slot = this.data.dineSlot
     const slotHit = slots.find(function (s) {
@@ -74,6 +75,10 @@ Page({
   onPickDineDate(e) {
     const value = e.currentTarget.dataset.value
     if (!value || value === this.data.dineDate) return
+    const hit = this.data.dineDates.find(function (d) {
+      return d.value === value
+    })
+    if (!hit || hit.disabled) return
     const now = new Date()
     this.setData({
       dineDate: value,

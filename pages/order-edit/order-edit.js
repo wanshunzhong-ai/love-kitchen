@@ -172,9 +172,9 @@ Page({
       // 存过但已超出可选范围（比如过期日期）→ 也回落到默认
       const savedDate = order.dine_date || ''
       const dateValid = dates.some(function (d) {
-        return d.value === savedDate
+        return d.value === savedDate && !d.disabled
       })
-      const date = dateValid ? savedDate : dates[0].value
+      const date = dateValid ? savedDate : dine.defaultDate(now)
       const slots = dine.buildSlotOptions(now, date)
       const savedSlot = order.dine_slot || ''
       const slotHit = slots.find(function (s) {
@@ -312,6 +312,10 @@ Page({
   onPickDineDate(e) {
     const value = e.currentTarget.dataset.value
     if (!value || value === this.data.dineDate) return
+    const hit = this.data.dineDates.find(function (d) {
+      return d.value === value
+    })
+    if (!hit || hit.disabled) return
     const now = new Date()
     this.setData({
       dineDate: value,

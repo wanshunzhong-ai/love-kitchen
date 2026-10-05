@@ -70,7 +70,7 @@
 
       <scroll-view class="dine-dates" scroll-x enhanced="{{true}}" show-scrollbar="{{false}}">
         <view
-          class="dine-chip {{dineDate === d.value ? 'dine-chip-on' : ''}}"
+          class="dine-chip {{dineDate === d.value ? 'dine-chip-on' : ''}} {{d.disabled ? 'dine-chip-off' : ''}}"
           wx:for="{{dineDates}}"
           wx:for-item="d"
           wx:key="value"
@@ -90,7 +90,7 @@
           wx:key="key"
           data-key="{{s.key}}"
           bindtap="onPickDineSlot"
-        >{{s.emoji}} {{s.text}}</view>
+        >{{s.emoji}} {{s.text}}<text class="dc-end">{{s.endText}}</text></view>
       </view>
     </view>
 
