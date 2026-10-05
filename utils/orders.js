@@ -178,6 +178,67 @@ async function listOrders() {
   return { orders: rows.map(rowToOrder) }
 }
 
+// 轮询用的「轻量头」只取这三列（清单 C8）。三列都是定长标量，
+// **绝不能改成 `*`** —— 这一条的收益全部来自「不把 items / reviews / avoids 三个 jsonb 拉下来」。
+// 排序用的 created_at 不必出现在 select 里（PG 允许按未选中的列排序）。
+const HEAD_COLUMNS = 'id,status,updated_at'
+
+/**
+ * 轻量头：只够判断「哪几条变了」，不含任何明细。
+ * 形状与 utils/order-sync.js 的 keyOf() 一致（updated_at 一律归一成毫秒数），
+ * 两边的键能直接比对 —— 这是增量视图能拿它当基准的前提。
+ */
+async function listOrderHeads() {
+  const res = unwrap(
+    await getDB()
+      .from(TABLE)
+      .select(HEAD_COLUMNS)
+      .order('created_at', { ascending: false })
+      .range(0, MAX_ORDERS - 1)
+  )
+  const rows = Array.isArray(res.data) ? res.data : []
+  return {
+    heads: rows.map(function (r) {
+      return {
+        id: String(r.id),
+        status: r.status || STATUS.pending,
+        updated_at: toMillis(r.updated_at),
+      }
+    }),
+  }
+}
+
+/**
+ * 按 id 批量取全量（轮询发现「这几条变了」时才走这里，通常一次 0 条）。
+ * 用 `.in()` 一条请求搞定，不要循环调 getOrder —— 那会变成 N 次往返。
+ */
+async function listOrdersByIds(event) {
+  const raw = event && Array.isArray(event.ids) ? event.ids : []
+  // 收敛成合法数字并去重：传进来的 id 可能是字符串（页面 / 上一轮的头），也可能重复。
+  //
+  // 注意两件事：
+  //   · `Number('')` 与 `Number(null)` 都是 0（不是 NaN），只判 isNaN 会让空值变成
+  //     `in.(…,0)` 混进查询；`Number(true)` 是 1，更会把布尔垃圾查成一条真订单。
+  //     所以先要求「类型就是字符串或数字」，再要求「正整数」。
+  //   · 订单 id 是 bigint identity（从 1 起），负数与小数不可能存在，一并挡掉。
+  const seen = {}
+  const ids = []
+  raw.forEach(function (v) {
+    if (typeof v !== 'string' && typeof v !== 'number') return
+    if (v === '') return
+    const n = Number(v)
+    if (!isFinite(n) || n <= 0 || Math.floor(n) !== n) return
+    if (seen[n]) return
+    seen[n] = true
+    ids.push(n)
+  })
+  if (!ids.length) return { orders: [] }
+
+  const res = unwrap(await getDB().from(TABLE).select('*').in('id', ids))
+  const rows = Array.isArray(res.data) ? res.data : []
+  return { orders: rows.map(rowToOrder) }
+}
+
 async function getOrder(event) {
   const id = event && event.id
   if (id === undefined || id === null || id === '') throw new Error('缺少订单 id')
@@ -415,6 +476,9 @@ async function stats() {
 // action 路由表：与 utils/api.js 的 ORDER_ACTIONS 对应
 const ACTIONS = {
   listOrders: listOrders,
+  // 轮询两步走（清单 C8）：先拉轻量头，再只为变化的那几条拉全量
+  listOrderHeads: listOrderHeads,
+  listOrdersByIds: listOrdersByIds,
   getOrder: getOrder,
   createOrder: createOrder,
   updateOrder: updateOrder,

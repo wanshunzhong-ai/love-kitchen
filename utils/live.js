@@ -6,13 +6,18 @@
 //   小程序端拿不到 websocket 通道，因此「实时」只能靠前台轮询来逼近。
 //   既然只能轮询，重点就落在「轮得聪明」上 —— 见下面三条。
 //
-// 轮询的三条设计：
+// 轮询的四条设计：
 //   1) 按「有没有急事」变频：有待开做的单 15s，有单在做 30s，全上完菜 60s。
 //      没单的时候没必要勤问，有单的时候必须快 —— 请求量跟着注意力走。
-//   2) 失败退避：出错就 15s → 30s → 60s → 120s 翻倍，成功后立刻回到正常节奏。
+//   2) **每轮只拉变化的**（清单 C8 轮询瘦身）：先拉「轻量头」（id / status / updated_at
+//      三个标量），只对新的、变了的那几条拉全字段，其余吃本地缓存。
+//      平稳使用下单轮几乎是几个头 + 0 条详情，payload 不随订单积累增长。
+//      详见 utils/order-sync.js。
+//   3) 失败退避：出错就 15s → 30s → 60s → 120s 翻倍，成功后立刻回到正常节奏。
 //      断网时不能死循环猛敲接口（真机上是耗电大户）。
-//   3) 只在前台轮：页面 onShow 启动、onHide 停。小程序切后台后 setTimeout 会被
+//   4) 只在前台轮：页面 onShow 启动、onHide 停。小程序切后台后 setTimeout 会被
 //      冻结或限流，与其留个僵尸定时器，不如明确停掉，回前台立刻补一次。
+//      （缓存不清 —— 回前台那一轮靠头差异自己发现后台期间的变化，不用重拉全量。）
 //
 // 变化检测用「快照 + 差异」：
 //   每次拉到的订单列表压成 { id: { status, dishes, qty, reviews, dine } }，
@@ -23,6 +28,7 @@
 // 只有 createWatcher 会用到计时器。
 const review = require('./review')
 const rejectLib = require('./reject')
+const orderSync = require('./order-sync')
 const { STATUS } = require('./constants')
 
 // 轮询节奏（毫秒）。数字调大更省电，调小更灵敏，这三档是「手感」和「耗电」的折中。
@@ -559,10 +565,39 @@ function createWatcher(options) {
   }
 }
 
-// 默认取数：走 utils/api，避免 live.js 直接依赖云 SDK 细节
-function defaultLoad() {
+// 默认取数：走 utils/api 的**增量三步**（轻量头 → 按 id 补详情 → 首轮全量兜底），
+// 避免 live.js 直接依赖云 SDK 细节。
+//
+// 增量视图做成模块级单例：整个 App 只有一个轮询器（见下面的 watch），
+// 缓存自然也该只有一份 —— 否则每重建一次 watcher 就白拉一次全量。
+let sync = null
+
+function getSync() {
+  if (sync) return sync
+  // require 放在函数里：api.js 会一路 require 到 orders.js / cloud.js，
+  // 而 live.js 是被 app.js 最先拉起来的模块之一，延迟到真要取数时再解析最稳。
   const api = require('./api')
-  return api.call('listOrders')
+  sync = orderSync.createSync({
+    fetchHeads: function () {
+      return api.call('listOrderHeads')
+    },
+    fetchByIds: function (ids) {
+      return api.call('listOrdersByIds', { ids: ids })
+    },
+    fetchAll: function () {
+      return api.call('listOrders')
+    },
+  })
+  return sync
+}
+
+function defaultLoad() {
+  return getSync().load()
+}
+
+/** 丢掉增量缓存（诊断 / 需要强制重建时用） */
+function resetSync() {
+  if (sync) sync.reset()
 }
 
 // ---------------------------------------------------------------------------
@@ -641,4 +676,7 @@ module.exports = {
   pause,
   resume,
   refreshNow,
+  resetSync,
+  // 供测试 / 调试使用
+  _internal: { defaultLoad: defaultLoad, getSync: getSync },
 }

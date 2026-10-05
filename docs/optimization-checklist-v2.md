@@ -4,7 +4,7 @@
 > v1 清单（`page-optimization-checklist.md`）的 H1-H7 已实施；本清单**取代 v1 的第二、三节**，并补上审查新发现的**布局一致性 / 逻辑健壮性 / 架构层**三块。
 > 共 **30 条**，按 `P0 → P5` 排序。每条可直接引用编号（例：「做 C1-C5」）。
 
-**进度**：`29 / 30`　🔴 高优先 `5 → 0`　🟠 中 `1`　🟡 低 `0`　⚪ 待拍板 `0`
+**进度**：`30 / 30`　🔴 高优先 `5 → 0`　🟠 中 `1 → 0`　🟡 低 `0`　⚪ 待拍板 `0`　**✅ 清单全部完成**
 
 > **第 1 批（C1–C5）已于 2026-10-05 实施完成**，全量 1676 项断言全绿。
 > **第 2 批（C9–C11 + C12）已于 2026-10-05 实施完成**：新增 `styles/common.wxss`（token）+ `styles/state.wxss`（空态）两个公共层与 `components/state-block` 组件，新增 `test_batch2.js` 91 项，全量断言全绿。
@@ -12,7 +12,7 @@
 > **第 4 批（C13 + C14 + C25）已于 2026-10-05 实施完成**：组件化三件套 —— `styles/sheet.wxss`（弹层基座）+ `utils/dish-search.js`（搜索规则唯一来源）+ `components/cart-list` + `components/dish-picker`（含搜索），新增 `test_batch4.js` 132 项，全量 **1949 项**断言全绿。
 > **第 5 批（C7 + C15–C18 + C26 + C27 + C29）已于 2026-10-05 实施完成**：`utils/paging.js`（长列表分页）+ `constants.STATUS`（状态枚举唯一来源，js / wxml 双向收口）+ `styles/tap.wxss`（按压反馈）+ 并发保护 + id 定位 + 魔法值收口 + `dish_logs` 时间窗，新增 `test_batch5.js` 100 项，全量 **2050 项**断言全绿。
 > **第 6 批（C28 + C30）已于 2026-10-05 实施完成（用户拍板：只单向同步「掌勺人新增」）**：新增 `utils/dish-cloud.js`（共享菜品增量层）+ `constants.CLOUD_ID_BASE`（双号段隔离）+ `syncDishes` 路由 + 菜单页 onShow 静默同步；云端 `public.dishes` **保留并改造**（清残骸 + identity 从 100001 发号 + `by_name` / `updated_at` + 序列授权），新增 `test_dish_cloud.js` 87 项，全量 **2139 项**断言全绿。
-> 余下 1 条：`C8`（轮询瘦身，可独立做）。
+> **第 7 批（C8）已于 2026-10-05 实施完成**：`utils/order-sync.js`（增量轮询视图）+ `listOrderHeads` / `listOrdersByIds` 两个 action —— 每轮从「200 单全字段」降到「200 条三列 + 变化条数」，新增 `test_order_sync.js` 103 项，全量 **2242 项**断言全绿。**30 条清单全部收口。**
 
 ---
 
@@ -67,12 +67,21 @@
   - 顺手把两处的「按下标取元素」改成**按 id 回查**（分页 + 频率重排下更稳）。
   - 验收：`test_batch5.js` A/B/C 组 —— 首屏 30 项（≤ 40）、滚到底 +30、封顶不越界、筛选后回到第一页、id 查不到不抛事件。
 
-- [ ] **C8 · 轮询瘦身** — `中` 🟠
-  - 位置：`utils/orders.js::listOrders`（取最近 200 单全字段，含 3 个 jsonb）
+- [x] **C8 · 轮询瘦身** — `中` 🟠 ✅ 第 7 批
+  - 位置：`utils/orders.js::listOrders`（取最近 200 单全字段，含 3 个 jsonb）+ `utils/live.js::defaultLoad`
   - 现状：15 秒一轮，payload 随使用时间单调增长；`frequency.js` 统计范围也被这 200 单绑死。
-  - 改法：评估「只拉最近 N 天」或列表页裁掉 `items/reviews` 明细（详情页再按 id 取）。
-  - 验收：连续使用一个月量级的假数据，单轮 payload 不随时间线性增长。
-  - 备注：若改字段裁剪，注意 `frequency.js` 依赖 `items` → 需单独取一次统计用数据。
+  - **先评估了清单给的两条路，都不合适**：
+    - 「只拉最近 N 天」→ 订单页会「老订单凭空消失」，要么伤功能要么得再加一套「加载更早」，而且**并不降低单条订单的大小**，活跃期照样顶到上限；
+    - 「列表页裁掉 `items`/`reviews` 明细」→ **裁不掉**：订单页要 `review.decorateItems(o.items, reviews)`、待做卡片要菜名、`frequency.js` 要靠 `items` 数频率、`deadline.js` 要数份数。字段全都有人要。
+  - **真正的病根**：一轮拉 200 条全字段来**检测变化**，可其中绝大多数一个字都没变。所以解法是**别重拉没变的**。
+  - **已实施**：新增 `utils/order-sync.js`（增量视图，纯函数 + 注入式 `createSync`），一轮拆成两步 ——
+    1. 拉「轻量头」`listOrderHeads`：只 `select('id,status,updated_at')`，**三个标量，一个 jsonb 都不带**；
+    2. 只对「新出现的 / 变了的」调 `listOrdersByIds`（`.in('id', ids)` 一条请求批量取），其余吃本地缓存。
+    首轮用 `listOrders` 建一次基线；之后 `staleIds()` 用 `updated_at`（**每条写路径都会更新它**：改内容 / 推进状态 / 驳回 / 评价，insert 走 DEFAULT）判断谁动了。
+  - **等价不变式**（最关键）：增量拼出来的 `orders` 与全量 `listOrders` **逐字节一致**（顺序 = 头顺序 = `created_at DESC`，上限同 200），所以 `live.js` 的 watcher / `snapshot` / `diff` / 页面层**一行都不用改**，变化检测（含「掌勺人开做了」「TA 打分啦」）全部照旧。测试 C 组逐轮做了深比。
+  - **失败兜底（不能静默丢更新）**：详情批失败 → 抛出去交给轮询退避，**基准不推进**，下轮重试；某条详情少返回 → 那条保持旧值（不让卡片凭空消失一下）且不记进基准、下轮还会拉；轻量头整列没带回 `updated_at` → `headsUsable()` 判定不可用，**退回全量**（宁可慢，也不能静默失去实时性）。
+  - **`frequency.js` 不受影响**：它吃的仍是 `live.currentOrders()`（缓存拼回的全量），统计口径与上限都没变。
+  - 验收：`test_order_sync.js` 103 项 —— A 纯函数（含脏输入）、B 增量行为、C **等价不变式**（含「200 单连跑 3 轮平稳轮详情请求数仍是 0」）、D 失败兜底、E 用假 SDK 装载 `orders.js` 断言真的只 select 了三列、F 与 `live` 的 watcher + snapshot/diff 联调。
 
 ---
 
@@ -272,6 +281,6 @@
 | 第 4 批 ✅ | C13 + C14 + C25 | **已完成 2026-10-05**：`styles/sheet.wxss` + `utils/dish-search.js` + `components/cart-list` + `components/dish-picker`（含搜索），新增 132 项 |
 | 第 5 批 ✅ | C7 + C15–C18 + C26 + C27 + C29 | **已完成 2026-10-05**：`utils/paging.js` 分页 + `constants.STATUS` 状态枚举 + `styles/tap.wxss` 按压反馈 + 并发保护 + id 定位 + 魔法值收口 + 日志时间窗，新增 100 项 |
 | 第 6 批 ✅ | C28 + C30 | **已完成 2026-10-05（已拍板）**：`utils/dish-cloud.js` 共享菜品增量层 + `constants.CLOUD_ID_BASE` 双号段隔离 + 云端 `dishes` 表保留改造，新增 `test_dish_cloud.js` 87 项 |
-| 待定 | C8 | 轮询瘦身，可独立做（唯一剩余项） |
+| 第 7 批 ✅ | C8 | **已完成 2026-10-05**：`utils/order-sync.js` 增量轮询视图 + `listOrderHeads` / `listOrdersByIds`，每轮从「200 单全字段」降到「200 条三列 + 变化条数」，新增 `test_order_sync.js` 103 项。**清单 30 条全部收口。** |
 
 > 每批完成后跑：全量 `test_*.js` + `audit_wxml.py` + `audit_pack.py` + `test_style_compat.js`。

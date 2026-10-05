@@ -31,6 +31,10 @@ const LOG_ACTIONS = ['listDishLogs']
 // 订单 action：由 utils/orders.js 接管
 const ORDER_ACTIONS = [
   'listOrders',
+  // 轮询两步走（清单 C8 轮询瘦身）：轻量头判断哪几条变了，再按 id 补那几条的明细。
+  // 两者一起把「每轮拉 200 单全字段」降成「每轮拉 200 条三列 + 变化条数」。
+  'listOrderHeads',
+  'listOrdersByIds',
   'getOrder',
   'createOrder',
   // 改内容：只有干饭人（下单的人）能调；状态改了也不认
