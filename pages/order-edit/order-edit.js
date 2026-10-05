@@ -117,7 +117,7 @@ Page({
       ui.toast('订单不存在')
       setTimeout(function () {
         wx.navigateBack()
-      }, 800)
+      }, ui.TOAST_DURATION)
       return
     }
     // 身份：本页两个身份都能进 —— 干饭人改内容、掌勺人只读推进状态，
@@ -164,7 +164,7 @@ Page({
         ui.toast('这单不存在了')
         setTimeout(function () {
           wx.navigateBack()
-        }, 800)
+        }, ui.TOAST_DURATION)
         return
       }
       const items = this.decorate(order.items)
@@ -629,7 +629,7 @@ Page({
       ui.toast(this.data.rejected ? '改好重新提交啦 ✓' : '改好了 ✓')
       setTimeout(function () {
         wx.navigateBack()
-      }, 800)
+      }, ui.TOAST_DURATION)
     } catch (err) {
       ui.hideLoading()
       console.error('[order-edit] 保存订单失败', err)
@@ -653,7 +653,7 @@ Page({
       ui.toast(nextStatus === 'cooking' ? '开做啦，加油 💪' : '上菜咯，开饭 🎉')
       setTimeout(function () {
         wx.navigateBack()
-      }, 800)
+      }, ui.TOAST_DURATION)
     } catch (err) {
       ui.hideLoading()
       console.error('[order-edit] 状态更新失败', err)
@@ -709,7 +709,7 @@ Page({
       ui.toast('已经告诉 TA 了 🙅')
       setTimeout(function () {
         wx.navigateBack()
-      }, 800)
+      }, ui.TOAST_DURATION)
     } catch (err) {
       ui.hideLoading()
       console.error('[order-edit] 驳回失败', err)
@@ -763,7 +763,7 @@ Page({
           ui.toast('已删除')
           setTimeout(function () {
             wx.navigateBack()
-          }, 800)
+          }, ui.TOAST_DURATION)
         } catch (err) {
           ui.hideLoading()
           console.error('[order-edit] 删除订单失败', err)

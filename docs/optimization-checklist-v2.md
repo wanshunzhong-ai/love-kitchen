@@ -4,10 +4,11 @@
 > v1 清单（`page-optimization-checklist.md`）的 H1-H7 已实施；本清单**取代 v1 的第二、三节**，并补上审查新发现的**布局一致性 / 逻辑健壮性 / 架构层**三块。
 > 共 **30 条**，按 `P0 → P5` 排序。每条可直接引用编号（例：「做 C1-C5」）。
 
-**进度**：`9 / 30`　🔴 高优先 `5 → 0`　🟠 中 `9`　🟡 低 `9`　⚪ 待拍板 `3`
+**进度**：`16 / 30`　🔴 高优先 `5 → 0`　🟠 中 `8`　🟡 低 `3`　⚪ 待拍板 `3`
 
 > **第 1 批（C1–C5）已于 2026-10-05 实施完成**，全量 1676 项断言全绿。
 > **第 2 批（C9–C11 + C12）已于 2026-10-05 实施完成**：新增 `styles/common.wxss`（token）+ `styles/state.wxss`（空态）两个公共层与 `components/state-block` 组件，新增 `test_batch2.js` 91 项，全量断言全绿。
+> **第 3 批（C6 + C19–C24）已于 2026-10-05 实施完成**：搜索防抖 / 随机尊重筛选 / 改菜标题 / tabBar 早退 / toast 延时唯一来源 / 打星过渡 / loading 禁用，新增 `test_batch3.js` 37 项（含行为测试），全量断言全绿。
 
 ---
 
@@ -43,11 +44,15 @@
 
 ## P1 · 性能（用得越久越明显）
 
-- [ ] **C6 · 搜索防抖 200ms** — `小` 🟠
+- [x] **C6 · 搜索防抖 200ms** — `小` 🟠 ✅ 第 3 批
   - 位置：`pages/menu/menu.js:196-199`
   - 现状：每敲一个字全量过滤 303 道 + 整列表 setData；叠加频率排序时每字符还要 sort 一次。
   - 改法：`onSearchInput` 加 200ms 防抖，`setData` 只更新 `filteredDishes`；排序不在输入路径里做。
   - 验收：连打 5 个字符只触发 1 次过滤（可打日志验证）。
+  - **已实施**：提成常量 `SEARCH_DEBOUNCE = 200` + `scheduleFilter()` / `cancelSearchDebounce()` 两个方法。
+    关键点：**keyword 仍然立刻 `setData`**（输入框受控，慢一拍文字/光标会跳、✕ 按钮也不及时），只有过滤延后；
+    清空搜索 / 切分类 / `onHide` / `onUnload` 四处必须调 `cancelSearchDebounce()` —— 不调会出现
+    「已经清空了，200ms 后又按旧关键词过滤一遍」。
 
 - [ ] **C7 · 长列表分页（三处共用）** — `中` 🟠
   - 位置：`pages/menu/menu.wxml:96`、`pages/order-edit/order-edit.wxml:261`、`components/dish-editor/dish-editor.wxml:80`
@@ -136,26 +141,37 @@
 
 ## P4 · 体验微调（可一次批量做掉）
 
-- [ ] **C19 · M3「今天吃什么」尊重当前筛选** — `小` 🟡
+- [x] **C19 · M3「今天吃什么」尊重当前筛选** — `小` 🟡 ✅ 第 3 批
   - 位置：`pages/menu/menu.js:347,352`（从**全部** dishes 随机）
   - 改法：优先 `filteredDishes`，为空回退全部。
+  - **已实施**：`scoped = filteredDishes.length > 0`，有筛选就用它，为空回退全部菜单
+    （否则会出现「搜了个词没结果，连随机都点不动」）。
 
-- [ ] **C20 · M5 改菜时导航栏标题** — `小` 🟡
+- [x] **C20 · M5 改菜时导航栏标题** — `小` 🟡 ✅ 第 3 批
   - 位置：`pages/dish-edit/dish-edit.json:2`（固定「加菜」）
   - 改法：带 id 时 `setNavigationBarTitle('改菜')`（`order-edit.js:122` 是正面示范）。
+  - **已实施**：`onLoad` 里带 id 才设（新增场景继续用 json 的静态标题）。
 
-- [ ] **C21 · M9 点已选 tab 早退** — `小` 🟡
+- [x] **C21 · M9 点已选 tab 早退** — `小` 🟡 ✅ 第 3 批
   - 位置：`custom-tab-bar/index.js:81-85`
   - 改法：`if (this.data.selected === key) return`。
+  - **已实施**：`index.wxml` 补 `data-key="{{item.key}}"`（原来只传了 path），`onTap` 里早退。
+    tab 是**按 key** 判断而不是 path —— 干饭人的「点单」与掌勺人的「菜单」是同一个 path。
 
-- [ ] **C22 · L3 成功跳转延时 800ms → 1500ms** — `小` 🟡
+- [x] **C22 · L3 成功跳转延时 800ms → 1500ms** — `小` 🟡 ✅ 第 3 批
   - 位置：`pages/checkout/checkout.js:356-360`（1500ms 的 toast 看不完）。
+  - **已实施**：范围比清单写的大 —— 全仓库 **12 处**「toast 后跳走」的 `setTimeout(…, 800)`
+    （checkout 1 / dish-edit 3 / order-edit 6 / review 2）都是同一个毛病。
+    在 `utils/ui.js` 提成 `TOAST_DURATION = 1500` 并导出，12 处统一引用，`toast()` 自己的默认时长也用它
+    —— 两边写死各自的数字迟早漂移。
 
-- [ ] **C23 · L5 打星补 `transition`** — `小` 🟡
+- [x] **C23 · L5 打星补 `transition`** — `小` 🟡 ✅ 第 3 批
   - 位置：`pages/review/review.wxss:190-200`。
+  - **已实施**：`.rv-star` 加 `transition: color 0.15s ease`（连点几颗星时颜色是跳变的）。
 
-- [ ] **C24 · L6 loading 态禁用「今天吃什么」** — `小` 🟡
+- [x] **C24 · L6 loading 态禁用「今天吃什么」** — `小` 🟡 ✅ 第 3 批
   - 位置：`pages/menu/menu.wxml:112`（loading 时仍可点，且基于旧 `dishes`）。
+  - **已实施**：`onRandom` 开头挡 `loading`；按钮加 `.lucky-off`（opacity .45）示意不可点。
 
 - [ ] **C25 · M7 选菜弹层加搜索框** — `中` 🟡
   - 位置：`pages/order-edit/order-edit.wxml:240-275`、`components/dish-editor/dish-editor.wxml:65-94`
@@ -195,21 +211,21 @@
 
 | v1 项 | 结论 | 证据 |
 | --- | --- | --- |
-| M1 搜索无防抖 | 仍然存在 → **C6** | `menu.js:196-199` |
+| M1 搜索无防抖 | ✅ **已修（C6）** | `menu.js` 的 `scheduleFilter` / `cancelSearchDebounce` |
 | M2 长列表无分页 | 仍然存在 → **C7** | `menu.wxml:96` 等 3 处 |
-| M3 随机忽略筛选 | 仍然存在 → **C19** | `menu.js:347,352` |
+| M3 随机忽略筛选 | ✅ **已修（C19）** | `menu.js` 的 `onRandom` 优先取 `filteredDishes` |
 | M4 视觉不一致 | ✅ **已修（C9/C10/C11）** | token 收敛、辣度皮肤合一、todo 本地重写删除 |
-| M5 dish-edit 标题 | 仍然存在 → **C20** | `dish-edit.json:2` |
+| M5 dish-edit 标题 | ✅ **已修（C20）** | `dish-edit.js` 的 `onLoad` 带 id 时设「改菜」 |
 | M6 profile toast 过频 | ✅ **已修** | `profile.js:36,103-112` |
 | M7 选菜弹层无搜索 | 仍然存在 → **C25** | `order-edit.wxml:240-275` |
 | M8 import 时序 | ✅ **已修（C3）** | `dish-import.js` 的 `ensureExisting` 先等菜单就绪 |
-| M9 tabBar 重复 switchTab | 仍然存在 → **C21** | `custom-tab-bar/index.js:81-85` |
+| M9 tabBar 重复 switchTab | ✅ **已修（C21）** | `index.wxml` 补 `data-key`，`onTap` 早退 |
 | L1 无 hover-class | 仍然存在 → **C26** | 全仓库 0 处 |
 | L2 无无障碍 | 仍然存在 → **C27** | 全仓库 0 处 |
-| L3 800ms 跳转 | 仍然存在 → **C22** | `checkout.js:356-360` |
+| L3 800ms 跳转 | ✅ **已修（C22）** | 12 处统一引用 `ui.TOAST_DURATION`（1500ms） |
 | L4 menu 并发保护 | ✅ **已修** | `menu.js:161-163` |
-| L5 星星无 transition | 仍然存在 → **C23** | `review.wxss:190-200` |
-| L6 loading 态可随机 | 仍然存在 → **C24** | `menu.wxml:112` |
+| L5 星星无 transition | ✅ **已修（C23）** | `review.wxss` 的 `.rv-star` 加 `transition: color` |
+| L6 loading 态可随机 | ✅ **已修（C24）** | `onRandom` 挡 loading + `.lucky-off` |
 | L7 评价区随轮询重建 | ✅ **已不适用** | review 已不订轮询 |
 
 ---
@@ -220,9 +236,9 @@
 | --- | --- | --- |
 | 第 1 批 ✅ | C1–C5 | **已完成 2026-10-05**，全量 1676 项断言全绿 |
 | 第 2 批 ✅ | C9–C11 + C12 | **已完成 2026-10-05**：token 层 + 空态公共层 + state-block 组件（8 页 20 处），新增 91 项 |
-| 第 3 批 | C6 + C22–C24 + C19–C21 | 体验与性能小项批量做 |
+| 第 3 批 ✅ | C6 + C22–C24 + C19–C21 | **已完成 2026-10-05**：搜索防抖 + 7 项体验微调，新增 37 项（含行为测试） |
 | 第 4 批 | C13 + C14 + C25 | 组件化三件套（cart-list / dish-picker + 搜索） |
-| 第 5 批 | C15–C18 + C26 + C27 + C29 | 健壮性与无障碍收尾 |
+| 第 5 批 | C7 + C15–C18 + C26 + C27 + C29 | 分页、健壮性与无障碍收尾 |
 | 待定 | C28 → 决定 C30 | 需要拍板 |
 
 > 每批完成后跑：全量 `test_*.js` + `audit_wxml.py` + `audit_pack.py` + `test_style_compat.js`。

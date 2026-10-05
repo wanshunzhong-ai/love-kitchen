@@ -176,6 +176,8 @@
   font-size: 48rpx;
   line-height: 1.15;
   color: #F0E0DA;
+  /* 点星时从灰跳到金，没有过渡会很突兀（尤其连点几颗） */
+  transition: color 0.15s ease;
 }
 
 .rv-star-on {

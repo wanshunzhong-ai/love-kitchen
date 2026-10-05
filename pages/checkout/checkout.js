@@ -354,10 +354,11 @@ Page({
       // 重置提交态，否则从订单页返回后按钮会一直是禁用的
       this.setData({ submitting: false })
       ui.toast('订单已送达厨房 🎉')
-      // 用 switchTab 回订单页（orders 是 tabBar 页，会关掉本页）
+      // 用 switchTab 回订单页（orders 是 tabBar 页，会关掉本页）。
+      // 延时对齐 toast 的停留时长 —— 早走会把 toast 一起收掉，用户看不到「🎉」。
       setTimeout(function () {
         wx.switchTab({ url: '/pages/orders/orders' })
-      }, 800)
+      }, ui.TOAST_DURATION)
     } catch (err) {
       ui.hideLoading()
       console.error('[checkout] 下单失败', err)

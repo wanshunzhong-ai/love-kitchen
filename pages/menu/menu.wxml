@@ -111,8 +111,10 @@
     </view>
   </view>
 
-  <!-- 随机帮选（点单功能，掌勺人不显示） -->
-  <view wx:if="{{!isCook}}" class="lucky" bindtap="onRandom">🎲 今天吃什么</view>
+  <!-- 随机帮选（点单功能，掌勺人不显示）。
+       loading 时变淡且点不动：那时手上是空数组，抽出来的是旧数据，
+       还会误报「菜单还是空的」。 -->
+  <view wx:if="{{!isCook}}" class="lucky {{loading ? 'lucky-off' : ''}}" bindtap="onRandom">🎲 今天吃什么</view>
 
   <!-- 购物车栏（掌勺人不显示，切身份时购物车已清空） -->
   <view class="cart-bar" wx:if="{{cartCount > 0 && !isCook}}" bindtap="goCart">

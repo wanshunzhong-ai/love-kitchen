@@ -66,7 +66,7 @@ Page({
       ui.toast('订单不存在')
       setTimeout(function () {
         wx.navigateBack()
-      }, 800)
+      }, ui.TOAST_DURATION)
       return
     }
     // 身份守卫：没选过身份先送去选择页
@@ -85,7 +85,7 @@ Page({
         ui.toast('这单不存在了')
         setTimeout(function () {
           wx.navigateBack()
-        }, 800)
+        }, ui.TOAST_DURATION)
         return
       }
       const reviews = review.normalizeReviews(order.reviews)

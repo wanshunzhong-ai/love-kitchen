@@ -81,6 +81,10 @@ Component({
     onTap(e) {
       const path = e.currentTarget.dataset.path
       if (!path) return
+      // 点已选中的 tab：switchTab 仍会重跑一次目标页的 onShow
+      // （重新拉数据 + 重建 tabBar），白花一次请求。直接早退。
+      const key = e.currentTarget.dataset.key
+      if (key && this.data.selected === key) return
       wx.switchTab({ url: path })
     },
   },

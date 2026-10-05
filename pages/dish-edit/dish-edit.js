@@ -24,6 +24,9 @@ Page({
     if (options && options.id) {
       // 云开发主键 _id 是字符串，不做 Number 转换
       this.setData({ id: String(options.id), loading: true })
+      // json 里的静态标题是「加菜」，带 id 进来是改菜 —— 不改的话
+      // 用户会以为自己点的是「新加一道」（order-edit.js 同款处理）
+      wx.setNavigationBarTitle({ title: '改菜' })
       this.loadDish(String(options.id))
     }
   },
@@ -38,7 +41,7 @@ Page({
         ui.toast('这道菜不存在了')
         setTimeout(function () {
           wx.navigateBack()
-        }, 800)
+        }, ui.TOAST_DURATION)
         return
       }
       this.setData({
@@ -103,7 +106,7 @@ Page({
       ui.toast(this.data.id ? '改好了 ✓' : '上新啦 ✓')
       setTimeout(function () {
         wx.navigateBack()
-      }, 800)
+      }, ui.TOAST_DURATION)
     } catch (err) {
       ui.hideLoading()
       console.error('[dish-edit] 保存失败', err)
@@ -131,7 +134,7 @@ Page({
           ui.toast('已下架')
           setTimeout(function () {
             wx.navigateBack()
-          }, 800)
+          }, ui.TOAST_DURATION)
         } catch (err) {
           console.error('[dish-edit] 下架菜品失败', err)
           ui.toast('网络开小差了，稍后再试')

@@ -18,6 +18,15 @@ function getWx() {
   return typeof wx !== 'undefined' ? wx : null
 }
 
+/**
+ * toast 的默认停留时长（毫秒）。
+ *
+ * 导出它的原因：toast 结束后要跳走（下单成功回订单页、菜不存在了返回列表）
+ * 这类场景，定时器的延时必须 ≥ 这个值 —— 否则页面先跳走，toast 被一起收掉，
+ * 用户根本没看清写了什么。两边写死各自的数字迟早会漂移。
+ */
+const TOAST_DURATION = 1500
+
 // 显示 loading。mask 默认开启，防止用户在请求途中重复点击。
 function showLoading(title, mask) {
   const api = getWx()
@@ -49,7 +58,7 @@ function toast(title, icon, duration) {
   api.showToast({
     title: title || '',
     icon: icon || 'none',
-    duration: duration || 1500,
+    duration: duration || TOAST_DURATION,
     success: function () {},
     fail: function () {},
     complete: function () {},
@@ -178,4 +187,4 @@ function haptic(type) {
   })
 }
 
-module.exports = { showLoading, hideLoading, toast, askText, askReason, alert, haptic }
+module.exports = { TOAST_DURATION, showLoading, hideLoading, toast, askText, askReason, alert, haptic }

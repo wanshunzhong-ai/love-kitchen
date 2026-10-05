@@ -7,6 +7,7 @@
     wx:for="{{tabs}}"
     wx:key="key"
     data-path="{{item.path}}"
+    data-key="{{item.key}}"
     bindtap="onTap"
   >
     <text class="tab-emoji">{{item.emoji}}</text>

@@ -329,6 +329,11 @@
   border: 2rpx solid #FFE3EA;
 }
 
+/* 菜单还在加载：变淡示意「现在点不了」（逻辑侧在 onRandom 里早退） */
+.lucky-off {
+  opacity: 0.45;
+}
+
 /* 购物车栏：原来贴在 bottom 40rpx，被自定义 tabBar（110rpx + 安全区）整个盖住，
    加完菜根本看不到「去下单」——现在贴着 tabBar 上沿放。 */
 .cart-bar {

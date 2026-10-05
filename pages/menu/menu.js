@@ -17,6 +17,11 @@ const freq = require('../../utils/frequency')
 
 const ALL = { key: '全部', emoji: '📜' }
 
+// 搜索防抖窗口。三百多道菜，每敲一个字都全量过滤 + 整列表 setData 不划算，
+// 叠上掌勺人的频率排序还要每字符 sort 一次。200ms 是「打字手感」与
+// 「少算几次」的折中：正常语速连打一个字间隔都小于它，一串输入只会过滤一次。
+const SEARCH_DEBOUNCE = 200
+
 Page({
   data: {
     categories: [ALL].concat(CATEGORIES),
@@ -77,6 +82,12 @@ Page({
     if (this.data.spicePicker.open) this.setData({ 'spicePicker.open': false })
     // 退订：页面不在了就别再跟着轮询重排
     this.unwatchOrders()
+    // 还有没落地的防抖过滤就作废（否则可能在页面切走后触发一次 setData）
+    this.cancelSearchDebounce()
+  },
+
+  onUnload() {
+    this.cancelSearchDebounce()
   },
 
   // ---------- 点菜频率（掌勺人的排序依据） ----------
@@ -193,9 +204,34 @@ Page({
   },
 
   // 搜索框输入
+  //
+  // keyword 立刻 setData（输入框是受控的，慢一拍光标/文字会跳，
+  // ✕ 清除按钮也要及时出现），只有「重新过滤」这件事延后。
   onSearchInput(e) {
     this.setData({ keyword: e.detail.value })
-    this.applyFilter()
+    this.scheduleFilter()
+  },
+
+  /** 排一次防抖后的过滤；窗口内再次输入就把上一次顶掉 */
+  scheduleFilter() {
+    this.cancelSearchDebounce()
+    this._searchTimer = setTimeout(() => {
+      this._searchTimer = null
+      this.applyFilter()
+    }, SEARCH_DEBOUNCE)
+  },
+
+  /**
+   * 取消还没落地的防抖过滤。
+   * 清空搜索 / 切分类 / 离开页面时都要调 —— 不调的话会出现
+   * 「已经清空了，200ms 后又按旧关键词过滤一遍」。这些路径自己会同步
+   * 调一次 applyFilter，不需要那个迟到的定时器。
+   */
+  cancelSearchDebounce() {
+    if (this._searchTimer) {
+      clearTimeout(this._searchTimer)
+      this._searchTimer = null
+    }
   },
 
   onSearchFocus() {
@@ -208,6 +244,7 @@ Page({
 
   // 清空搜索
   clearSearch() {
+    this.cancelSearchDebounce()
     this.setData({ keyword: '' })
     this.applyFilter()
   },
@@ -243,6 +280,8 @@ Page({
   },
 
   onTapCategory(e) {
+    // 切分类是要立刻看到结果的，不能被上一次输入的防抖拖住
+    this.cancelSearchDebounce()
     this.setData({ activeCategory: e.currentTarget.dataset.cat })
     this.applyFilter()
   },
@@ -344,7 +383,16 @@ Page({
   // 「今天吃什么」随机帮选（点单功能，只给干饭人）
   onRandom() {
     if (this.data.isCook) return
-    const dishes = this.data.dishes
+    // 菜单还没加载完就点：手上是空数组，会误报「菜单还是空的」，
+    // 而且抽中的是旧数据。按钮同时有 .lucky-off 变淡示意不可点。
+    if (this.data.loading) return
+
+    // 在「当前筛选结果」里随机：用户刚筛了「凉菜」或搜了「鸡」，
+    // 帮他选就该只从这批里挑。筛选为空（搜不到东西）时回退全部菜单，
+    // 否则会出现「搜了个词没结果，连随机都点不动」。
+    const filtered = this.data.filteredDishes
+    const scoped = filtered && filtered.length > 0
+    const dishes = scoped ? filtered : this.data.dishes
     if (!dishes.length) {
       ui.toast('菜单还是空的，先加道菜吧')
       return
