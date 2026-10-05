@@ -1,0 +1,4 @@
+@import "../../styles/state.wxss";
+/* 三态视觉（.state / .state-* / .btn-retry）只有 styles/state.wxss 一份。
+   组件默认「样式隔离」，页面与全局样式都进不来，所以这里必须 import 一次。
+   该文件刻意不写 page 选择器、也不用 var() —— 原因见它的头部注释。 */

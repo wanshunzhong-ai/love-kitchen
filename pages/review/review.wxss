@@ -36,7 +36,7 @@
   font-weight: 600;
   color: #E85C8A;
   background: #FFE9EE;
-  border-radius: 999rpx;
+  border-radius: var(--radius-pill);
   padding: 0 20rpx;
 }
 
@@ -59,7 +59,7 @@
   color: #8A7772;
   background: #FFF7F2;
   border: 2rpx solid #F6E3DC;
-  border-radius: 999rpx;
+  border-radius: var(--radius-pill);
   padding: 0 18rpx;
 }
 
@@ -150,31 +150,13 @@
   flex-shrink: 0;
   margin-left: 12rpx;
   padding: 2rpx 12rpx;
-  border-radius: 999rpx;
+  border-radius: var(--radius-pill);
   font-size: 22rpx;
   line-height: 32rpx;
 }
 
-.spice-0 {
-  background: #F4EDE9;
-  color: #A89690;
-}
-
-.spice-1 {
-  background: #FFE9E0;
-  color: #E07B4F;
-}
-
-.spice-2 {
-  background: #FFDCD6;
-  color: #E0533F;
-}
-
-.spice-3 {
-  background: #FFD0CC;
-  color: #D42B2B;
-}
-
+/* 辣度皮肤（.spice-0 ~ .spice-3）已收进 styles/common.wxss。
+   原先五个页面各写一份（待做页那份还漂移过色值），同一档辣度会显示成两种颜色。 */
 /* ---------- 星级 ---------- */
 
 .rv-stars-row {
@@ -220,7 +202,7 @@
   margin: 7rpx;
   background: #FFF7F2;
   border: 2rpx dashed #F0CFC6;
-  border-radius: 999rpx;
+  border-radius: var(--radius-pill);
   padding: 10rpx 22rpx;
   font-size: 24rpx;
   color: #B9A29B;
@@ -296,7 +278,7 @@
 .rv-act-ghost {
   margin-left: 14rpx;
   padding: 12rpx 22rpx;
-  border-radius: 999rpx;
+  border-radius: var(--radius-pill);
   font-size: 23rpx;
   border: 2rpx solid #EAD9D3;
   color: #8A7772;
@@ -305,11 +287,11 @@
 .rv-save {
   margin-left: 14rpx;
   padding: 12rpx 26rpx;
-  border-radius: 999rpx;
+  border-radius: var(--radius-pill);
   font-size: 23rpx;
   font-weight: 600;
   color: #ffffff;
-  background: linear-gradient(135deg, #FF7A9E, #FF9F43);
+  background: var(--grad-main);
 }
 
 .rv-saved-tip {
@@ -338,11 +320,11 @@
 
 .rv-back {
   display: inline-block;
-  background: linear-gradient(135deg, #FF7A9E, #FF9F43);
+  background: var(--grad-main);
   color: #ffffff;
   font-size: 27rpx;
   font-weight: 600;
   padding: 20rpx 56rpx;
-  border-radius: 999rpx;
+  border-radius: var(--radius-pill);
   box-shadow: 0 8rpx 20rpx rgba(255, 122, 158, 0.28);
 }

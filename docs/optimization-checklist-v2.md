@@ -4,9 +4,10 @@
 > v1 清单（`page-optimization-checklist.md`）的 H1-H7 已实施；本清单**取代 v1 的第二、三节**，并补上审查新发现的**布局一致性 / 逻辑健壮性 / 架构层**三块。
 > 共 **30 条**，按 `P0 → P5` 排序。每条可直接引用编号（例：「做 C1-C5」）。
 
-**进度**：`5 / 30`　🔴 高优先 `5 → 0`　🟠 中 `13`　🟡 低 `9`　⚪ 待拍板 `3`
+**进度**：`9 / 30`　🔴 高优先 `5 → 0`　🟠 中 `9`　🟡 低 `9`　⚪ 待拍板 `3`
 
 > **第 1 批（C1–C5）已于 2026-10-05 实施完成**，全量 1676 项断言全绿。
+> **第 2 批（C9–C11 + C12）已于 2026-10-05 实施完成**：新增 `styles/common.wxss`（token）+ `styles/state.wxss`（空态）两个公共层与 `components/state-block` 组件，新增 `test_batch2.js` 91 项，全量断言全绿。
 
 ---
 
@@ -67,29 +68,31 @@
 
 > **顺序有依赖**：C9 做完，C10 / C11 才有落点。
 
-- [ ] **C9 · 新增 `styles/common.wxss` 承载设计 token** — `中` 🟠
-  - 位置：新建文件 + 各页 `@import`
+- [x] **C9 · 新增 `styles/common.wxss` 承载设计 token** — `中` ✅
+  - 位置：新建 `styles/common.wxss` + `styles/state.wxss`；`app.wxss` 顶部两行 `@import`
   - 现状：主渐变手写 **23 次**、`#FF7A9E` **39 次**、`#FF9F43` **24 次**、`border-radius` **116 处 10 档**、`box-shadow` 20 处（其中一条 2 处逐字相同）。
-  - 改法：把「主渐变 / 主色 / 圆角 / 阴影 / Hero 渐变」各定义一次为公共类，各页改为引用。
-  - 验收：全仓库 `linear-gradient(135deg, #FF7A9E` 出现次数 ≤ 3（仅 token 定义处）。
+  - 做法：**改用 CSS 变量而不是公共类** —— 变量是继承属性，能穿透自定义组件边界（background 之类的类名做不到），且 `var()` 的支持度远高于 flex gap。token：`--brand` / `--brand-2` / `--grad-main`（由前面两个拼出）/ `--grad-hero` / `--grad-done` / `--grad-pink` / `--grad-warn` / `--grad-panel` / `--radius-card` / `--radius-pill` / `--shadow-card` / `--shadow-float`，共 14 个文件 90 处替换（脚本 `.workbuddy/tmp/refactor_c9.py`，全部同值等价）。
+  - 圆角只收高频两档（999/24rpx），其余零散档位保持原值以免改变视觉。
+  - 验收：全仓库 `linear-gradient(135deg, #FF7A9E` 出现次数 **0**（目标 ≤ 3，因为 `--grad-main` 直接由 `var(--brand)` 拼出，连 token 处都没有字面量）；`#FF7A9E` / `#FF9F43` 字面量只剩 token 定义那 2 行。
 
-- [ ] **C10 · 删掉 `todo.wxss:261-294` 的本地重写** — `小` 🟠
-  - 位置：`pages/todo/todo.wxss:261-294` vs `app.wxss:54-94`
-  - 现状：整块重写且**数值已漂移**（padding / 字号 / 行高全不同），还**丢了 `.btn-retry::after { border:none }`** → 可能露出原生按钮边框。
-  - 改法：删除本地重写，直接用全局 `.state` / `.btn-retry`。
-  - 验收：待做页空态与订单页空态视觉一致。
+- [x] **C10 · 删掉 `todo.wxss:261-294` 的本地重写** — `小` ✅
+  - 位置：`pages/todo/todo.wxss` vs `styles/state.wxss`
+  - 现状：整块重写且**数值已漂移**（padding 100 vs 120rpx、字号 27/23 vs 28/24rpx），还**丢了 `.btn-retry::after { border:none }`** → 会露出原生按钮边框。
+  - 做法：删除本地重写，改用公共层唯一一份；空态样式拆到 `styles/state.wxss`（不含 page 选择器），让 `state-block` 组件能 `@import` 它。
+  - 验收：`todo.wxss` 不再定义 `.state` / `.state-*` / `.btn-retry`；`state.wxss` 保留 `::after` 清边框。
 
-- [ ] **C11 · 统一辣度皮肤（并入 C10）** — `小` 🟠
-  - 位置：`pages/todo/todo.wxss:138-152`（另一套）vs `menu.wxss:206-224` / `order-edit.wxss:150-168` / `orders.wxss:253-271` / `review.wxss:157-175`（4 处逐字相同）
-  - 现状：`todo` 只写 `background` 不写 `color`，色值全不同（`.spice-0` `#D9C6BF` vs 其余 `#F4EDE9`）→ 同一个「微辣」两页两个颜色。
-  - 改法：辣度皮肤收进 `common.wxss`，5 处改为引用。
-  - 验收：同一辣度在待做页与订单页颜色一致。
+- [x] **C11 · 统一辣度皮肤（并入 C10）** — `小` ✅
+  - 位置：`pages/todo/todo.wxss`（另一套）vs `menu.wxss` / `order-edit.wxss` / `orders.wxss` / `review.wxss`（4 处逐字相同）
+  - 现状：`todo` 只写 `background` 不写 `color`（靠 `.oi-spice` 的 `color:#ffffff` 兜），色值全不同（`.spice-0` `#D9C6BF` vs 其余 `#F4EDE9`）→ 同一个「微辣」两页两个颜色。
+  - 做法：四档皮肤收进 `styles/common.wxss`；5 处本地定义全删；**同时删掉 todo `.oi-spice` 的 `color:#ffffff`** —— 页面样式表后加载，不删的话它会盖掉全局皮肤，统一无效（这是本次最容易漏的一步）。
+  - 验收：全仓库只有 `common.wxss` 定义 `.spice-0..3`；四档都有底色 + 字色。
+  - ⚠️ **视觉变动（有意）**：待做页的辣度标签从「实心深底 + 白字」变成「浅底 + 深字」，与订单页同款。
 
-- [ ] **C12 · 抽 `state-block` 组件（三态）** — `中` 🟠
-  - 位置：6 处各写一遍 —— `orders.wxml:24-39`、`todo.wxml:15-29`、`menu.wxml:65-88`、`review.wxml:26-35`、`dish-edit.wxml:2-12`、`dish-logs.wxml:23-39`
+- [x] **C12 · 抽 `state-block` 组件（三态）** — `中` ✅
+  - 位置：**实际 21 处（9 个页面）**，清单原先只列了 6 处 —— 补上 `checkout.wxml`（空购物车）、`order-edit.wxml`（2 处）、`menu.wxml` 的 4 处。
   - 现状：几乎同构的 `state-emoji / state-tip / state-sub / btn-retry`，无公共组件。
-  - 改法：`components/state-block`（properties：`emoji` / `tip` / `sub` / `retry`，event：`retry`）。**先抽这个，性价比最高。**
-  - 验收：6 页替换后 `audit_wxml.py` 通过，各页三态外观无变化。
+  - 做法：`components/state-block`（properties：`emoji` / `tip` / `sub` / `retry`，event：`retry`；`retry` 是按钮文案，留空即不出按钮）。**替换 8 个页面共 20 处**；`dish-import` 的成功页只借 `.state` 做居中布局、结构不是三态，**保留全局类不套组件**（否则得给它开 slot，得不偿失）。
+  - 验收：`audit_wxml.py` 通过；8 页 `usingComponents` 注册齐全；8 页 wxml 不再出现 `class="state"` / `class="btn-retry"` / 裸 `bindtap="onRetry"`。
 
 - [ ] **C13 · 抽 `cart-list` 组件** — `中` 🟠
   - 位置：`checkout.wxml` ↔ `order-edit.wxml`（**26 个同名类整块重复**：`.cart-item` / `.ci-*` / `.step` / `.mask` / `.sheet` …）
@@ -195,11 +198,11 @@
 | M1 搜索无防抖 | 仍然存在 → **C6** | `menu.js:196-199` |
 | M2 长列表无分页 | 仍然存在 → **C7** | `menu.wxml:96` 等 3 处 |
 | M3 随机忽略筛选 | 仍然存在 → **C19** | `menu.js:347,352` |
-| M4 视觉不一致 | **部分修** → **C9/C10/C11** | 色值已统一，重复未收敛，todo 仍两套 |
+| M4 视觉不一致 | ✅ **已修（C9/C10/C11）** | token 收敛、辣度皮肤合一、todo 本地重写删除 |
 | M5 dish-edit 标题 | 仍然存在 → **C20** | `dish-edit.json:2` |
 | M6 profile toast 过频 | ✅ **已修** | `profile.js:36,103-112` |
 | M7 选菜弹层无搜索 | 仍然存在 → **C25** | `order-edit.wxml:240-275` |
-| M8 import 时序 | 仍然存在 → **C3** | `dish-import.js:52-69,183` |
+| M8 import 时序 | ✅ **已修（C3）** | `dish-import.js` 的 `ensureExisting` 先等菜单就绪 |
 | M9 tabBar 重复 switchTab | 仍然存在 → **C21** | `custom-tab-bar/index.js:81-85` |
 | L1 无 hover-class | 仍然存在 → **C26** | 全仓库 0 处 |
 | L2 无无障碍 | 仍然存在 → **C27** | 全仓库 0 处 |
@@ -216,7 +219,7 @@
 | 批次 | 内容 | 说明 |
 | --- | --- | --- |
 | 第 1 批 ✅ | C1–C5 | **已完成 2026-10-05**，全量 1676 项断言全绿 |
-| 第 2 批 | C9–C11 + C12 | 先建 token 层，再做 state-block（两者独立可并行） |
+| 第 2 批 ✅ | C9–C11 + C12 | **已完成 2026-10-05**：token 层 + 空态公共层 + state-block 组件（8 页 20 处），新增 91 项 |
 | 第 3 批 | C6 + C22–C24 + C19–C21 | 体验与性能小项批量做 |
 | 第 4 批 | C13 + C14 + C25 | 组件化三件套（cart-list / dish-picker + 搜索） |
 | 第 5 批 | C15–C18 + C26 + C27 + C29 | 健壮性与无障碍收尾 |

@@ -1,0 +1,19 @@
+<!-- ============================================================
+     空态三态块（加载 / 失败 / 空）
+     ------------------------------------------------------------
+     用法：
+       加载：<state-block emoji="🍽️" tip="正在摆盘…" />
+       失败：<state-block emoji="😵" tip="菜单没加载出来" sub="网络开小差了"
+                        retry="重试" bind:retry="loadDishes" />
+       空态：<state-block emoji="🍳" tip="菜单还是空的" retry="去加菜"
+                        bind:retry="goAddDish" />
+
+     retry 是**按钮文案**，留空（默认）就不出按钮 —— 空态不一定有动作。
+     外观值放在 styles/state.wxss，本组件只管结构。
+     ============================================================ -->
+<view class="state">
+  <text class="state-emoji" wx:if="{{emoji}}">{{emoji}}</text>
+  <text class="state-tip" wx:if="{{tip}}">{{tip}}</text>
+  <text class="state-sub" wx:if="{{sub}}">{{sub}}</text>
+  <button class="btn-retry" wx:if="{{retry}}" bindtap="onRetryTap">{{retry}}</button>
+</view>

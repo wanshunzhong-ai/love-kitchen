@@ -73,7 +73,7 @@
   font-size: 22rpx;
   line-height: 44rpx;
   padding: 0 18rpx;
-  border-radius: 999rpx;
+  border-radius: var(--radius-pill);
   color: #A89690;
   background: #F8F3F1;
   border: 2rpx solid #EFE6E2;
@@ -114,7 +114,7 @@
   line-height: 38rpx;
   padding: 0 16rpx;
   margin-right: 10rpx;
-  border-radius: 999rpx;
+  border-radius: var(--radius-pill);
   color: #A89690;
   background: #F8F3F1;
   border: 2rpx solid transparent;
@@ -148,26 +148,8 @@
   flex-shrink: 0;
 }
 
-.spice-0 {
-  background: #F4EDE9;
-  color: #A89690;
-}
-
-.spice-1 {
-  background: #FFE9E0;
-  color: #E07B4F;
-}
-
-.spice-2 {
-  background: #FFDCD6;
-  color: #E0533F;
-}
-
-.spice-3 {
-  background: #FFD0CC;
-  color: #D42B2B;
-}
-
+/* 辣度皮肤（.spice-0 ~ .spice-3）已收进 styles/common.wxss。
+   原先五个页面各写一份（待做页那份还漂移过色值），同一档辣度会显示成两种颜色。 */
 .ci-stepper {
   display: flex;
   align-items: center;
@@ -186,7 +168,7 @@
 }
 
 .step-plus {
-  background: linear-gradient(135deg, #FF7A9E, #FF9F43);
+  background: var(--grad-main);
   border-color: transparent;
   color: #ffffff;
 }
@@ -220,7 +202,7 @@
   padding: 0 12rpx;
   font-size: 22rpx;
   line-height: 38rpx;
-  border-radius: 999rpx;
+  border-radius: var(--radius-pill);
   background: #FFF3F6;
   border: 2rpx solid #FFE0EA;
 }
@@ -306,7 +288,7 @@
   padding: 0 12rpx;
   font-size: 22rpx;
   line-height: 34rpx;
-  border-radius: 999rpx;
+  border-radius: var(--radius-pill);
   color: #A89690;
   background: #F4EDE9;
 }
@@ -355,7 +337,7 @@
   color: #FF5C8A;
   font-weight: 600;
   background: #FFF3F6;
-  border-radius: 999rpx;
+  border-radius: var(--radius-pill);
   padding: 18rpx 0;
   border: 2rpx dashed #FFD3E0;
 }
@@ -390,7 +372,7 @@
 
 .sro-chip {
   padding: 10rpx 28rpx;
-  border-radius: 999rpx;
+  border-radius: var(--radius-pill);
   font-size: 26rpx;
   font-weight: 600;
 }
@@ -506,7 +488,7 @@
   color: #6B7B95;
   background: #F5F7FB;
   border: 2rpx solid #E3E8F1;
-  border-radius: 999rpx;
+  border-radius: var(--radius-pill);
 }
 
 /* 按钮 */
@@ -523,7 +505,7 @@
   font-size: 28rpx;
   color: #D9534F;
   background: #FFF1F0;
-  border-radius: 999rpx;
+  border-radius: var(--radius-pill);
 }
 
 /* 加菜弹层 */
@@ -583,14 +565,14 @@
   padding: 12rpx 28rpx;
   margin-right: 16rpx;
   background: #ffffff;
-  border-radius: 999rpx;
+  border-radius: var(--radius-pill);
   font-size: 24rpx;
   color: #8A7772;
   border: 2rpx solid #F6E3DC;
 }
 
 .cat-active {
-  background: linear-gradient(135deg, #FF7A9E, #FF9F43);
+  background: var(--grad-main);
   color: #ffffff;
   border-color: transparent;
   font-weight: 600;
@@ -636,7 +618,7 @@
   color: #C97B8E;
   background: #FFF0F4;
   padding: 4rpx 14rpx;
-  border-radius: 999rpx;
+  border-radius: var(--radius-pill);
   flex-shrink: 0;
 }
 

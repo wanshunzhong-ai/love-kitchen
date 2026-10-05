@@ -22,18 +22,17 @@
 
   <view class="rv-remark" wx:if="{{remark}}">💬 {{remark}}</view>
 
-  <!-- 加载 / 失败 -->
-  <view wx:if="{{loading}}" class="state">
-    <text class="state-emoji">🍽️</text>
-    <text class="state-tip">正在端上来…</text>
-  </view>
+  <!-- 加载 / 失败（统一走 state-block 组件，视觉见 styles/state.wxss） -->
+  <state-block wx:if="{{loading}}" emoji="🍽️" tip="正在端上来…" />
 
-  <view wx:elif="{{loadError}}" class="state">
-    <text class="state-emoji">😵</text>
-    <text class="state-tip">这一单没加载出来</text>
-    <text class="state-sub">评价存在云数据库里，网络恢复后再试试</text>
-    <button class="btn-retry" bindtap="onRetry">重新加载</button>
-  </view>
+  <state-block
+    wx:elif="{{loadError}}"
+    emoji="😵"
+    tip="这一单没加载出来"
+    sub="评价存在云数据库里，网络恢复后再试试"
+    retry="重新加载"
+    bind:retry="onRetry"
+  />
 
   <view wx:else class="rv-list">
     <view class="rv-card card" wx:for="{{items}}" wx:key="key">

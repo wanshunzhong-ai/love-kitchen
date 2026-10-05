@@ -122,14 +122,14 @@
   font-size: 24rpx;
   line-height: 56rpx;
   padding: 0 26rpx;
-  border-radius: 999rpx;
+  border-radius: var(--radius-pill);
   color: #8A7772;
   background: #ffffff;
   border: 2rpx solid #F6E3DC;
 }
 
 .de-chip-on {
-  background: linear-gradient(135deg, #FF7A9E, #FF9F43);
+  background: var(--grad-main);
   color: #ffffff;
   border-color: transparent;
   font-weight: 600;
@@ -173,7 +173,7 @@
   color: #FF5C8A;
   font-weight: 600;
   background: #FFF3F6;
-  border-radius: 999rpx;
+  border-radius: var(--radius-pill);
   padding: 20rpx 0;
   border: 2rpx dashed #FFD3E0;
 }
@@ -185,8 +185,8 @@
   font-weight: 600;
   color: #ffffff;
   line-height: 88rpx;
-  border-radius: 999rpx;
-  background: linear-gradient(135deg, #FF7A9E, #FF9F43);
+  border-radius: var(--radius-pill);
+  background: var(--grad-main);
 }
 
 /* 换菜：分类 + 列表 */
@@ -200,14 +200,14 @@
   padding: 12rpx 28rpx;
   margin-right: 16rpx;
   background: #ffffff;
-  border-radius: 999rpx;
+  border-radius: var(--radius-pill);
   font-size: 24rpx;
   color: #8A7772;
   border: 2rpx solid #F6E3DC;
 }
 
 .de-cat-on {
-  background: linear-gradient(135deg, #FF7A9E, #FF9F43);
+  background: var(--grad-main);
   color: #ffffff;
   border-color: transparent;
   font-weight: 600;
@@ -253,7 +253,7 @@
   color: #C97B8E;
   background: #FFF0F4;
   padding: 4rpx 14rpx;
-  border-radius: 999rpx;
+  border-radius: var(--radius-pill);
   flex-shrink: 0;
 }
 

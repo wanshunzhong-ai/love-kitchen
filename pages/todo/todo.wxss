@@ -9,8 +9,8 @@
 
 /* 顶部概览 */
 .hero {
-  background: linear-gradient(135deg, #FFD3E0, #FFE9C7);
-  border-radius: 24rpx;
+  background: var(--grad-hero);
+  border-radius: var(--radius-card);
   padding: 32rpx;
   margin-bottom: 24rpx;
 }
@@ -69,7 +69,7 @@
 .order {
   background: #ffffff;
   border: 3rpx solid #F6E3DC;
-  border-radius: 24rpx;
+  border-radius: var(--radius-card);
   padding: 26rpx;
   margin-bottom: 18rpx;
   box-shadow: 0 6rpx 20rpx rgba(255, 122, 158, 0.06);
@@ -91,7 +91,7 @@
 .order-status {
   font-size: 22rpx;
   font-weight: 600;
-  border-radius: 999rpx;
+  border-radius: var(--radius-pill);
   padding: 6rpx 18rpx;
 }
 
@@ -131,25 +131,11 @@
   margin-left: 12rpx;
   font-size: 22rpx;
   line-height: 32rpx;
-  border-radius: 999rpx;
+  border-radius: var(--radius-pill);
   padding: 2rpx 12rpx;
-  color: #ffffff;
-}
-
-.spice-0 {
-  background: #D9C6BF;
-}
-
-.spice-1 {
-  background: #FFB35C;
-}
-
-.spice-2 {
-  background: #FF7A45;
-}
-
-.spice-3 {
-  background: #F4433C;
+  /* 颜色交给全局辣度皮肤（styles/common.wxss 的 .spice-*）。
+     这里原先写死 color:#ffffff，会把皮肤的字色盖掉（页面样式表后加载），
+     导致同一档辣度在待做页和订单页不同色。 */
 }
 
 .oi-note {
@@ -163,7 +149,7 @@
   margin-left: 16rpx;
   font-size: 25rpx;
   font-weight: 600;
-  color: #FF7A9E;
+  color: var(--brand);
 }
 
 .order-dine {
@@ -192,19 +178,19 @@
 .act {
   font-size: 25rpx;
   font-weight: 600;
-  border-radius: 999rpx;
+  border-radius: var(--radius-pill);
   padding: 14rpx 34rpx;
 }
 
 .act-go {
   color: #ffffff;
-  background: linear-gradient(135deg, #FF7A9E, #FF9F43);
+  background: var(--grad-main);
   box-shadow: 0 6rpx 16rpx rgba(255, 122, 158, 0.28);
 }
 
 .act-done {
   color: #ffffff;
-  background: linear-gradient(135deg, #52C9A2, #7ED0A0);
+  background: var(--grad-done);
   box-shadow: 0 6rpx 16rpx rgba(82, 201, 162, 0.25);
 }
 
@@ -221,7 +207,7 @@
 .later {
   background: #FFF9F6;
   border: 2rpx solid #F6E3DC;
-  border-radius: 24rpx;
+  border-radius: var(--radius-card);
   padding: 20rpx 22rpx 8rpx;
   margin-bottom: 18rpx;
 }
@@ -258,41 +244,11 @@
   color: #FFB3C7;
 }
 
-/* 空态 / 加载态 */
-.state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 100rpx 40rpx;
-}
-
-.state-emoji {
-  font-size: 90rpx;
-  line-height: 1;
-}
-
-.state-tip {
-  margin-top: 24rpx;
-  font-size: 27rpx;
-  color: #8A7772;
-}
-
-.state-sub {
-  margin-top: 10rpx;
-  font-size: 23rpx;
-  color: #C9B6AF;
-}
-
-.btn-retry {
-  margin-top: 28rpx;
-  background: linear-gradient(135deg, #FF7A9E, #FF9F43);
-  color: #ffffff;
-  font-size: 27rpx;
-  font-weight: 600;
-  border-radius: 999rpx;
-  padding: 0 56rpx;
-  line-height: 76rpx;
-}
+/* 空态 / 加载态：
+   原先这里整块重写了 .state / .state-* / .btn-retry —— 数值与全局那套已经
+   漂移（padding 100 vs 120rpx、字号不同），还漏了 .btn-retry::after 的
+   边框清除（真机上会露出按钮原生边框）。已删除，改用 styles/common.wxss
+   里唯一一份定义，由 components/state-block 渲染。 */
 
 .todo-tip {
   text-align: center;

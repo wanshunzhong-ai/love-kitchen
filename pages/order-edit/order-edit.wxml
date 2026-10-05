@@ -1,16 +1,16 @@
 <view class="page">
-  <view wx:if="{{loading}}" class="state">
-    <text class="state-emoji">📝</text>
-    <text class="state-tip">正在打开这一单…</text>
-  </view>
+  <!-- 三态统一走 state-block 组件，视觉见 styles/state.wxss -->
+  <state-block wx:if="{{loading}}" emoji="📝" tip="正在打开这一单…" />
 
   <!-- 加载失败：停在页内让用户决定重试还是返回（不再 toast 完就踢回上一页） -->
-  <view wx:elif="{{loadError}}" class="state">
-    <text class="state-emoji">😵</text>
-    <text class="state-tip">这一单没打开</text>
-    <text class="state-sub">网络开小差了，检查一下再试</text>
-    <button class="btn-retry" bindtap="onRetry">重试</button>
-  </view>
+  <state-block
+    wx:elif="{{loadError}}"
+    emoji="😵"
+    tip="这一单没打开"
+    sub="网络开小差了，检查一下再试"
+    retry="重试"
+    bind:retry="onRetry"
+  />
 
   <block wx:else>
     <!-- ===== 只读态：掌勺人（这一单不是他点的）+ 已上菜的终态 ===== -->

@@ -1,6 +1,7 @@
 {
   "navigationBarTitleText": "编辑订单",
   "usingComponents": {
-    "dish-editor": "/components/dish-editor/dish-editor"
+    "dish-editor": "/components/dish-editor/dish-editor",
+    "state-block": "/components/state-block/state-block"
   }
 }

@@ -19,24 +19,24 @@
     >只看 TA 动的</view>
   </view>
 
-  <!-- 加载 / 错误 / 空 -->
-  <view wx:if="{{loading}}" class="state">
-    <text class="state-emoji">📋</text>
-    <text class="state-tip">正在翻记录…</text>
-  </view>
+  <!-- 加载 / 错误 / 空（统一走 state-block 组件，视觉见 styles/state.wxss） -->
+  <state-block wx:if="{{loading}}" emoji="📋" tip="正在翻记录…" />
 
-  <view wx:elif="{{loadError}}" class="state">
-    <text class="state-emoji">🍽️</text>
-    <text class="state-tip">日志没加载出来</text>
-    <text class="state-sub">日志走的是云数据库，网络恢复后点「重试」即可；菜单本身不受影响</text>
-    <button class="btn-retry" bindtap="onRetry">重试</button>
-  </view>
+  <state-block
+    wx:elif="{{loadError}}"
+    emoji="🍽️"
+    tip="日志没加载出来"
+    sub="日志走的是云数据库，网络恢复后点「重试」即可；菜单本身不受影响"
+    retry="重试"
+    bind:retry="onRetry"
+  />
 
-  <view wx:elif="{{total === 0}}" class="state">
-    <text class="state-emoji">🍃</text>
-    <text class="state-tip">{{filter === 'orderer' ? 'TA 还没动过菜单' : '还没有人动过菜单'}}</text>
-    <text class="state-sub">从今往后，加菜 / 改菜 / 下架都会被记在这里</text>
-  </view>
+  <state-block
+    wx:elif="{{total === 0}}"
+    emoji="🍃"
+    tip="{{filter === 'orderer' ? 'TA 还没动过菜单' : '还没有人动过菜单'}}"
+    sub="从今往后，加菜 / 改菜 / 下架都会被记在这里"
+  />
 
   <!-- 按天分组的流水 -->
   <block wx:else>

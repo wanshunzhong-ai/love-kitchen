@@ -12,22 +12,23 @@
     <view class="hero-sub">{{heroSub}}</view>
   </view>
 
-  <view wx:if="{{loading}}" class="state">
-    <text class="state-emoji">🍳</text>
-    <text class="state-tip">正在看看厨房…</text>
-  </view>
+  <!-- 三态统一走 state-block 组件，视觉见 styles/state.wxss -->
+  <state-block wx:if="{{loading}}" emoji="🍳" tip="正在看看厨房…" />
 
-  <view wx:elif="{{loadError}}" class="state">
-    <text class="state-emoji">😵</text>
-    <text class="state-tip">清单没加载出来，网络可能开小差了</text>
-    <button class="btn-retry" bindtap="onRetry">重试</button>
-  </view>
+  <state-block
+    wx:elif="{{loadError}}"
+    emoji="😵"
+    tip="清单没加载出来，网络可能开小差了"
+    retry="重试"
+    bind:retry="onRetry"
+  />
 
-  <view wx:elif="{{isEmpty}}" class="state">
-    <text class="state-emoji">☕</text>
-    <text class="state-tip">今天没有要做的菜，歇会儿吧</text>
-    <text class="state-sub">TA 下单后会出现在这里</text>
-  </view>
+  <state-block
+    wx:elif="{{isEmpty}}"
+    emoji="☕"
+    tip="今天没有要做的菜，歇会儿吧"
+    sub="TA 下单后会出现在这里"
+  />
 
   <view wx:else>
     <!-- 今天的一日三餐：早餐 / 午餐 / 晚餐 / 夜宵（+ 有单时的「尽快要做」） -->

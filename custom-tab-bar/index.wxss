@@ -14,7 +14,7 @@
   display: flex;
   background: #ffffff;
   border-top: 2rpx solid #F6E3DC;
-  border-radius: 24rpx 24rpx 0 0;
+  border-radius: var(--radius-card) 24rpx 0 0;
   box-shadow: 0 -6rpx 24rpx rgba(255, 122, 158, 0.08);
 }
 
@@ -50,7 +50,7 @@
   color: #ffffff;
   background: #FF5C8A;
   border: 2rpx solid #ffffff;
-  border-radius: 999rpx;
+  border-radius: var(--radius-pill);
   box-shadow: 0 2rpx 8rpx rgba(255, 92, 138, 0.35);
 }
 
@@ -72,5 +72,5 @@
 }
 
 .tab-on {
-  color: #FF7A9E;
+  color: var(--brand);
 }

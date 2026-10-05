@@ -25,7 +25,7 @@
   margin-left: 14rpx;
   background: #ffffff;
   border: 2rpx solid #F6E3DC;
-  border-radius: 999rpx;
+  border-radius: var(--radius-pill);
   padding: 10rpx 22rpx;
   font-size: 24rpx;
   font-weight: 600;
@@ -43,14 +43,14 @@
   padding: 12rpx 30rpx;
   margin-right: 16rpx;
   background: #ffffff;
-  border-radius: 999rpx;
+  border-radius: var(--radius-pill);
   font-size: 26rpx;
   color: #8A7772;
   border: 2rpx solid #F6E3DC;
 }
 
 .fchip-active {
-  background: linear-gradient(135deg, #FF7A9E, #FF9F43);
+  background: var(--grad-main);
   color: #ffffff;
   border-color: transparent;
   font-weight: 600;
@@ -87,7 +87,7 @@
 
 .order-status {
   padding: 8rpx 20rpx;
-  border-radius: 999rpx;
+  border-radius: var(--radius-pill);
   font-size: 24rpx;
   font-weight: 600;
 }
@@ -208,7 +208,7 @@
   line-height: 34rpx;
   color: #1FA65A;
   background: #E2F5E9;
-  border-radius: 999rpx;
+  border-radius: var(--radius-pill);
   padding: 0 14rpx;
 }
 
@@ -245,32 +245,14 @@
 .oi-spice {
   margin-left: 12rpx;
   padding: 2rpx 12rpx;
-  border-radius: 999rpx;
+  border-radius: var(--radius-pill);
   font-size: 22rpx;
   line-height: 32rpx;
   flex-shrink: 0;
 }
 
-.spice-0 {
-  background: #F4EDE9;
-  color: #A89690;
-}
-
-.spice-1 {
-  background: #FFE9E0;
-  color: #E07B4F;
-}
-
-.spice-2 {
-  background: #FFDCD6;
-  color: #E0533F;
-}
-
-.spice-3 {
-  background: #FFD0CC;
-  color: #D42B2B;
-}
-
+/* 辣度皮肤（.spice-0 ~ .spice-3）已收进 styles/common.wxss。
+   原先五个页面各写一份（待做页那份还漂移过色值），同一档辣度会显示成两种颜色。 */
 .order-remark {
   margin-top: 16rpx;
   font-size: 24rpx;
@@ -343,7 +325,7 @@
 
 .act {
   padding: 12rpx 30rpx;
-  border-radius: 999rpx;
+  border-radius: var(--radius-pill);
   font-size: 26rpx;
   margin-left: 16rpx;
 }
@@ -383,7 +365,7 @@
 }
 
 .act-main {
-  background: linear-gradient(135deg, #FF7A9E, #FF9F43);
+  background: var(--grad-main);
   color: #ffffff;
   font-weight: 600;
 }

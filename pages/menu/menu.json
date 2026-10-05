@@ -1,5 +1,8 @@
 {
   "navigationBarTitleText": "爱心小厨房",
   "enablePullDownRefresh": true,
-  "backgroundTextStyle": "dark"
+  "backgroundTextStyle": "dark",
+  "usingComponents": {
+    "state-block": "/components/state-block/state-block"
+  }
 }

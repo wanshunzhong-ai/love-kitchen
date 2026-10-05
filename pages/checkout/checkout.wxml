@@ -1,9 +1,12 @@
 <view class="page">
-  <view wx:if="{{cart.length === 0}}" class="state">
-    <text class="state-emoji">🛒</text>
-    <text class="state-tip">购物车空空的，去挑点好吃的吧</text>
-    <button class="btn-retry" bindtap="goBackMenu">去点单</button>
-  </view>
+  <!-- 空购物车（统一走 state-block 组件，视觉见 styles/state.wxss） -->
+  <state-block
+    wx:if="{{cart.length === 0}}"
+    emoji="🛒"
+    tip="购物车空空的，去挑点好吃的吧"
+    retry="去点单"
+    bind:retry="goBackMenu"
+  />
 
   <block wx:else>
     <!-- 菜品清单 -->

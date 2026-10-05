@@ -11,8 +11,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: linear-gradient(135deg, #FFD3E0, #FFE9C7);
-  border-radius: 24rpx;
+  background: var(--grad-hero);
+  border-radius: var(--radius-card);
   padding: 32rpx;
   margin-bottom: 24rpx;
 }
@@ -55,7 +55,7 @@
   font-size: 24rpx;
   font-weight: 600;
   padding: 10rpx 22rpx;
-  border-radius: 999rpx;
+  border-radius: var(--radius-pill);
 }
 
 .hero-add {
@@ -64,7 +64,7 @@
   font-size: 24rpx;
   font-weight: 600;
   padding: 12rpx 20rpx;
-  border-radius: 999rpx;
+  border-radius: var(--radius-pill);
   box-shadow: 0 4rpx 12rpx rgba(255, 122, 158, 0.25);
   white-space: nowrap;
 }
@@ -76,7 +76,7 @@
   font-size: 24rpx;
   font-weight: 600;
   padding: 12rpx 20rpx;
-  border-radius: 999rpx;
+  border-radius: var(--radius-pill);
   border: 2rpx solid rgba(255, 255, 255, 0.9);
   white-space: nowrap;
 }
@@ -88,7 +88,7 @@
   display: flex;
   align-items: center;
   background: #ffffff;
-  border-radius: 999rpx;
+  border-radius: var(--radius-pill);
   padding: 0 28rpx;
   margin-bottom: 20rpx;
   border: 2rpx solid #F6E3DC;
@@ -149,14 +149,14 @@
   padding: 12rpx 30rpx;
   margin-right: 16rpx;
   background: #ffffff;
-  border-radius: 999rpx;
+  border-radius: var(--radius-pill);
   font-size: 26rpx;
   color: #8A7772;
   border: 2rpx solid #F6E3DC;
 }
 
 .cat-active {
-  background: linear-gradient(135deg, #FF7A9E, #FF9F43);
+  background: var(--grad-main);
   color: #ffffff;
   border-color: transparent;
   font-weight: 600;
@@ -198,32 +198,14 @@
 .dish-spice {
   margin-left: 12rpx;
   padding: 2rpx 14rpx;
-  border-radius: 999rpx;
+  border-radius: var(--radius-pill);
   font-size: 22rpx;
   line-height: 34rpx;
   flex-shrink: 0;
 }
 
-.spice-0 {
-  background: #F4EDE9;
-  color: #A89690;
-}
-
-.spice-1 {
-  background: #FFE9E0;
-  color: #E07B4F;
-}
-
-.spice-2 {
-  background: #FFDCD6;
-  color: #E0533F;
-}
-
-.spice-3 {
-  background: #FFD0CC;
-  color: #D42B2B;
-}
-
+/* 辣度皮肤（.spice-0 ~ .spice-3）已收进 styles/common.wxss。
+   原先五个页面各写一份（待做页那份还漂移过色值），同一档辣度会显示成两种颜色。 */
 .dish-desc {
   margin-top: 6rpx;
   font-size: 24rpx;
@@ -244,7 +226,7 @@
 .sort-chip {
   flex-shrink: 0;
   padding: 10rpx 26rpx;
-  border-radius: 999rpx;
+  border-radius: var(--radius-pill);
   font-size: 24rpx;
   line-height: 36rpx;
   color: #8A7772;
@@ -323,7 +305,7 @@
   line-height: 52rpx;
   text-align: center;
   border-radius: 50%;
-  background: linear-gradient(135deg, #FF7A9E, #FF9F43);
+  background: var(--grad-main);
   color: #ffffff;
   font-size: 36rpx;
   font-weight: 700;
@@ -342,7 +324,7 @@
   font-size: 26rpx;
   font-weight: 600;
   padding: 20rpx 32rpx;
-  border-radius: 999rpx;
+  border-radius: var(--radius-pill);
   box-shadow: 0 8rpx 24rpx rgba(255, 122, 158, 0.25);
   border: 2rpx solid #FFE3EA;
 }
@@ -360,7 +342,7 @@
   align-items: center;
   background: #3F2F2C;
   color: #ffffff;
-  border-radius: 999rpx;
+  border-radius: var(--radius-pill);
   padding: 16rpx 16rpx 16rpx 32rpx;
   box-shadow: 0 10rpx 30rpx rgba(63, 47, 44, 0.35);
 }
@@ -384,8 +366,8 @@
 }
 
 .cart-go {
-  background: linear-gradient(135deg, #FF7A9E, #FF9F43);
-  border-radius: 999rpx;
+  background: var(--grad-main);
+  border-radius: var(--radius-pill);
   padding: 16rpx 40rpx;
   font-size: 28rpx;
   font-weight: 600;

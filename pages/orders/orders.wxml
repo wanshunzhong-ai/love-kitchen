@@ -20,24 +20,25 @@
     <view class="role-chip" bindtap="goProfile">{{roleInfo.emoji}} {{roleInfo.text}}</view>
   </view>
 
-  <!-- 订单列表 -->
-  <view wx:if="{{loading}}" class="state">
-    <text class="state-emoji">📋</text>
-    <text class="state-tip">正在看看厨房…</text>
-  </view>
+  <!-- 订单列表（三态统一走 state-block 组件，视觉见 styles/state.wxss） -->
+  <state-block wx:if="{{loading}}" emoji="📋" tip="正在看看厨房…" />
 
-  <view wx:elif="{{loadError}}" class="state">
-    <text class="state-emoji">🍽️</text>
-    <text class="state-tip">订单没加载出来</text>
-    <text class="state-sub">菜单已经可以正常用了；订单走的是云数据库，网络恢复后点「重试」即可</text>
-    <button class="btn-retry" bindtap="onRetry">重试</button>
-  </view>
+  <state-block
+    wx:elif="{{loadError}}"
+    emoji="🍽️"
+    tip="订单没加载出来"
+    sub="菜单已经可以正常用了；订单走的是云数据库，网络恢复后点「重试」即可"
+    retry="重试"
+    bind:retry="onRetry"
+  />
 
-  <view wx:elif="{{filteredOrders.length === 0}}" class="state">
-    <text class="state-emoji">🛎️</text>
-    <text class="state-tip">{{isCook ? '还没有订单，等TA来点单～' : '还没有订单，去点几个菜吧～'}}</text>
-    <button wx:if="{{!isCook}}" class="btn-retry" bindtap="goMenu">去点单</button>
-  </view>
+  <state-block
+    wx:elif="{{filteredOrders.length === 0}}"
+    emoji="🛎️"
+    tip="{{isCook ? '还没有订单，等TA来点单～' : '还没有订单，去点几个菜吧～'}}"
+    retry="{{isCook ? '' : '去点单'}}"
+    bind:retry="goMenu"
+  />
 
   <view wx:else class="order-list">
     <view class="order card" wx:for="{{filteredOrders}}" wx:key="id">

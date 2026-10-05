@@ -61,32 +61,35 @@
     <text class="log-bar-arrow">›</text>
   </view>
 
-  <!-- 菜品列表 -->
-  <view wx:if="{{loading}}" class="state">
-    <text class="state-emoji">🍽️</text>
-    <text class="state-tip">正在摆盘…</text>
-  </view>
+  <!-- 菜品列表（三态统一走 state-block 组件，视觉见 styles/state.wxss） -->
+  <state-block wx:if="{{loading}}" emoji="🍽️" tip="正在摆盘…" />
 
-  <view wx:elif="{{loadError}}" class="state">
-    <text class="state-emoji">😵</text>
-    <text class="state-tip">菜单没加载出来，网络可能开小差了</text>
-    <button class="btn-retry" bindtap="loadDishes">重试</button>
-  </view>
+  <state-block
+    wx:elif="{{loadError}}"
+    emoji="😵"
+    tip="菜单没加载出来，网络可能开小差了"
+    retry="重试"
+    bind:retry="loadDishes"
+  />
 
   <!-- 搜不到（有菜单但没匹配） -->
-  <view wx:elif="{{dishes.length > 0 && filteredDishes.length === 0}}" class="state">
-    <text class="state-emoji">🔍</text>
-    <text class="state-tip">没找到「{{keyword}}」{{activeCategory === '全部' ? '' : '（' + activeCategory + '）'}}</text>
-    <text class="state-sub">换个词试试，或者看看全部菜单</text>
-    <button class="btn-retry" bindtap="clearSearch">看看全部菜单</button>
-  </view>
+  <state-block
+    wx:elif="{{dishes.length > 0 && filteredDishes.length === 0}}"
+    emoji="🔍"
+    tip="没找到「{{keyword}}」{{activeCategory === '全部' ? '' : '（' + activeCategory + '）'}}"
+    sub="换个词试试，或者看看全部菜单"
+    retry="看看全部菜单"
+    bind:retry="clearSearch"
+  />
 
   <!-- 菜单本身是空的 -->
-  <view wx:elif="{{dishes.length === 0}}" class="state">
-    <text class="state-emoji">🍳</text>
-    <text class="state-tip">菜单还是空的，点「加菜」放第一道菜进来吧</text>
-    <button class="btn-retry" bindtap="goAddDish">去加菜</button>
-  </view>
+  <state-block
+    wx:elif="{{dishes.length === 0}}"
+    emoji="🍳"
+    tip="菜单还是空的，点「加菜」放第一道菜进来吧"
+    retry="去加菜"
+    bind:retry="goAddDish"
+  />
 
   <view wx:else class="dish-list">
     <view wx:if="{{keyword}}" class="result-hint">

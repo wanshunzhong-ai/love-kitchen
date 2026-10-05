@@ -14,7 +14,7 @@ page {
 .me-card {
   background: #ffffff;
   border: 3rpx solid #F6E3DC;
-  border-radius: 24rpx;
+  border-radius: var(--radius-card);
   padding: 36rpx 32rpx;
   margin-bottom: 28rpx;
   box-shadow: 0 8rpx 28rpx rgba(255, 122, 158, 0.08);
@@ -58,9 +58,9 @@ page {
 .me-avatar-edit {
   margin-top: 14rpx;
   font-size: 22rpx;
-  color: #FF7A9E;
+  color: var(--brand);
   background: #FFE9EE;
-  border-radius: 999rpx;
+  border-radius: var(--radius-pill);
   padding: 6rpx 20rpx;
 }
 
@@ -109,9 +109,9 @@ page {
   font-size: 22rpx;
   line-height: 32rpx;
   font-weight: 600;
-  color: #FF7A9E;
+  color: var(--brand);
   background: #FFE9EE;
-  border-radius: 999rpx;
+  border-radius: var(--radius-pill);
   padding: 0 16rpx;
   flex-shrink: 0;
 }
@@ -141,14 +141,14 @@ page {
   margin: 8rpx;
   background: #FFF7F2;
   border: 2rpx solid #F6E3DC;
-  border-radius: 999rpx;
+  border-radius: var(--radius-pill);
   padding: 12rpx 26rpx;
   font-size: 26rpx;
   color: #8A7772;
 }
 
 .me-mood-on {
-  background: linear-gradient(135deg, #FF7A9E, #FF9F43);
+  background: var(--grad-main);
   color: #ffffff;
   border-color: transparent;
   font-weight: 600;
@@ -165,9 +165,9 @@ page {
   margin: 7rpx;
   display: flex;
   align-items: center;
-  background: linear-gradient(135deg, #FFF0F4, #FFE6EE);
+  background: var(--grad-pink);
   border: 2rpx solid #FFD3E0;
-  border-radius: 999rpx;
+  border-radius: var(--radius-pill);
   padding: 10rpx 14rpx 10rpx 24rpx;
   font-size: 25rpx;
   font-weight: 600;
@@ -228,7 +228,7 @@ page {
   margin: 7rpx;
   background: #FFF7F2;
   border: 2rpx dashed #F0CFC6;
-  border-radius: 999rpx;
+  border-radius: var(--radius-pill);
   padding: 10rpx 22rpx;
   font-size: 24rpx;
   color: #B9A29B;
@@ -244,7 +244,7 @@ page {
 }
 
 .me-tag-input {
-  color: #FF7A9E;
+  color: var(--brand);
   border-color: #FFB3C7;
   font-weight: 600;
 }
@@ -296,12 +296,12 @@ page {
 .me-save {
   margin-top: 20rpx;
   display: inline-block;
-  background: linear-gradient(135deg, #FF7A9E, #FF9F43);
+  background: var(--grad-main);
   color: #ffffff;
   font-size: 26rpx;
   font-weight: 600;
   padding: 14rpx 40rpx;
-  border-radius: 999rpx;
+  border-radius: var(--radius-pill);
   box-shadow: 0 6rpx 16rpx rgba(255, 122, 158, 0.3);
 }
 
@@ -325,7 +325,7 @@ page {
 .me-role-switch {
   font-size: 26rpx;
   font-weight: 600;
-  color: #FF7A9E;
+  color: var(--brand);
 }
 
 /* 底部 */

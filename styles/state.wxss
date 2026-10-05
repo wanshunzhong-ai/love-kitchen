@@ -1,0 +1,60 @@
+/* ============================================================
+   爱心小厨房 · 空态样式（加载 / 失败 / 空 三态）
+   ------------------------------------------------------------
+   为什么单独一个文件、而且**故意不用 var() 与 page 选择器**：
+     这份样式有两类消费者 ——
+       1) app.wxss 里 @import → 页面全局可用（dish-import 的成功页
+          只借它的居中布局，结构不是标准三态）；
+       2) components/state-block 组件 wxss 里 @import → 组件自带样式，
+          组件默认是「样式隔离」的，全局/页面样式进不来，必须自带。
+     组件的 wxss 里不能出现 page 选择器（styles/common.wxss 的 token 段
+     就是 page 选择器，所以不能整个 import 过来）；而 CSS 变量是继承属性，
+     跨进组件边界取值要靠继承，不如直接写字面量稳 —— 这里的值本来就
+     不随主题变，写死没有维护成本。
+
+   原先这套在 6 个页面各写一遍，todo 那份还漂移了数值（padding
+   100 vs 120rpx、字号全不同），并且漏了 .btn-retry::after 的边框清除，
+   真机上会露出 button 的原生边框。现在只此一份。
+   ============================================================ */
+
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 120rpx 40rpx;
+  color: #B9A29B;
+}
+
+.state-emoji {
+  font-size: 88rpx;
+  margin-bottom: 24rpx;
+}
+
+.state-tip {
+  margin-bottom: 32rpx;
+  line-height: 1.6;
+  text-align: center;
+}
+
+.state-sub {
+  font-size: 24rpx;
+  line-height: 1.7;
+  text-align: center;
+  color: #CBB8B2;
+  margin: -16rpx 0 32rpx;
+  padding: 0 20rpx;
+}
+
+.btn-retry {
+  background: linear-gradient(135deg, #FF7A9E, #FF9F43);
+  color: #ffffff;
+  border-radius: 999rpx;
+  font-size: 26rpx;
+  padding: 0 48rpx;
+  line-height: 72rpx;
+  border: none;
+}
+
+.btn-retry::after {
+  border: none;
+}

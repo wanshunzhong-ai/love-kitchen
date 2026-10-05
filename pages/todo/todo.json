@@ -1,5 +1,8 @@
 {
   "navigationBarTitleText": "待做",
   "navigationBarBackgroundColor": "#FF7A9E",
-  "navigationBarTextStyle": "white"
+  "navigationBarTextStyle": "white",
+  "usingComponents": {
+    "state-block": "/components/state-block/state-block"
+  }
 }
