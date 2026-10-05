@@ -2,6 +2,8 @@
    页面与全局样式都进不来，所以用到的都要写在这里）。
    用到的 var(--radius-pill) / var(--grad-main) 来自 styles/common.wxss ——
    CSS 变量是继承属性，能穿透组件边界，组件内照样解析得出来。 */
+/* 按压反馈 .tap-hover（hover-class 引用它）—— 组件样式隔离，必须自己引一次 */
+@import "../../styles/tap.wxss";
 
 .cart-item {
   display: flex;

@@ -1,6 +1,6 @@
 <view class="todo">
   <!-- 轮询发现变化时浮出来的一句话（不打断手上正在做的事，6 秒后自己消失） -->
-  <view class="notice" wx:if="{{notice}}" bindtap="onTapNotice">
+  <view class="notice" wx:if="{{notice}}" bindtap="onTapNotice" hover-class="tap-hover" aria-role="button">
     <text class="notice-emoji">{{notice.emoji}}</text>
     <text class="notice-text">{{notice.text}}</text>
     <text class="notice-go" wx:if="{{notice.path !== '/pages/todo/todo'}}">去看看 ›</text>
@@ -69,9 +69,9 @@
 
           <!-- 直接在这里推进状态：待开做 → 开做中 → 已上菜；做不了就驳回（要写理由） -->
           <view class="order-acts" wx:if="{{isCook}}">
-            <view class="act act-go" wx:if="{{order.status === 'pending'}}" data-id="{{order.id}}" catchtap="onStartCooking">🔥 开始做</view>
-            <view class="act act-done" wx:if="{{order.status === 'cooking'}}" data-id="{{order.id}}" catchtap="onFinishCooking">✅ 做好了</view>
-            <view class="act act-reject" data-id="{{order.id}}" catchtap="onReject">🙅 驳回</view>
+            <view class="act act-go" wx:if="{{order.status === statusKeys.pending}}" data-id="{{order.id}}" catchtap="onStartCooking" hover-class="tap-hover" aria-role="button">🔥 开始做</view>
+            <view class="act act-done" wx:if="{{order.status === statusKeys.cooking}}" data-id="{{order.id}}" catchtap="onFinishCooking" hover-class="tap-hover" aria-role="button">✅ 做好了</view>
+            <view class="act act-reject" data-id="{{order.id}}" catchtap="onReject" hover-class="tap-hover" aria-role="button">🙅 驳回</view>
           </view>
         </view>
       </view>
@@ -82,7 +82,7 @@
     <!-- 后面几天：只给摘要，具体去订单页看 -->
     <view class="later" wx:if="{{laterGroups.length > 0}}">
       <view class="later-title">📅 后面几天（{{laterDishes}} 道菜等着）</view>
-      <view class="later-row" wx:for="{{laterGroups}}" wx:key="key" bindtap="goOrders">
+      <view class="later-row" wx:for="{{laterGroups}}" wx:key="key" bindtap="goOrders" hover-class="tap-hover" aria-role="button">
         <text class="later-date">{{item.text}}</text>
         <text class="later-stat">{{item.orderCount}} 单 · {{item.dishCount}} 道菜</text>
         <text class="later-go">›</text>

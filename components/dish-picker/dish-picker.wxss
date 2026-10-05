@@ -1,6 +1,8 @@
 /* 选菜弹层的遮罩 / 弹层壳 / 分类胶囊条都在 styles/sheet.wxss（与菜单页共用一份）。
    组件默认样式隔离，页面与全局样式都进不来，所以必须自己 @import 一次。 */
 @import "../../styles/sheet.wxss";
+/* 按压反馈 .tap-hover（hover-class 引用它）—— 组件样式隔离，必须自己引一次 */
+@import "../../styles/tap.wxss";
 
 /* ---------- 搜索框（弹层里比菜单页那根矮一点） ---------- */
 .ps {
@@ -53,6 +55,14 @@
 
 .picker-state {
   padding: 60rpx 0;
+  text-align: center;
+  font-size: 24rpx;
+  color: #B9A29B;
+}
+
+/* 分页尾巴：还有没渲染完的菜（往下滑自动接上，见 utils/paging.js） */
+.picker-more {
+  padding: 24rpx 0;
   text-align: center;
   font-size: 24rpx;
   color: #B9A29B;

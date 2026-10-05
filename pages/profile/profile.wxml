@@ -28,7 +28,7 @@
       />
       <text class="me-count">{{intro.length}}/{{introMax}}</text>
     </view>
-    <view wx:if="{{introDirty}}" class="me-save" bindtap="saveIntro">保存一下</view>
+    <view wx:if="{{introDirty}}" class="me-save" bindtap="saveIntro" hover-class="tap-hover" aria-role="button">保存一下</view>
     <view class="me-tip">你俩的资料各存各的，改这里不会影响 TA</view>
   </view>
 
@@ -41,8 +41,7 @@
         wx:for="{{moods}}"
         wx:key="key"
         data-key="{{item.key}}"
-        bindtap="onMoodTap"
-      >{{item.emoji}} {{item.text}}</view>
+        bindtap="onMoodTap" hover-class="tap-hover" aria-role="button">{{item.emoji}} {{item.text}}</view>
     </view>
   </view>
 
@@ -51,7 +50,7 @@
     <view class="me-label-row">
       <text class="me-label">忌口清单</text>
       <text class="me-badge">{{avoids.length}}/{{avoidMax}}</text>
-      <text wx:if="{{avoids.length > 0}}" class="me-clear" bindtap="onClearAvoids">清空</text>
+      <text wx:if="{{avoids.length > 0}}" class="me-clear" bindtap="onClearAvoids" hover-class="tap-hover" aria-role="button">清空</text>
     </view>
 
     <!-- 已记：一眼看清不能吃什么，点一下就去掉 -->
@@ -61,8 +60,7 @@
         wx:for="{{avoids}}"
         wx:key="*this"
         data-tag="{{item}}"
-        bindtap="onRemoveAvoid"
-      >
+        bindtap="onRemoveAvoid" hover-class="tap-hover" aria-role="button">
         <text class="me-avoid-text">{{item}}</text>
         <text class="me-avoid-del">✕</text>
       </view>
@@ -80,9 +78,8 @@
         wx:for="{{commonTags}}"
         wx:key="text"
         data-tag="{{item.text}}"
-        bindtap="onCommonTagTap"
-      >{{item.on ? '✓' : '＋'}} {{item.text}}</view>
-      <view class="me-tag me-tag-input" bindtap="onAddAvoid">✏️ 自己输入</view>
+        bindtap="onCommonTagTap" hover-class="tap-hover" aria-role="button">{{item.on ? '✓' : '＋'}} {{item.text}}</view>
+      <view class="me-tag me-tag-input" bindtap="onAddAvoid" hover-class="tap-hover" aria-role="button">✏️ 自己输入</view>
     </view>
     <view class="me-tip">掌勺前照着这份清单避雷，吃的放心</view>
   </view>
@@ -104,13 +101,13 @@
     </view>
     <view class="me-tip" wx:if="{{!isCook}}">下单时会显示在订单的「来自 xx」里</view>
     <view class="me-tip" wx:else>你俩的称呼各存各的，改这里不会影响 TA</view>
-    <view wx:if="{{dirty}}" class="me-save" bindtap="saveNickname">保存一下</view>
+    <view wx:if="{{dirty}}" class="me-save" bindtap="saveNickname" hover-class="tap-hover" aria-role="button">保存一下</view>
   </view>
 
   <!-- 身份 -->
   <view class="me-card">
     <view class="me-label">当前身份</view>
-    <view class="me-role-row" bindtap="goRoleSelect">
+    <view class="me-role-row" bindtap="goRoleSelect" hover-class="tap-hover" aria-role="button">
       <text class="me-role-text">{{roleInfo.emoji}} {{roleInfo.text}}</text>
       <text class="me-role-switch">切换身份 →</text>
     </view>

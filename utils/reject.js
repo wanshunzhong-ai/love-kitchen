@@ -6,11 +6,11 @@
 //      把这条判定收在一处，页面层与服务端引同一份，不会各写一套后漂移。
 //
 // 本文件是纯函数（不碰 wx），页面层 / utils/orders.js / 测试都引它。
-const { REJECT_MAX } = require('./constants')
+const { REJECT_MAX, STATUS } = require('./constants')
 
 // 允许驳回的状态：待开做 + 开做中。
 // 已上菜（done）不能驳回（菜都端上桌了），已驳回（rejected）也不用再驳一次。
-const REJECTABLE = ['pending', 'cooking']
+const REJECTABLE = [STATUS.pending, STATUS.cooking]
 
 // 驳回的快捷说法：手机上一键选，省得逐字打。
 // 想写别的就选「自己写一句」。
@@ -24,7 +24,7 @@ const QUICK_REASONS = [
 
 /** 这个状态能不能驳回 */
 function canReject(status) {
-  return REJECTABLE.indexOf(String(status || 'pending')) >= 0
+  return REJECTABLE.indexOf(String(status || STATUS.pending)) >= 0
 }
 
 /**

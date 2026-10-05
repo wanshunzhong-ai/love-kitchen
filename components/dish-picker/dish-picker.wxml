@@ -3,8 +3,8 @@
   <view class="sheet" catchtap="noop">
     <view class="sheet-head">
       <text class="sheet-title">{{title}}</text>
-      <text wx:if="{{backText}}" class="sheet-back" bindtap="onClose">← {{backText}}</text>
-      <text wx:else class="sheet-close" bindtap="onClose">✕</text>
+      <text wx:if="{{backText}}" class="sheet-back" bindtap="onClose" hover-class="tap-hover" aria-role="button">← {{backText}}</text>
+      <text wx:else class="sheet-close" bindtap="onClose" hover-class="tap-hover" aria-role="button" aria-label="关闭">✕</text>
     </view>
 
     <!-- 搜索：三百多道菜，靠分类翻太慢。规则与菜单页同一套（utils/dish-search.js） -->
@@ -20,7 +20,7 @@
         bindfocus="onSearchFocus"
         bindblur="onSearchBlur"
       />
-      <text wx:if="{{keyword}}" class="ps-clear" bindtap="clearSearch">✕</text>
+      <text wx:if="{{keyword}}" class="ps-clear" bindtap="clearSearch" hover-class="tap-hover" aria-role="button" aria-label="清空搜索">✕</text>
     </view>
 
     <scroll-view class="cats" scroll-x enhanced="{{true}}" show-scrollbar="{{false}}">
@@ -29,26 +29,21 @@
         wx:for="{{categories}}"
         wx:key="key"
         data-cat="{{item.key}}"
-        bindtap="onTapCategory"
-      >{{item.emoji}} {{item.key}}</view>
+        bindtap="onTapCategory" hover-class="tap-hover" aria-role="button">{{item.emoji}} {{item.key}}</view>
     </scroll-view>
 
-    <scroll-view class="picker-list" scroll-y>
+    <!-- 只渲染前 shownCount 条（分页，见 utils/paging.js）；滚到底由 onReachLower 再放一页 -->
+    <scroll-view class="picker-list" scroll-y lower-threshold="120" bindscrolltolower="onReachLower">
       <view wx:if="{{loading}}" class="picker-state">正在翻菜单…</view>
       <view wx:elif="{{dishes.length === 0 && keyword}}" class="picker-state">没找到「{{keyword}}」</view>
       <view wx:elif="{{dishes.length === 0}}" class="picker-state">{{emptyText}}</view>
-      <view
-        class="pick-item"
-        wx:for="{{dishes}}"
-        wx:key="id"
-        data-idx="{{index}}"
-        bindtap="onPick"
-      >
+      <view class="pick-item" wx:for="{{visibleDishes}}" wx:key="id" data-id="{{item.id}}" bindtap="onPick" hover-class="tap-hover" aria-role="button">
         <text class="pick-emoji">{{item.emoji}}</text>
         <text class="pick-name">{{item.name}}</text>
-        <text class="pick-spice">{{item.spice || '不辣'}}</text>
+        <text class="pick-spice">{{item.spice || defaultSpice}}</text>
         <text class="pick-add">＋</text>
       </view>
+      <view wx:if="{{hasMore}}" class="picker-more">还有 {{dishes.length - shownCount}} 道，往下滑</view>
     </scroll-view>
   </view>
 </view>

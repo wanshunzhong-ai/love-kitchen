@@ -10,13 +10,11 @@
     <view
       class="lg-chip {{filter === 'all' ? 'lg-chip-on' : ''}}"
       data-key="all"
-      bindtap="onFilterTap"
-    >全部</view>
+      bindtap="onFilterTap" hover-class="tap-hover" aria-role="button">全部</view>
     <view
       class="lg-chip {{filter === 'orderer' ? 'lg-chip-on' : ''}}"
       data-key="orderer"
-      bindtap="onFilterTap"
-    >只看 TA 动的</view>
+      bindtap="onFilterTap" hover-class="tap-hover" aria-role="button">只看 TA 动的</view>
   </view>
 
   <!-- 加载 / 错误 / 空（统一走 state-block 组件，视觉见 styles/state.wxss） -->
@@ -61,6 +59,14 @@
 
         <view class="lg-time">{{item.timeText}}</view>
       </view>
+    </view>
+
+    <!-- 时间窗：这张表只追加不删，默认只看最近 N 天（清单 C29）。
+         想翻更早的就点一下，窗口 ×3 再拉一次，最多到 DAYS_MAX 天。 -->
+    <view class="lg-window">
+      <text class="lg-window-tip">只显示最近 {{days}} 天的记录{{capped ? '（已达条数上限，只列最新的）' : ''}}</text>
+      <view wx:if="{{canExpand}}" class="lg-more" bindtap="onExpand" hover-class="tap-hover" aria-role="button">看更早的 ›</view>
+      <text wx:else class="lg-window-end">已经翻到头啦</text>
     </view>
   </block>
 </view>

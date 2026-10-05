@@ -14,7 +14,7 @@
   <view class="de-sheet" catchtap="noop">
     <view class="de-head">
       <text class="de-title">✏️ 改这道菜</text>
-      <text class="de-close" bindtap="onClose">✕</text>
+      <text class="de-close" bindtap="onClose" hover-class="tap-hover" aria-role="button" aria-label="关闭">✕</text>
     </view>
 
     <view class="de-cur">
@@ -34,8 +34,7 @@
           wx:for-item="sp"
           wx:key="key"
           data-spice="{{sp.key}}"
-          bindtap="onTapSpice"
-        >{{sp.key}}</text>
+          bindtap="onTapSpice" hover-class="tap-hover" aria-role="button">{{sp.key}}</text>
       </view>
     </view>
 
@@ -58,13 +57,12 @@
           wx:for-item="tag"
           wx:key="*this"
           data-tag="{{tag}}"
-          bindtap="onTapNoteTag"
-        >{{tag}}</text>
-        <text class="de-chip de-chip-clear" wx:if="{{note}}" bindtap="onClearNote">清空</text>
+          bindtap="onTapNoteTag" hover-class="tap-hover" aria-role="button">{{tag}}</text>
+        <text class="de-chip de-chip-clear" wx:if="{{note}}" bindtap="onClearNote" hover-class="tap-hover" aria-role="button">清空</text>
       </view>
     </view>
 
-    <view class="de-swap" bindtap="openPicker">🔄 换一道菜</view>
-    <view class="de-done" bindtap="onClose">好了</view>
+    <view class="de-swap" bindtap="openPicker" hover-class="tap-hover" aria-role="button">🔄 换一道菜</view>
+    <view class="de-done" bindtap="onClose" hover-class="tap-hover" aria-role="button">好了</view>
   </view>
 </view>

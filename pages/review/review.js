@@ -14,7 +14,7 @@ const store = require('../../utils/store')
 const dine = require('../../utils/dine')
 const review = require('../../utils/review')
 const live = require('../../utils/live')
-const { spiceInfo } = require('../../utils/constants')
+const { STATUS, spiceInfo, CONFIRM_COLOR, DEFAULT_NAME } = require('../../utils/constants')
 const { formatTime } = require('../../utils/format')
 
 /** 草稿与已存评价是否一致（决定「存下」按钮亮不亮） */
@@ -77,6 +77,11 @@ Page({
   },
 
   async loadOrder(id) {
+    // 并发保护：onLoad / onRetry / 下拉刷新三处都会调到这里，后者可能在
+    // 前者还没回来时又发一次 —— 两个响应回来顺序不定，老的会盖住新的。
+    // 同屏只跑一次，多的直接返回（下拉刷新的 finally 照样能执行）。
+    if (this._loadingOrder) return
+    this._loadingOrder = true
     this.setData({ loading: true, loadError: false })
     try {
       const res = await api.call('getOrder', { id: id })
@@ -105,7 +110,7 @@ Page({
       })
       this.setData({
         items: items,
-        orderBy: order.order_by || '宝贝',
+        orderBy: order.order_by || DEFAULT_NAME,
         statusText: '已上菜',
         dineText: dine.formatDine(order.dine_date, order.dine_slot),
         timeText: formatTime(order.created_at),
@@ -117,6 +122,8 @@ Page({
     } catch (err) {
       console.error('[review] 加载订单失败', err)
       this.setData({ loading: false, loadError: true })
+    } finally {
+      this._loadingOrder = false
     }
   },
 
@@ -241,7 +248,7 @@ Page({
       title: '撤掉这道菜的评价？',
       content: '「' + it.name + '」的评价会被清空，可以重新评',
       confirmText: '撤掉',
-      confirmColor: '#FF7A9E',
+      confirmColor: CONFIRM_COLOR,
       cancelText: '留着',
       success: function (res) {
         if (res.confirm) self.submit(it, null)

@@ -7,7 +7,7 @@ const api = require('../../utils/api')
 const store = require('../../utils/store')
 const ui = require('../../utils/ui')
 const dine = require('../../utils/dine')
-const { SPICE_LEVELS, spiceInfo, DISH_NOTE_MAX, AVOID_MAX, AVOID_TEXT_MAX } = require('../../utils/constants')
+const { SPICE_LEVELS, DEFAULT_SPICE, spiceInfo, DISH_NOTE_MAX, AVOID_MAX, AVOID_TEXT_MAX, DEFAULT_NAME } = require('../../utils/constants')
 
 Page({
   data: {
@@ -332,7 +332,7 @@ Page({
       ui.toast('还没选菜哦')
       return
     }
-    const nickname = (this.data.nickname || '').trim() || '宝贝'
+    const nickname = (this.data.nickname || '').trim() || DEFAULT_NAME
     store.setNickname(nickname)
     ui.haptic('medium')
     this.setData({ submitting: true })
@@ -343,7 +343,7 @@ Page({
           dishId: it.dishId,
           name: it.name,
           emoji: it.emoji,
-          spice: it.spice || '不辣', // 用户选定的辣度
+          spice: it.spice || DEFAULT_SPICE, // 用户选定的辣度
           note: it.note || '', // 这一道菜的单独备注
           qty: it.qty,
         }

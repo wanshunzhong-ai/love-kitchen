@@ -11,7 +11,6 @@ const dishLogs = require('../../utils/dish-logs')
 const store = require('../../utils/store')
 const ui = require('../../utils/ui')
 const { formatClock } = require('../../utils/format')
-
 /** 给一条日志挂上可渲染的文案与时间（纯展示层加工，规则仍在 dish-logs.js 里） */
 function decorate(log) {
   return Object.assign({}, log, {
@@ -30,6 +29,10 @@ Page({
     filter: 'all',
     groups: [],
     total: 0,
+    // 时间窗：默认只看最近 DEFAULT_DAYS 天（这张表只追加不删，见清单 C29）
+    days: dishLogs.DEFAULT_DAYS,
+    canExpand: dishLogs.DEFAULT_DAYS < dishLogs.DAYS_MAX,
+    capped: false,
   },
 
   onShow() {
@@ -49,9 +52,15 @@ Page({
     if (!hasCache) this.setData({ loading: true, loadError: false })
 
     try {
-      const res = await api.call('listDishLogs')
+      // 只拉最近 days 天的（时间窗在服务端生效，不是拉全再本地裁）
+      const res = await api.call('listDishLogs', { days: this.data.days })
       this._all = (res && res.logs ? res.logs : []).map(decorate)
-      this.setData({ loading: false, loadError: false })
+      this.setData({
+        loading: false,
+        loadError: false,
+        capped: !!(res && res.capped),
+        canExpand: this.data.days < dishLogs.DAYS_MAX,
+      })
       this.applyFilter()
     } catch (err) {
       console.error('[dish-logs] 加载失败', err)
@@ -83,6 +92,18 @@ Page({
 
   onRetry() {
     ui.haptic('light')
+    this.load()
+  },
+
+  /**
+   * 看更早的：把时间窗 ×3 再拉一次（30 → 90 → 270 → 封顶 365）。
+   * 不一次拉到头，是因为绝大多数时候只看最近的；窗口够用时不必付那份流量。
+   */
+  onExpand() {
+    if (this.data.days >= dishLogs.DAYS_MAX) return
+    ui.haptic('light')
+    const next = Math.min(this.data.days * 3, dishLogs.DAYS_MAX)
+    this.setData({ days: next })
     this.load()
   },
 

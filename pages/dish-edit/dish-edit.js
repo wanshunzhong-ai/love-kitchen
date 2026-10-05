@@ -1,7 +1,7 @@
 // 加菜 / 编辑菜品页：新增、修改、下架菜品
 const api = require('../../utils/api')
 const ui = require('../../utils/ui')
-const { CATEGORIES, DISH_EMOJIS, SPICE_LEVELS } = require('../../utils/constants')
+const { CATEGORIES, DISH_EMOJIS, SPICE_LEVELS, DEFAULT_SPICE } = require('../../utils/constants')
 
 Page({
   data: {
@@ -9,7 +9,7 @@ Page({
     name: '',
     category: '经典热菜',
     emoji: '🍗',
-    spice: '不辣',
+    spice: DEFAULT_SPICE,
     description: '',
     categories: CATEGORIES,
     emojis: DISH_EMOJIS,
@@ -48,7 +48,7 @@ Page({
         name: data.name,
         category: data.category,
         emoji: data.emoji,
-        spice: data.spice || '不辣',
+        spice: data.spice || DEFAULT_SPICE,
         description: data.description || '',
         loading: false,
       })
@@ -97,7 +97,7 @@ Page({
       name: name,
       category: this.data.category,
       emoji: this.data.emoji,
-      spice: this.data.spice || '不辣',
+      spice: this.data.spice || DEFAULT_SPICE,
       description: (this.data.description || '').trim(),
     }
     try {

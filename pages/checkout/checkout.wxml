@@ -35,8 +35,7 @@
           wx:for-item="d"
           wx:key="value"
           data-value="{{d.value}}"
-          bindtap="onPickDineDate"
-        >
+          bindtap="onPickDineDate" hover-class="tap-hover" aria-role="button">
           <text class="dc-label">{{d.label}}</text>
           <text class="dc-sub">{{d.sub}}</text>
         </view>
@@ -49,8 +48,7 @@
           wx:for-item="s"
           wx:key="key"
           data-key="{{s.key}}"
-          bindtap="onPickDineSlot"
-        >{{s.emoji}} {{s.text}}<text class="dc-end">{{s.endText}}</text></view>
+          bindtap="onPickDineSlot" hover-class="tap-hover" aria-role="button">{{s.emoji}} {{s.text}}<text class="dc-end">{{s.endText}}</text></view>
       </view>
     </view>
 
@@ -76,7 +74,7 @@
       </view>
       <view class="avoid-none" wx:else>还没记忌口 · 掌勺人不知道你不吃什么</view>
 
-      <view class="avoid-add" bindtap="onAddAvoid">
+      <view class="avoid-add" bindtap="onAddAvoid" hover-class="tap-hover" aria-role="button">
         <text>＋ 记一条</text>
         <text class="avoid-count">{{avoids.length}}/{{avoidMax}}</text>
       </view>

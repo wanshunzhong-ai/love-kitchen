@@ -6,11 +6,11 @@
       <view class="hero-sub">{{role === 'cook' ? '点菜名改菜、下架；「批量」一次导入' : '选好后交给掌勺人吧 💕'}}</view>
     </view>
     <view class="hero-right">
-      <view class="hero-role" bindtap="goProfile">{{roleInfo.emoji}} {{roleInfo.text}}</view>
+      <view class="hero-role" bindtap="goProfile" hover-class="tap-hover" aria-role="button">{{roleInfo.emoji}} {{roleInfo.text}}</view>
       <!-- 加菜 / 批量导入并排（同一权限：两种身份都能维护菜单） -->
       <view class="hero-btns">
-        <view class="hero-add" bindtap="goAddDish">＋ 加菜</view>
-        <view class="hero-import" bindtap="goImportDishes">📥 批量</view>
+        <view class="hero-add" bindtap="goAddDish" hover-class="tap-hover" aria-role="button">＋ 加菜</view>
+        <view class="hero-import" bindtap="goImportDishes" hover-class="tap-hover" aria-role="button">📥 批量</view>
       </view>
     </view>
   </view>
@@ -28,7 +28,7 @@
       bindfocus="onSearchFocus"
       bindblur="onSearchBlur"
     />
-    <text wx:if="{{keyword}}" class="search-clear" bindtap="clearSearch">✕</text>
+    <text wx:if="{{keyword}}" class="search-clear" bindtap="clearSearch" hover-class="tap-hover" aria-role="button" aria-label="清空搜索">✕</text>
   </view>
 
   <!-- 分类 -->
@@ -38,13 +38,12 @@
       wx:for="{{categories}}"
       wx:key="key"
       data-cat="{{item.key}}"
-      bindtap="onTapCategory"
-    >{{item.emoji}} {{item.key}}</view>
+      bindtap="onTapCategory" hover-class="tap-hover" aria-role="button">{{item.emoji}} {{item.key}}</view>
   </scroll-view>
 
   <!-- 排序（掌勺人专属）：默认按干饭人点过的次数排，常点的在最前面 -->
   <view wx:if="{{isCook && freqReady}}" class="sortbar">
-    <view class="sort-chip {{sortByFreq ? 'sort-chip-on' : ''}}" bindtap="onToggleSort">
+    <view class="sort-chip {{sortByFreq ? 'sort-chip-on' : ''}}" bindtap="onToggleSort" hover-class="tap-hover" aria-role="button">
       {{sortByFreq ? '🔥 按常点排' : '📜 按默认排'}}
     </view>
     <text class="sort-tip">{{freqTip}}</text>
@@ -52,7 +51,7 @@
 
   <!-- 菜单日志入口（掌勺人专属）：TA 对菜单做过的加 / 改 / 下架都记在那里。
        菜单存在各自手机本地，不专门记一笔，掌勺人永远不会知道 TA 动过什么。 -->
-  <view wx:if="{{isCook}}" class="log-bar" bindtap="goDishLogs">
+  <view wx:if="{{isCook}}" class="log-bar" bindtap="goDishLogs" hover-class="tap-hover" aria-role="button">
     <text class="log-bar-icon">📋</text>
     <view class="log-bar-body">
       <view class="log-bar-title">菜单日志</view>
@@ -96,9 +95,10 @@
       找到 <text class="result-num">{{filteredDishes.length}}</text> 道菜
     </view>
 
-    <view class="dish card" wx:for="{{filteredDishes}}" wx:key="id">
+    <!-- 只渲染前 shownCount 条（分页，见 utils/paging.js）；滚到底由 onReachBottom 再放一页 -->
+    <view class="dish card" wx:for="{{visibleDishes}}" wx:key="id">
       <view class="dish-emoji">{{item.emoji}}</view>
-      <view class="dish-info" data-idx="{{index}}" bindtap="onDishTap">
+      <view class="dish-info" data-id="{{item.id}}" bindtap="onDishTap" hover-class="tap-hover" aria-role="button">
         <view class="dish-name-row">
           <view class="dish-name">{{item.name}}</view>
           <text class="dish-spice spice-{{item.spiceIdx}}">{{item.spiceText}}</text>
@@ -107,17 +107,20 @@
         <!-- 常点标记：给掌勺人看的（TA 点过几次），点过 1 次不标，太吵 -->
         <view class="dish-hot" wx:if="{{isCook && item.hot}}">🔥 TA 点过 {{item.orderTimes}} 次</view>
       </view>
-      <view wx:if="{{!isCook}}" class="dish-add" data-idx="{{index}}" catchtap="onAddTap">＋</view>
+      <view wx:if="{{!isCook}}" class="dish-add" data-id="{{item.id}}" catchtap="onAddTap" hover-class="tap-hover" aria-role="button" aria-label="加入这道菜">＋</view>
     </view>
+
+    <!-- 还有没渲染完的：滚到底自动加载，这里给个「还没到底」的信号 -->
+    <view wx:if="{{hasMore}}" class="list-more">还有 {{filteredDishes.length - shownCount}} 道，滑到底就出来</view>
   </view>
 
   <!-- 随机帮选（点单功能，掌勺人不显示）。
        loading 时变淡且点不动：那时手上是空数组，抽出来的是旧数据，
        还会误报「菜单还是空的」。 -->
-  <view wx:if="{{!isCook}}" class="lucky {{loading ? 'lucky-off' : ''}}" bindtap="onRandom">🎲 今天吃什么</view>
+  <view wx:if="{{!isCook}}" class="lucky {{loading ? 'lucky-off' : ''}}" bindtap="onRandom" hover-class="tap-hover" aria-role="button">🎲 今天吃什么</view>
 
   <!-- 购物车栏（掌勺人不显示，切身份时购物车已清空） -->
-  <view class="cart-bar" wx:if="{{cartCount > 0 && !isCook}}" bindtap="goCart">
+  <view class="cart-bar" wx:if="{{cartCount > 0 && !isCook}}" bindtap="goCart" hover-class="tap-hover" aria-role="button">
     <view class="cart-badge">{{cartCount}}</view>
     <text class="cart-label">已选好菜</text>
     <view class="cart-go">去下单</view>
@@ -131,11 +134,11 @@
           <text class="sheet-emoji">{{spicePicker.dish.emoji}}</text>
           <text class="sheet-name">{{spicePicker.dish.name}}</text>
         </view>
-        <text class="sheet-close" bindtap="closeSpicePicker">✕</text>
+        <text class="sheet-close" bindtap="closeSpicePicker" hover-class="tap-hover" aria-role="button" aria-label="关闭">✕</text>
       </view>
 
       <view class="sheet-tip">
-        想吃什么辣度？<text class="sheet-tip-sub">（推荐 {{spicePicker.dish.spice || '不辣'}}）</text>
+        想吃什么辣度？<text class="sheet-tip-sub">（推荐 {{spicePicker.dish.spice || defaultSpice}}）</text>
       </view>
 
       <view class="spice-opts">
@@ -144,8 +147,7 @@
           wx:for="{{spicePicker.levels}}"
           wx:key="key"
           data-spice="{{item.key}}"
-          bindtap="onPickSpice"
-        >
+          bindtap="onPickSpice" hover-class="tap-hover" aria-role="button">
           <text class="so-txt">{{item.key}}</text>
           <text class="so-chili">{{item.level > 0 ? '🌶️' : '🚫'}}</text>
         </view>

@@ -1,3 +1,7 @@
+/* 按压反馈 .tap-hover（hover-class 引用它）—— tabBar 也是自定义组件，
+   样式默认隔离，必须自己引一次，否则 tab 按下去没反应。 */
+@import "../styles/tap.wxss";
+
 /* 自定义 tabBar：白底圆角浮起，粉色选中态
    实测高度 = 内容 100rpx（14 + 44 + 4 + 32 + 6）+ 底部 10rpx ≈ 110rpx
    页面里要避让它的浮层，按「110rpx + safe-area-inset-bottom」算。 */

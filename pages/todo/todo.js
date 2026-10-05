@@ -14,7 +14,7 @@ const dine = require('../../utils/dine')
 const board = require('../../utils/todo')
 const rejectLib = require('../../utils/reject')
 const live = require('../../utils/live')
-const { ORDER_STATUS } = require('../../utils/constants')
+const { ORDER_STATUS, STATUS, CONFIRM_COLOR, NOTICE_MS } = require('../../utils/constants')
 
 Page({
   data: {
@@ -31,6 +31,8 @@ Page({
     loading: true,
     loadError: false,
     statusMap: ORDER_STATUS,
+    // 模板里判状态用 statusKeys.pending，不写字面量（枚举只有一份，见 utils/constants.js）
+    statusKeys: STATUS,
     // 只有掌勺人能推进状态；干饭人进来自动弹回点单页（兜底）
     isCook: true,
     // 轮询发现变化时浮出来的一句话提示（几秒后自己消失）
@@ -67,6 +69,10 @@ Page({
   // ---------- 订阅实时数据 ----------
 
   startLive() {
+    // 防重入：onShow 可能被连着触发（切 tab 回来 + 下拉刷新），
+    // 没有这一句后一次订阅会把前一次的 unsub 覆盖掉 —— 旧订阅就永久泄漏了
+    // （照抄 menu.js::watchOrders 的做法）
+    if (this.unsub) return
     const self = this
     this.unsub = live.subscribe(function (d, orders, err) {
       if (err) {
@@ -138,7 +144,7 @@ Page({
     this._noticeTimer = setTimeout(function () {
       self.setData({ notice: null })
       self._noticeTimer = null
-    }, 6000)
+    }, NOTICE_MS)
   },
 
   hideNotice() {
@@ -171,7 +177,7 @@ Page({
         ui.toast('没更新成功，再试一次')
         return
       }
-      ui.toast(next === 'cooking' ? '开做啦，加油 💪' : '上菜咯，开饭 🎉')
+      ui.toast(next === STATUS.cooking ? '开做啦，加油 💪' : '上菜咯，开饭 🎉')
       ui.haptic('medium')
       live.refreshNow()
     } catch (err) {
@@ -182,7 +188,7 @@ Page({
   },
 
   onStartCooking(e) {
-    this.advance(e.currentTarget.dataset.id, 'cooking')
+    this.advance(e.currentTarget.dataset.id, STATUS.cooking)
   },
 
   // 「已上菜」是不可逆的终态（之后只能删单）→ 二次确认防误点
@@ -195,13 +201,13 @@ Page({
       title: '这一单都上菜啦？',
       content: '标记「已上菜」后就不能再改了哦',
       confirmText: '上菜咯',
-      confirmColor: '#FF7A9E',
+      confirmColor: CONFIRM_COLOR,
       cancelText: '再做会儿',
       complete: function () {
         live.resume()
       },
       success: function (res) {
-        if (res.confirm) self.advance(id, 'done')
+        if (res.confirm) self.advance(id, STATUS.done)
       },
     })
   },

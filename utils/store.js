@@ -10,7 +10,7 @@
 // 关于每道菜的备注（note）：它挂在「行」上，跟着这一行一起下单。
 // 整单想说的话请用订单级 remark，两者在下单页各有一块输入区。
 
-const { DISH_NOTE_MAX, ROLES, AVOID_MAX, INTRO_MAX } = require('./constants')
+const { DISH_NOTE_MAX, ROLES, AVOID_MAX, INTRO_MAX, DEFAULT_SPICE } = require('./constants')
 // 忌口的收敛规则只有一份定义（utils/avoids.js），本地存储与订单服务端共用
 const avoidsLib = require('./avoids')
 
@@ -48,7 +48,7 @@ function normalizeNote(v) {
  * @returns {string}
  */
 function itemKey(it) {
-  return String(it.dishId) + '|' + (it.spice || '不辣')
+  return String(it.dishId) + '|' + (it.spice || DEFAULT_SPICE)
 }
 
 /**
@@ -68,7 +68,7 @@ function getCart() {
   const raw = wx.getStorageSync(CART_KEY)
   if (!Array.isArray(raw)) return []
   return raw.map(function (it) {
-    const spice = it.spice || '不辣'
+    const spice = it.spice || DEFAULT_SPICE
     const qty = Number(it.qty)
     const row = Object.assign({}, it, {
       spice: spice,
@@ -93,7 +93,7 @@ function setCart(cart) {
  */
 function addToCart(dish, spice) {
   const cart = getCart()
-  const useSpice = spice || dish.spice || '不辣'
+  const useSpice = spice || dish.spice || DEFAULT_SPICE
   const wantKey = String(dish.id !== undefined && dish.id !== null ? dish.id : dish.dishId) + '|' + useSpice
 
   const found = cart.find(function (it) {
@@ -211,7 +211,7 @@ function replaceDish(id, dish) {
   row.name = dish.name || row.name
   row.emoji = dish.emoji || row.emoji
   // 新菜有推荐辣度就用它，否则保留原来选的
-  row.spice = dish.spice || row.spice || '不辣'
+  row.spice = dish.spice || row.spice || DEFAULT_SPICE
   row.key = itemKey(row)
 
   const dupIdx = cart.findIndex(function (it, i) {

@@ -4,12 +4,14 @@
 > v1 清单（`page-optimization-checklist.md`）的 H1-H7 已实施；本清单**取代 v1 的第二、三节**，并补上审查新发现的**布局一致性 / 逻辑健壮性 / 架构层**三块。
 > 共 **30 条**，按 `P0 → P5` 排序。每条可直接引用编号（例：「做 C1-C5」）。
 
-**进度**：`19 / 30`　🔴 高优先 `5 → 0`　🟠 中 `5`　🟡 低 `3`　⚪ 待拍板 `3`
+**进度**：`27 / 30`　🔴 高优先 `5 → 0`　🟠 中 `1`　🟡 低 `0`　⚪ 待拍板 `2`
 
 > **第 1 批（C1–C5）已于 2026-10-05 实施完成**，全量 1676 项断言全绿。
 > **第 2 批（C9–C11 + C12）已于 2026-10-05 实施完成**：新增 `styles/common.wxss`（token）+ `styles/state.wxss`（空态）两个公共层与 `components/state-block` 组件，新增 `test_batch2.js` 91 项，全量断言全绿。
 > **第 3 批（C6 + C19–C24）已于 2026-10-05 实施完成**：搜索防抖 / 随机尊重筛选 / 改菜标题 / tabBar 早退 / toast 延时唯一来源 / 打星过渡 / loading 禁用，新增 `test_batch3.js` 37 项（含行为测试），全量断言全绿。
 > **第 4 批（C13 + C14 + C25）已于 2026-10-05 实施完成**：组件化三件套 —— `styles/sheet.wxss`（弹层基座）+ `utils/dish-search.js`（搜索规则唯一来源）+ `components/cart-list` + `components/dish-picker`（含搜索），新增 `test_batch4.js` 132 项，全量 **1949 项**断言全绿。
+> **第 5 批（C7 + C15–C18 + C26 + C27 + C29）已于 2026-10-05 实施完成**：`utils/paging.js`（长列表分页）+ `constants.STATUS`（状态枚举唯一来源，js / wxml 双向收口）+ `styles/tap.wxss`（按压反馈）+ 并发保护 + id 定位 + 魔法值收口 + `dish_logs` 时间窗，新增 `test_batch5.js` 100 项，全量 **2050 项**断言全绿。
+> 余下 3 条：`C8`（轮询瘦身）与 `C28` / `C30`（菜单是否上云共享，**需拍板**）。
 
 ---
 
@@ -55,11 +57,14 @@
     清空搜索 / 切分类 / `onHide` / `onUnload` 四处必须调 `cancelSearchDebounce()` —— 不调会出现
     「已经清空了，200ms 后又按旧关键词过滤一遍」。
 
-- [ ] **C7 · 长列表分页（三处共用）** — `中` 🟠
-  - 位置：`pages/menu/menu.wxml:96`、`pages/order-edit/order-edit.wxml:261`、`components/dish-editor/dish-editor.wxml:80`
-  - 现状：303 道菜全量渲染，无分页 / 虚拟列表。
-  - 改法：抽一套「滚动到底 +30」的分页逻辑（`utils/paging.js` 纯函数 + 三页各接一次 `onReachBottom` / `bindscrolltolower`）。
-  - 验收：首屏渲染 ≤ 40 项；滚动加载不重复不丢项。
+- [x] **C7 · 长列表分页（三处共用）** — `中` 🟠 ✅ 第 5 批
+  - 位置：`pages/menu/menu.wxml`、`components/dish-picker/dish-picker.wxml`（组件化后 order-edit / dish-editor 已不再直接渲染菜品列表，都走 dish-picker，所以落点是**两处**而不是原清单写的三处）
+  - 现状：303 道菜全量渲染，低端机上滚动发涩。
+  - **已实施**：新增 `utils/paging.js`（`PAGE_SIZE = 30` / `initial` / `hasMore` / `grow` / `slice` / `clamp`，纯函数零依赖）。
+    **关键不变式**：渲染的列表永远是完整列表的**前缀**（`slice(0, shown)`），所以 wxml 里 `data-idx="{{index}}"` 与完整列表的下标天然一致 —— 分页不会让原有「按 index 取元素」的代码错位。
+    菜单页接 `onReachBottom`（页面级滚动），弹层接 `scroll-view` 的 `bindscrolltolower`；筛选结果变化时 `resetPaging` 回到第一页。
+  - 顺手把两处的「按下标取元素」改成**按 id 回查**（分页 + 频率重排下更稳）。
+  - 验收：`test_batch5.js` A/B/C 组 —— 首屏 30 项（≤ 40）、滚到底 +30、封顶不越界、筛选后回到第一页、id 查不到不抛事件。
 
 - [ ] **C8 · 轮询瘦身** — `中` 🟠
   - 位置：`utils/orders.js::listOrders`（取最近 200 单全字段，含 3 个 jsonb）
@@ -119,27 +124,30 @@
 
 ## P3 · 健壮性
 
-- [ ] **C15 · 状态枚举收进 `constants.js`** — `小` 🟠
-  - 位置：`orders.js:28-31/144-145/405/409/420/436`、`order-edit.js:64/184-187/582/738`、`todo.js:174` 等十余处字面量
-  - 改法：`constants.js` 出 `ORDER_STATUS_KEYS`（或复用现有 `ORDER_STATUS`），全项目改为引用常量。
-  - 验收：`grep -rn "'pending'"` 只命中 constants 与测试。
+- [x] **C15 · 状态枚举收进 `constants.js`** — `小` 🟠 ✅ 第 5 批
+  - 位置：`orders.js` / `live.js` / `frequency.js` / `reject.js` / `deadline.js` / `todo.js` / `review.js` + 四个页面 + 三个 wxml —— 共 **12 个 js + 3 个 wxml、约 75 处**字面量（原清单只列了十余处）
+  - **已实施**：`constants.js` 出 `STATUS`（四个键）与 `ACTIVE_STATUSES`（不含已驳回的三个，供 `ORDER_STATUSES` / `COUNT_STATUSES` 派生）。
+    js 侧脚本 `refactor_c15.py` 统一替换（含 require 注入）；**模板侧不能 require 常量**，所以页面把 `STATUS` 挂成 `data.statusKeys`，wxml 写 `statusKeys.pending`（脚本 `refactor_c15_wxml.py`）。
+  - ⚠️ **踩到的真坑**：`utils/orders.js` 里 `ORDER_STATUSES` 在文件前部、而 `require('./constants')` 在后部 —— `const` 没有变量提升，模块加载时直接 **TDZ 报错**（`Cannot access 'STATUS' before initialization`），整个 app require 链全炸。已把常量 require 提到 `ORDER_STATUSES` 之前。**新加常量时先确认 import 在使用之前**。
+  - 验收：`grep -rn "'(pending|cooking|done|rejected)'" pages components utils` 只命中 `utils/constants.js`；`test_batch5.js` D 组（含「全项目 0 处字面量」扫描 + `ORDER_STATUSES` / `COUNT_STATUSES` / `REJECTABLE` 三条派生断言 + 三页 `statusKeys` 接线）。
 
-- [ ] **C16 · 补齐并发保护** — `小` 🟠
-  - 位置：`pages/orders/orders.js:81`、`pages/todo/todo.js:71`（`startLive` 无防重入）；`pages/review/review.js:79`（`loadOrder` 无 in-flight）
-  - 现状：`menu.js:86` 有 `if (this._unsub) return`；另两页**没有** → 连续调两次会覆盖 `this.unsub`、旧订阅泄漏（当前靠调用时序兜住，非代码保证）。`review.loadOrder` 被 `onLoad` / `onRetry` / `onPullDownRefresh` 三处调用，可并发。
-  - 改法：照抄 `menu.js` 的防重入；`review` 加 `_loadingOrder` 标志。
-  - 验收：三页各加一条断言 —— 连续两次 `startLive` 只生效一次。
+- [x] **C16 · 补齐并发保护** — `小` 🟠 ✅ 第 5 批
+  - 位置：`pages/orders/orders.js`、`pages/todo/todo.js` 的 `startLive`（无防重入）；`pages/review/review.js` 的 `loadOrder`（无 in-flight）
+  - **已实施**：两处 `startLive` 开头照抄 `menu.js` 的 `if (this.unsub) return`（否则后一次订阅覆盖前一次的 `unsub`，旧订阅永久泄漏）；`loadOrder` 加 `_loadingOrder` 标志 + `finally` 复位（`onLoad` / `onRetry` / 下拉刷新三处都会调）。
+  - 验收：`test_batch5.js` E 组 —— 静态断言 + **行为测试**（连调 3 次 `startLive` 只订阅 1 次；in-flight 时 `loadOrder` 不重置 `loading` 且仍返回 thenable，下拉刷新的 `finally` 不会炸）。
 
-- [ ] **C17 · 下标定位改 id 定位** — `小` 🟠
-  - 位置：`pages/orders/orders.js:226-229`（`this.data.filteredOrders[idx]`）
-  - 现状：`await` 期间若轮询全量重画，下标会错位（注释自认「改错单」）；虽按 id 兜了一道，源头仍是下标。
-  - 改法：从 `dataset.id` 直接取 id，不再依赖下标。
-  - 验收：`updateStatus` 只用 id 查目标单。
+- [x] **C17 · 下标定位改 id 定位** — `小` 🟠 ✅ 第 5 批
+  - 位置：`pages/orders/orders.js`（`filteredOrders[idx]`）
+  - **已实施**：新增 `findOrder(id)`（查**全量** `orders`，不是 `filteredOrders` —— 单子可能因状态变化被筛出，但用户点的确实是它）；`updateStatus(id, nextStatus)` 与七个动作 handler 全部改收 `dataset.id`；wxml 的 `data-idx="{{index}}"` 全换成 `data-id="{{item.id}}"`。
+  - 为什么必须改：`await` 写库期间轮询可能已全量重画，回来时下标可能指向另一单 →「点 A 开工、B 变了状态」。
+  - 验收：`test_batch5.js` F 组（`findOrder` 存在 + `updateStatus` 收 id + 0 处 `filteredOrders[dataset.idx]` + 七个 handler 都按 id + wxml 无 `data-idx`）。
 
-- [ ] **C18 · 魔法数字收口** — `小` 🟡
-  - 位置：`setTimeout(...,800)` **13 处**（order-edit×7、dish-edit×3、review×2、checkout×1）；`6000` ×2（`orders.js:178`、`todo.js:141`）；`5000` ×1（`orders.js:496`）；`confirmColor:'#FF7A9E'` **7 处**；兜底署名 `'宝贝'` **4 处**；辣度默认 `'不辣'` **9+ 处**；`dish-import.js:169-170` 阈值 `200000` 与文案「20 万字符」两处硬编码
-  - 改法：提到 `constants.js`（`TOAST_MS` / `UNDO_MS` / `CONFIRM_COLOR` / `DEFAULT_NAME` / `DEFAULT_SPICE` / `IMPORT_TEXT_MAX`）。
-  - 验收：wxml 文案与阈值同源（改一处即生效）。
+- [x] **C18 · 魔法数字收口** — `小` 🟡 ✅ 第 5 批
+  - 「toast 后跳走」的 13 处 `800` 已在 **C22** 统一成 `ui.TOAST_DURATION`；导入阈值已在 **C3** 统一成 `csv.TEXT_MAX`。本批收口其余四类：
+  - **已实施**（脚本 `refactor_c18.py`）：`CONFIRM_COLOR`（`confirmColor: '#FF7A9E'` 7 处 → 常量，全站 `#FF7A9E` 现在只在 `constants.js` 出现一次）、`DEFAULT_NAME`（`'宝贝'` 9 处）、`DEFAULT_SPICE`（`'不辣'` 默认值 20+ 处，**由 `SPICE_LEVELS[0].key` 派生**而不是再写一遍字面量）、`NOTICE_MS = 6000`（提示条自动收起 ×2）、`UNDO_MS = 5000`（删单撤销窗口）。
+  - 模板侧默认辣度同理挂成 `data.defaultSpice`（菜单页 / 选菜弹层），订单页兜底署名挂成 `data.defaultName`。
+  - 保留不动的：`utils/csv.js` 里的 `'不辣'`（那是**数据值 / 解析默认值**，不是界面散数字）、`data/dishes.js` 的辣度值。
+  - 验收：`test_batch5.js` G 组（`#FF7A9E` 唯一出处 + `confirmColor` 0 处字面量 + `'宝贝'` 0 处 + `NOTICE_MS` / `UNDO_MS` + `DEFAULT_SPICE` 派生 + 导入阈值不回归）。
 
 ---
 
@@ -183,14 +191,18 @@
   - 规则与防抖都取自新抽的 `utils/dish-search.js`（`DEBOUNCE = 200` 与菜单页**同一个值**）：`hay()` 拼检索串并缓存、`filterBy(list, category, keyword)` 分类 + 多关键词。**menu.js 里那份复刻实现已删除**；`test_menu_search.js` 也从「测副本」改为「测真实现」（原先它复刻了一份算法，真实现漂移了它不会红）。
   - 验收：`test_batch4.js` D 组行为测试（连打 5 个字符只过滤 1 次 / 清空立即生效且迟到的定时器作废 / 切分类立即生效 / 关掉时清关键词但保留分类）。
 
-- [ ] **C26 · 全局按压反馈（`hover-class`）** — `小` 🟡
-  - 位置：全项目 **0 处** `hover-class`；89 个 `bindtap` 中约 **69 个**落在 `view`/`text` 上（`menu.wxml:9/12/13/47/55/98/112/115`、`todo.wxml:71/72/73` …）
-  - 改法：`app.wxss` 定义 `.tap-hover { opacity:.7; transform:scale(.98) }`，批量给可点 `view` 加 `hover-class="tap-hover"`（`<button>` 20 个自带原生态，不用加）。
-  - 验收：真机点列表项有「按下去」反馈。
+- [x] **C26 · 全局按压反馈（`hover-class`）** — `小` 🟡 ✅ 第 5 批
+  - 位置：全项目原 **0 处** `hover-class`
+  - **已实施**：新增 `styles/tap.wxss`（`.tap-hover { opacity: .7; transform: scale(.98) }`），`app.wxss` 全局 `@import`；**4 个组件（cart-list / dish-editor / dish-picker / custom-tab-bar）各自 `@import` 一次** —— 组件样式默认隔离，全局类进不去。
+    脚本 `add_hover_aria.py` 按标签扫描（不是按行，属性常分几行写），给可点的 `<view>` / `<text>` 补 `hover-class="tap-hover"`：**87 处**。
+  - 刻意排除：`<button>`（自带原生态按压）、遮罩 `.mask`（按下去整块变暗很怪）、`noop` 空处理函数（弹层内容区防穿透）。
+  - 验收：`test_batch5.js` H 组（文件 + `@import` 齐全 + 覆盖 ≥ 60 处 + 遮罩上 0 处 + button 0 处）。
 
-- [ ] **C27 · 关键入口补 `aria-label`** — `小` 🟡
-  - 位置：全项目 **0 处** `aria-role` / `aria-label`
-  - 改法：给 tab、主按钮、图标按钮补 `aria-role="button"` + `aria-label`。
+- [x] **C27 · 关键入口补 `aria-label`** — `小` 🟡 ✅ 第 5 批
+  - 位置：全项目原 **0 处** `aria-role` / `aria-label`
+  - **已实施**：脚本给同一批可点元素补 `aria-role="button"`（**87 处**）；再对**只有图标、没有可见文字**的控件补 `aria-label`（13 处，脚本 `add_aria_label.py`）：搜索清空 ✕、弹层关闭 ✕、菜品行 ✏️/✕、步进器 −/＋、改辣度、打星、tab。
+  - 有可见文字的按钮不再重复加 `aria-label`（文字本身就是可访问名，重复反而啰嗦）。
+  - 验收：`test_batch5.js` I 组（`aria-role` 覆盖 ≥ 60 + 9 个纯图标控件的具体断言 + 步进器 + 打星）。
 
 ---
 
@@ -202,10 +214,11 @@
   - 两条路：**A. 保持本地**（0 代价，永远对不齐）／**B. 上云共享**（含双向同步、冲突处理、离线编辑——需新建 dishes 表、改写 `utils/dishes.js` 本地优先策略）。
   - 影响：会**放大**其他问题（两边菜单不同 → 日志越重要 → 云表越不可省 → 数据层越重）。
 
-- [ ] **C29 · `dish_logs` 归档 / 分页** — `小` ⚪
-  - 位置：`utils/dish-logs.js`（全量拉、按天分组）
-  - 现状：append-only 且**无归档策略**，用得久了日志页越来越慢。
-  - 改法：查询加「只取最近 N 天」或分页。
+- [x] **C29 · `dish_logs` 归档 / 分页** — `小` ⚪ ✅ 第 5 批
+  - 位置：`utils/dish-logs.js::list`（原全量拉 + 按天分组）
+  - **已实施**：两道闸门 —— ① **时间窗** `event.days`（默认 `DEFAULT_DAYS = 30` 天，`clampDays` 收敛到合法区间，上限 `DAYS_MAX = 365`），查询加 `.gte('created_at', since)`，**窗口在服务端生效**而不是拉全再本地裁；② 条数上限 `MAX_LOGS = 200` 保留。返回值带上 `days` 与 `capped`（是否顶到条数上限）。
+  - 日志页把 `days` 传下去，底部给「只显示最近 N 天（已达条数上限，只列最新的）」提示；「看更早的」一次把窗口 **×3**（30 → 90 → 270 → 封顶 365），不一次拉到头 —— 绝大多数时候只看最近的，窗口够用时不必付那份流量。
+  - 验收：`test_batch5.js` J 组（导出 + 默认值 + `clampDays` 六种脏输入 + `.gte` 在案 + 页面传参 + 扩窗逻辑 + wxml 提示）。
 
 - [ ] **C30 · 清理云上残留 `dishes` 表** — `小` ⚪
   - 位置：云库 `public.dishes`（**101 行**，早期「菜单放云端」方案残骸，当前代码零引用）
@@ -244,7 +257,7 @@
 | 第 2 批 ✅ | C9–C11 + C12 | **已完成 2026-10-05**：token 层 + 空态公共层 + state-block 组件（8 页 20 处），新增 91 项 |
 | 第 3 批 ✅ | C6 + C22–C24 + C19–C21 | **已完成 2026-10-05**：搜索防抖 + 7 项体验微调，新增 37 项（含行为测试） |
 | 第 4 批 ✅ | C13 + C14 + C25 | **已完成 2026-10-05**：`styles/sheet.wxss` + `utils/dish-search.js` + `components/cart-list` + `components/dish-picker`（含搜索），新增 132 项 |
-| 第 5 批 | C7 + C15–C18 + C26 + C27 + C29 | 分页、健壮性与无障碍收尾 |
-| 待定 | C28 → 决定 C30 | 需要拍板 |
+| 第 5 批 ✅ | C7 + C15–C18 + C26 + C27 + C29 | **已完成 2026-10-05**：`utils/paging.js` 分页 + `constants.STATUS` 状态枚举 + `styles/tap.wxss` 按压反馈 + 并发保护 + id 定位 + 魔法值收口 + 日志时间窗，新增 100 项 |
+| 待定 | C8 → 之后是 C28 → 决定 C30 | `C8`（轮询瘦身）可独立做；`C28` 需要拍板 |
 
 > 每批完成后跑：全量 `test_*.js` + `audit_wxml.py` + `audit_pack.py` + `test_style_compat.js`。

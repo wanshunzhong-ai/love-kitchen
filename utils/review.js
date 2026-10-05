@@ -1,7 +1,7 @@
 // 菜品评价（干饭人给掌勺人的手艺打分）
 //
 // 规则：
-//   · 只有「已上菜」（status === 'done'）的订单可以评，一道菜一条；
+//   · 只有「已上菜」（status === STATUS.done）的订单可以评，一道菜一条；
 //   · 评价的粒度是「订单里的一行」—— 同一道菜的不同辣度算两条，各评各的，
 //     与购物车 / 编辑订单页的 itemKey 规则完全一致（dishId|辣度）；
 //   · 一条评价 = 星级（1~5，必填）+ 快捷标签（可多选，最多 3 个）+ 一句话（可空）。
@@ -11,6 +11,8 @@
 // 用「对象按键查找」而不是数组：天然保证同一道菜不会被写出两条评价，读取也是 O(1)。
 //
 // 本文件全是纯函数（不碰 wx / 不碰网络），因此可以被 node 直接跑契约测试。
+
+const { STATUS, DEFAULT_SPICE } = require('./constants')
 
 // 星级范围
 const RATING_MAX = 5
@@ -54,7 +56,7 @@ const STAR_SLOTS = [1, 2, 3, 4, 5]
  */
 function itemKey(it) {
   const id = it && it.dishId !== null && it.dishId !== undefined ? it.dishId : it && it.name
-  return String(id === null || id === undefined ? '' : id) + '|' + ((it && it.spice) || '不辣')
+  return String(id === null || id === undefined ? '' : id) + '|' + ((it && it.spice) || DEFAULT_SPICE)
 }
 
 // 星级收敛：非数字 / 越界一律当 0（= 还没评），保证入库干净
@@ -173,7 +175,7 @@ function decorateItems(items, reviews) {
   return (Array.isArray(items) ? items : []).map(function (it) {
     const key = itemKey(it)
     const review = all[key] || null
-    const spice = (it && it.spice) || '不辣'
+    const spice = (it && it.spice) || DEFAULT_SPICE
     return Object.assign({}, it, {
       key: key,
       spice: spice,
@@ -227,7 +229,7 @@ function summarize(items, reviews) {
 function canReview(order, role) {
   if (!order || !order.id) return false
   if (role !== 'orderer') return false
-  return order.status === 'done'
+  return order.status === STATUS.done
 }
 
 module.exports = {

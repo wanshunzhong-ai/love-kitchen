@@ -58,8 +58,7 @@
             wx:key="*this"
             data-key="{{item.key}}"
             data-star="{{s}}"
-            catchtap="onTapStar"
-          >★</text>
+            catchtap="onTapStar" hover-class="tap-hover" aria-role="button" aria-label="打 {{s}} 星">★</text>
         </view>
         <text class="rv-rating-label">{{item.draftLabel}}</text>
       </view>
@@ -73,8 +72,7 @@
           wx:key="text"
           data-key="{{item.key}}"
           data-text="{{t.text}}"
-          catchtap="onToggleTag"
-        >{{t.emoji}} {{t.text}}</view>
+          catchtap="onToggleTag" hover-class="tap-hover" aria-role="button">{{t.emoji}} {{t.text}}</view>
       </view>
 
       <!-- 一句话 -->
@@ -102,14 +100,12 @@
             class="rv-act-ghost"
             wx:if="{{item.review}}"
             data-key="{{item.key}}"
-            catchtap="onClear"
-          >撤销</view>
+            catchtap="onClear" hover-class="tap-hover" aria-role="button">撤销</view>
           <view
             class="rv-save"
             wx:if="{{item.dirty}}"
             data-key="{{item.key}}"
-            catchtap="onSave"
-          >{{savingKey === item.key ? '存…' : '存下这一条'}}</view>
+            catchtap="onSave" hover-class="tap-hover" aria-role="button">{{savingKey === item.key ? '存…' : '存下这一条'}}</view>
           <text class="rv-saved-tip" wx:else>{{item.draft.rating ? '已是最新' : '选个星吧'}}</text>
         </view>
       </view>
@@ -120,6 +116,6 @@
   <view class="rv-bottom" wx:if="{{!loading && !loadError}}">
     <view class="rv-bottom-tip" wx:if="{{summary.allDone}}">🎉 {{summary.total}} 道菜全评完啦，TA 看到会很开心的</view>
     <view class="rv-bottom-tip rv-bottom-off" wx:else>还有 {{summary.total - summary.rated}} 道没评，随时可以回来补</view>
-    <view class="rv-back" bindtap="goOrders">回到我的订单</view>
+    <view class="rv-back" bindtap="goOrders" hover-class="tap-hover" aria-role="button">回到我的订单</view>
   </view>
 </view>

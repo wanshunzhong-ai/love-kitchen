@@ -1,5 +1,7 @@
 /* 「改这道菜」面板（组件内自包含样式：小程序自定义组件默认样式隔离，
    组件里不能依赖 app.wxss / 页面样式，所以这里把用到的都写全） */
+/* 按压反馈 .tap-hover（hover-class 引用它）—— 组件样式隔离，必须自己引一次 */
+@import "../../styles/tap.wxss";
 
 .de-mask {
   position: fixed;

@@ -45,7 +45,7 @@
 
         <view class="ro-meta">
           <text class="ro-meta-line">📅 {{dineText}}</text>
-          <text class="ro-meta-line">🙋 {{orderBy || '宝贝'}}</text>
+          <text class="ro-meta-line">🙋 {{orderBy || defaultName}}</text>
           <text class="ro-meta-line" wx:if="{{remark}}">💬 {{remark}}</text>
         </view>
 
@@ -61,25 +61,25 @@
         <view class="card section">
           <view class="section-title">🍳 接下来怎么办</view>
           <button
-            wx:if="{{status === 'pending'}}"
+            wx:if="{{status === statusKeys.pending}}"
             class="btn-main cook-act"
             bindtap="onStartCooking"
           >🔥 开始做</button>
           <button
-            wx:elif="{{status === 'cooking'}}"
+            wx:elif="{{status === statusKeys.cooking}}"
             class="btn-main cook-act"
             bindtap="onFinishCooking"
           >✅ 做好了，上菜</button>
-          <view wx:if="{{canReject}}" class="btn-reject" bindtap="onReject">🙅 这一单先不做，说一句理由</view>
+          <view wx:if="{{canReject}}" class="btn-reject" bindtap="onReject" hover-class="tap-hover" aria-role="button">🙅 这一单先不做，说一句理由</view>
           <view class="cook-tip">你做不了的话就驳回，TA 会看到理由</view>
         </view>
       </block>
 
       <!-- 已驳回的单：掌勺人可以把驳回收回来（手滑了有路可退） -->
-      <view wx:if="{{status === 'rejected'}}" class="btn-reject" bindtap="onWithdrawReject">↩️ 收回这次驳回</view>
+      <view wx:if="{{status === statusKeys.rejected}}" class="btn-reject" bindtap="onWithdrawReject" hover-class="tap-hover" aria-role="button">↩️ 收回这次驳回</view>
 
       <!-- 干饭人：已上菜是终态只删不评之外的事；开做中的单删不得 -->
-      <view wx:if="{{!isCook && status !== 'cooking'}}" class="btn-delete" bindtap="onDelete">🗑 删掉这一单</view>
+      <view wx:if="{{!isCook && status !== statusKeys.cooking}}" class="btn-delete" bindtap="onDelete" hover-class="tap-hover" aria-role="button">🗑 删掉这一单</view>
     </block>
 
     <!-- ===== 干饭人：正常编辑（改内容，改不了状态） ===== -->
@@ -124,8 +124,7 @@
             wx:for-item="d"
             wx:key="value"
             data-value="{{d.value}}"
-            bindtap="onPickDineDate"
-          >
+            bindtap="onPickDineDate" hover-class="tap-hover" aria-role="button">
             <text class="dc-label">{{d.label}}</text>
             <text class="dc-sub">{{d.sub}}</text>
           </view>
@@ -138,8 +137,7 @@
             wx:for-item="s"
             wx:key="key"
             data-key="{{s.key}}"
-            bindtap="onPickDineSlot"
-          >{{s.emoji}} {{s.text}}<text class="dc-end">{{s.endText}}</text></view>
+            bindtap="onPickDineSlot" hover-class="tap-hover" aria-role="button">{{s.emoji}} {{s.text}}<text class="dc-end">{{s.endText}}</text></view>
         </view>
       </view>
 
@@ -168,7 +166,7 @@
         </view>
         <view class="avoid-none" wx:else>{{isCook ? 'TA 没说有什么忌口' : '还没记忌口 · 掌勺人不知道你不吃什么'}}</view>
 
-        <view class="avoid-add" wx:if="{{!readonly}}" bindtap="onAddAvoid">
+        <view class="avoid-add" wx:if="{{!readonly}}" bindtap="onAddAvoid" hover-class="tap-hover" aria-role="button">
           <text>＋ 记一条</text>
           <text class="avoid-count">{{avoids.length}}/{{avoidMax}}</text>
         </view>
@@ -197,7 +195,7 @@
       </view>
 
       <button class="btn-main submit" disabled="{{saving}}" bindtap="onSave">{{rejected ? '改好重新提交 ✓' : '保存修改 ✓'}}</button>
-      <view class="btn-delete" bindtap="onDelete">🗑 删掉这一单</view>
+      <view class="btn-delete" bindtap="onDelete" hover-class="tap-hover" aria-role="button">🗑 删掉这一单</view>
     </block>
   </block>
 

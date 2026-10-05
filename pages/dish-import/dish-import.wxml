@@ -10,7 +10,7 @@
       <view class="sec-title">① 把内容给我</view>
       <view class="sec-sub">三种方式，随手边方便的那个用</view>
 
-      <view class="pick" bindtap="onPickFile">
+      <view class="pick" bindtap="onPickFile" hover-class="tap-hover" aria-role="button">
         <text class="pick-emoji">📄</text>
         <view class="pick-text">
           <view class="pick-name">从微信聊天选文件</view>
@@ -19,7 +19,7 @@
         <text class="pick-arrow">›</text>
       </view>
 
-      <view class="pick" bindtap="onReadClipboard">
+      <view class="pick" bindtap="onReadClipboard" hover-class="tap-hover" aria-role="button">
         <text class="pick-emoji">📋</text>
         <view class="pick-text">
           <view class="pick-name">从剪贴板粘贴</view>
@@ -77,11 +77,11 @@
     <view class="card sec">
       <view class="sec-title">懒人办法</view>
       <view class="quick-row">
-        <view class="quick" bindtap="onCopyTemplate">
+        <view class="quick" bindtap="onCopyTemplate" hover-class="tap-hover" aria-role="button">
           <text class="quick-emoji">📝</text>
           <text class="quick-name">复制模板</text>
         </view>
-        <view class="quick" bindtap="onCopyMenu">
+        <view class="quick" bindtap="onCopyMenu" hover-class="tap-hover" aria-role="button">
           <text class="quick-emoji">📤</text>
           <text class="quick-name">导出菜单</text>
         </view>
@@ -125,11 +125,11 @@
       <block wx:if="{{hasSame}}">
         <view class="mode-tip">发现有和现有菜单重名的菜，你想怎么办？</view>
         <view class="mode-row">
-          <view class="mode {{mode === 'skip' ? 'mode-on' : ''}}" data-mode="skip" bindtap="onSetMode">
+          <view class="mode {{mode === 'skip' ? 'mode-on' : ''}}" data-mode="skip" bindtap="onSetMode" hover-class="tap-hover" aria-role="button">
             <view class="mode-name">跳过它</view>
             <view class="mode-desc">菜单里原来的不动</view>
           </view>
-          <view class="mode {{mode === 'update' ? 'mode-on' : ''}}" data-mode="update" bindtap="onSetMode">
+          <view class="mode {{mode === 'update' ? 'mode-on' : ''}}" data-mode="update" bindtap="onSetMode" hover-class="tap-hover" aria-role="button">
             <view class="mode-name">覆盖它</view>
             <view class="mode-desc">用新的这份替换</view>
           </view>
@@ -173,7 +173,7 @@
       <button class="btn-main" bindtap="onImport" disabled="{{importing || (stats.add + stats.update === 0)}}">
         {{importing ? '正在导入…' : '导入这 ' + (stats.add + stats.update) + ' 道菜'}}
       </button>
-      <view class="foot-ghost" bindtap="onReset">换一份内容</view>
+      <view class="foot-ghost" bindtap="onReset" hover-class="tap-hover" aria-role="button">换一份内容</view>
     </view>
   </block>
 
@@ -189,7 +189,7 @@
         <view class="done-line">现在菜单上一共 <text class="done-num">{{result.total}}</text> 道菜</view>
       </view>
       <button class="btn-retry" bindtap="onBackToMenu">回菜单看看</button>
-      <view class="foot-ghost" bindtap="onReset">再导一份</view>
+      <view class="foot-ghost" bindtap="onReset" hover-class="tap-hover" aria-role="button">再导一份</view>
     </view>
   </block>
 </view>

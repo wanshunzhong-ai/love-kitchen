@@ -47,6 +47,25 @@ const ORDER_STATUS = {
   rejected: { text: '已驳回', emoji: '🙅' },
 }
 
+// 订单状态的**键**（唯一来源）。上面 ORDER_STATUS 管「长什么样」，这里管「叫什么」。
+//
+// 判断状态一律引这里的常量，别再写字面量：`.status === 'pending'` 这类写法散在
+// 十几个文件里（utils/orders.js / live.js / todo.js / frequency.js / reject.js /
+// deadline.js + 四个页面 + 两个 wxml），改一次枚举就得靠 grep 一个个捡，必漏。
+// 服务端 / 页面 / 模板都从这一份取，枚举加值时只有一个地方要动。
+//
+// wxml 里也不能写字面量（模板没法 require 常量）：把这一份挂到页面 data 上
+// （如 `statusKeys`），模板写 `item.status === statusKeys.pending`。
+const STATUS = {
+  pending: 'pending',
+  cooking: 'cooking',
+  done: 'done',
+  rejected: 'rejected',
+}
+
+// 排除掉「已驳回」的「正常单」状态（有些统计只认这三种）
+const ACTIVE_STATUSES = [STATUS.pending, STATUS.cooking, STATUS.done]
+
 // 驳回理由的字数上限（掌勺人驳回时必填，与 utils/reject.js 共用）
 const REJECT_MAX = 60
 
@@ -58,14 +77,19 @@ const SPICE_LEVELS = [
   { key: '特辣', level: 3 },
 ]
 
+// 没写辣度时的默认值（老数据里可能没有 spice 字段）。
+// 由 SPICE_LEVELS 的第一档派生，而不是再写一遍「不辣」——
+// 档位顺序改了这里自动跟上。
+const DEFAULT_SPICE = SPICE_LEVELS[0].key
+
 /**
  * 辣度 → 展示信息。列表里「只显示选定的那一档」用它出文案与配色。
- * 纯函数，非法 / 空值一律按「不辣」处理（老数据里可能没有 spice 字段）。
+ * 纯函数，非法 / 空值一律按默认档（不辣）处理。
  * @param {string} spice 辣度名
  * @returns {{ key: string, level: number, label: string }} level 用于配色（0~3）
  */
 function spiceInfo(spice) {
-  const key = String(spice || '不辣')
+  const key = String(spice || DEFAULT_SPICE)
   const hit = SPICE_LEVELS.find(function (s) {
     return s.key === key
   })
@@ -142,14 +166,32 @@ const AVOID_COMMON = [
 // 个人介绍字数上限（「我的」页，一句话介绍自己）
 const INTRO_MAX = 60
 
+// ---------- 界面上的散数字（收在这里，改一处即生效） ----------
+
+// wx.showModal 主按钮的颜色 —— 与品牌色一致，全站 7 个确认弹窗共用。
+// 之前是 7 处字面量，改品牌色时必漏。
+const CONFIRM_COLOR = '#FF7A9E'
+
+// 没设过称呼时的兜底署名（下单人 / 日志记录人）
+const DEFAULT_NAME = '宝贝'
+
+// 顶部提示条（「TA 开始做啦」这类）自动收起的时长
+const NOTICE_MS = 6000
+
+// 删单后的「撤销」窗口：这段时间内真删请求还没发出去，点了撤销就当没删
+const UNDO_MS = 5000
+
 module.exports = {
   CATEGORIES,
   ROLES,
   roleInfo,
   DISH_EMOJIS,
   ORDER_STATUS,
+  STATUS,
+  ACTIVE_STATUSES,
   REJECT_MAX,
   SPICE_LEVELS,
+  DEFAULT_SPICE,
   spiceInfo,
   DINE_SLOTS,
   DINE_MAX_AHEAD_DAYS,
@@ -161,4 +203,8 @@ module.exports = {
   AVOID_TEXT_MAX,
   AVOID_COMMON,
   INTRO_MAX,
+  CONFIRM_COLOR,
+  DEFAULT_NAME,
+  NOTICE_MS,
+  UNDO_MS,
 }

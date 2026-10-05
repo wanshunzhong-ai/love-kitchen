@@ -9,12 +9,13 @@
 // 频率的数据不额外请求：App 级轮询（utils/live.js）本来就在拿订单，
 // 这里订阅它就行；万一轮询还没跑起来，才自己拉一次 listOrders。
 const api = require('../../utils/api')
-const { CATEGORIES, SPICE_LEVELS } = require('../../utils/constants')
+const { CATEGORIES, SPICE_LEVELS, DEFAULT_SPICE } = require('../../utils/constants')
 const store = require('../../utils/store')
 const ui = require('../../utils/ui')
 const live = require('../../utils/live')
 const freq = require('../../utils/frequency')
 const dishSearch = require('../../utils/dish-search')
+const paging = require('../../utils/paging')
 
 const ALL = { key: dishSearch.ALL, emoji: '📜' }
 
@@ -23,7 +24,13 @@ Page({
     categories: [ALL].concat(CATEGORIES),
     activeCategory: '全部',
     dishes: [],
+    // filteredDishes = 筛选后的**完整**列表（随机帮选、计数都用它）
     filteredDishes: [],
+    // 真正渲染的是它的前 shownCount 条（分页，见 utils/paging.js）——
+    // 前缀不变式让 wxml 里的 index 与完整列表一致
+    visibleDishes: [],
+    shownCount: 0,
+    hasMore: false,
     cartCount: 0,
     loading: true,
     loadError: false,
@@ -39,9 +46,11 @@ Page({
     spicePicker: {
       open: false,
       dish: null,
-      selected: '不辣',
+      selected: DEFAULT_SPICE,
       levels: SPICE_LEVELS,
     },
+    // 模板里「没填辣度就显示默认档」用得到（模板没法 require 常量）
+    defaultSpice: DEFAULT_SPICE,
   },
 
   onShow() {
@@ -180,7 +189,7 @@ Page({
           // 兼容旧的 dish.id 用法：云开发主键是 _id（字符串）
           id: d._id || d.id,
           spiceIdx: level,
-          spiceText: level > 0 ? '🌶️'.repeat(level) : '不辣',
+          spiceText: level > 0 ? '🌶️'.repeat(level) : DEFAULT_SPICE,
           // 预生成小写检索串（公式在 utils/dish-search.js 里，别在这里再写一遍）
           _hay: dishSearch.hay(d),
         })
@@ -258,6 +267,31 @@ Page({
     if (this.data.isCook && this.data.sortByFreq) list = freq.sortByFrequency(list)
 
     this.setData({ filteredDishes: list })
+    // 筛选结果变了 → 回到第一页（否则搜「鸡」时还停在上一次的 120 条上）
+    this.resetPaging(list)
+  },
+
+  /** 回到第一页：首屏只渲染一页的量（见 utils/paging.js） */
+  resetPaging(list) {
+    const total = (list || []).length
+    const shown = paging.initial(total)
+    this.setData({
+      shownCount: shown,
+      visibleDishes: paging.slice(list, shown),
+      hasMore: paging.hasMore(shown, total),
+    })
+  },
+
+  /** 滚到页面底部：再放一页出来 */
+  onReachBottom() {
+    const list = this.data.filteredDishes
+    if (!paging.hasMore(this.data.shownCount, list.length)) return
+    const shown = paging.grow(this.data.shownCount, list.length)
+    this.setData({
+      shownCount: shown,
+      visibleDishes: paging.slice(list, shown),
+      hasMore: paging.hasMore(shown, list.length),
+    })
   },
 
   onTapCategory(e) {
@@ -267,6 +301,21 @@ Page({
     this.applyFilter()
   },
 
+  /**
+   * 按 id 找菜。
+   *
+   * 不用「列表下标」：分页之后下标的含义受渲染范围影响，而且掌勺人那边的列表
+   * 会随轮询重排（applyFrequency）—— 点下去到读取之间下标可能已经指向别的菜。
+   * id 不受这些影响（与订单页同一条规矩）。
+   */
+  findDish(id) {
+    return (
+      this.data.filteredDishes.find(function (d) {
+        return String(d.id) === String(id)
+      }) || null
+    )
+  },
+
   // 点「＋」→ 先让他选辣度（默认就是这道菜的推荐辣度）
   onAddTap(e) {
     // 掌勺人不点单（模板已隐藏＋，这里兜底）
@@ -274,7 +323,7 @@ Page({
       ui.toast('掌勺人不点单哦，等TA来点单 💕')
       return
     }
-    const dish = this.data.filteredDishes[e.currentTarget.dataset.idx]
+    const dish = this.findDish(e.currentTarget.dataset.id)
     if (!dish) return
     this.openSpicePicker(dish)
   },
@@ -295,7 +344,7 @@ Page({
       spicePicker: {
         open: true,
         dish: dish,
-        selected: dish.spice || '不辣', // 默认推荐辣度
+        selected: dish.spice || DEFAULT_SPICE, // 默认推荐辣度
         levels: SPICE_LEVELS,
       },
     })
@@ -336,7 +385,7 @@ Page({
 
   // 点菜品卡片 → 编辑这道菜
   onDishTap(e) {
-    const dish = this.data.filteredDishes[e.currentTarget.dataset.idx]
+    const dish = this.findDish(e.currentTarget.dataset.id)
     if (!dish) return
     wx.navigateTo({ url: '/pages/dish-edit/dish-edit?id=' + dish.id })
   },

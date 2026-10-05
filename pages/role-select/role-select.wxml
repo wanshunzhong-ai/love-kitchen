@@ -7,7 +7,7 @@
   </view>
 
   <!-- 老用户快捷入口：已选过身份就给一个「继续」，免得每次冷启动都手点卡片 -->
-  <view wx:if="{{role}}" class="w-continue" bindtap="onContinue">继续作为{{roleText}}进入 →</view>
+  <view wx:if="{{role}}" class="w-continue" bindtap="onContinue" hover-class="tap-hover" aria-role="button">继续作为{{roleText}}进入 →</view>
 
   <!-- 身份卡片 -->
   <view
@@ -15,8 +15,7 @@
     wx:for="{{roles}}"
     wx:key="key"
     data-role="{{item.key}}"
-    bindtap="onPick"
-  >
+    bindtap="onPick" hover-class="tap-hover" aria-role="button">
     <text class="wc-emoji">{{item.emoji}}</text>
     <view class="wc-body">
       <view class="wc-title">

@@ -33,8 +33,7 @@
           wx:for="{{categories}}"
           wx:key="key"
           data-cat="{{item.key}}"
-          bindtap="onTapCategory"
-        >{{item.emoji}} {{item.key}}</view>
+          bindtap="onTapCategory" hover-class="tap-hover" aria-role="button">{{item.emoji}} {{item.key}}</view>
       </view>
     </view>
 
@@ -46,8 +45,7 @@
           wx:for="{{spiceLevels}}"
           wx:key="key"
           data-spice="{{item.key}}"
-          bindtap="onTapSpice"
-        >{{item.key}}</view>
+          bindtap="onTapSpice" hover-class="tap-hover" aria-role="button">{{item.key}}</view>
       </view>
     </view>
 
@@ -59,8 +57,7 @@
           wx:for="{{emojis}}"
           wx:key="*this"
           data-emoji="{{item}}"
-          bindtap="onTapEmoji"
-        >{{item}}</view>
+          bindtap="onTapEmoji" hover-class="tap-hover" aria-role="button">{{item}}</view>
       </view>
     </view>
 
@@ -77,6 +74,6 @@
     </view>
 
     <button class="btn-main save" disabled="{{saving}}" bindtap="onSave">{{id ? '保存修改' : '加入菜单'}}</button>
-    <view wx:if="{{id}}" class="delete-link" bindtap="onDelete">下架这道菜</view>
+    <view wx:if="{{id}}" class="delete-link" bindtap="onDelete" hover-class="tap-hover" aria-role="button">下架这道菜</view>
   </block>
 </view>

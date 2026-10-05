@@ -22,6 +22,7 @@
 const dine = require('./dine')
 const store = require('./store')
 const ui = require('./ui')
+const { STATUS } = require('./constants')
 
 // 截止前多少分钟开始提醒
 const REMIND_BEFORE_MIN = 30
@@ -35,7 +36,7 @@ const MAX_LINES = 4
 
 /** 状态缺省算「待开做」（老数据 / 半截对象兜底） */
 function isPending(order) {
-  return String((order && order.status) || 'pending') === 'pending'
+  return String((order && order.status) || STATUS.pending) === STATUS.pending
 }
 
 /** 这一单的截止时刻 → 毫秒；没有用餐时间（老订单「尽快」）返回 0 */

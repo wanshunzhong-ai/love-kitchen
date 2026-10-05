@@ -15,11 +15,11 @@ const dine = require('../../utils/dine')
 const store = require('../../utils/store')
 const rejectLib = require('../../utils/reject')
 const live = require('../../utils/live')
-const { ORDER_STATUS, SPICE_LEVELS, spiceInfo, DISH_NOTE_MAX, AVOID_MAX, AVOID_TEXT_MAX } = require('../../utils/constants')
+const { ORDER_STATUS, STATUS, SPICE_LEVELS, DEFAULT_SPICE, spiceInfo, DISH_NOTE_MAX, AVOID_MAX, AVOID_TEXT_MAX, CONFIRM_COLOR, DEFAULT_NAME } = require('../../utils/constants')
 
 /** 订单内条目的唯一键：同一道菜的不同辣度算两条 */
 function itemKey(it) {
-  return String(it.dishId != null ? it.dishId : it.name) + '|' + (it.spice || '不辣')
+  return String(it.dishId != null ? it.dishId : it.name) + '|' + (it.spice || DEFAULT_SPICE)
 }
 
 /**
@@ -61,10 +61,14 @@ Page({
     items: [],
     remark: '',
     orderBy: '',
-    status: 'pending',
+    status: STATUS.pending,
     // 状态只做展示（干饭人看），推不推进由掌勺人在订单页 / 待做页做
     statusEmoji: ORDER_STATUS.pending.emoji,
     statusText: ORDER_STATUS.pending.text,
+    // 模板里判状态用 statusKeys.pending，不写字面量（枚举只有一份，见 utils/constants.js）
+    statusKeys: STATUS,
+    // 模板里「没设称呼时的兜底署名」用得到
+    defaultName: DEFAULT_NAME,
     spiceLevels: SPICE_LEVELS,
     // 辣度平时只显示「当前选的那一档」；这一条是正在展开重选的那道菜
     spiceOpenKey: '',
@@ -130,7 +134,7 @@ Page({
   // 给每条补 key / spiceIdx / spiceLabel / note，供 wxml 使用
   decorate(items) {
     return (Array.isArray(items) ? items : []).map(function (it) {
-      const spice = it.spice || '不辣'
+      const spice = it.spice || DEFAULT_SPICE
       const info = spiceInfo(spice)
       const row = {
         dishId: it.dishId,
@@ -181,10 +185,10 @@ Page({
         return s.key === savedSlot
       })
       const slot = slotHit && !slotHit.disabled ? savedSlot : dine.defaultSlot(now, date)
-      const status = order.status || 'pending'
-      const done = status === 'done'
-      const cooking = status === 'cooking'
-      const rejected = status === 'rejected'
+      const status = order.status || STATUS.pending
+      const done = status === STATUS.done
+      const cooking = status === STATUS.cooking
+      const rejected = status === STATUS.rejected
       const isCook = this.data.isCook
       // 只读的几种情况不一样，文案也就不一样（同一个页面多种身份 + 终态 + 开做中）
       const badge = this.readonlyBadge(isCook, done, rejected, cooking)
@@ -522,7 +526,7 @@ Page({
   onPickerPick(e) {
     const dish = (e.detail || {}).dish
     if (!dish) return
-    const spice = dish.spice || '不辣'
+    const spice = dish.spice || DEFAULT_SPICE
 
     const items = this.data.items.slice()
     const info = spiceInfo(spice)
@@ -565,7 +569,7 @@ Page({
       ui.toast('这一单已上菜，不能再改了')
       return
     }
-    if (this.data.status === 'cooking') {
+    if (this.data.status === STATUS.cooking) {
       ui.toast('这一单正在做，等做完这顿再说吧')
       return
     }
@@ -590,7 +594,7 @@ Page({
             }
           }),
           remark: (this.data.remark || '').trim(),
-          order_by: (this.data.orderBy || '').trim() || '宝贝',
+          order_by: (this.data.orderBy || '').trim() || DEFAULT_NAME,
           // 刻意不传 status：状态是掌勺人的事。被驳回的单改完后，
           // 服务端会把它自动退回「待开做」—— 这一次保存就等于「重新提交」。
           dine_date: this.data.dineDate,
@@ -630,7 +634,7 @@ Page({
         ui.toast('没更新成功，再试一次')
         return
       }
-      ui.toast(nextStatus === 'cooking' ? '开做啦，加油 💪' : '上菜咯，开饭 🎉')
+      ui.toast(nextStatus === STATUS.cooking ? '开做啦，加油 💪' : '上菜咯，开饭 🎉')
       setTimeout(function () {
         wx.navigateBack()
       }, ui.TOAST_DURATION)
@@ -642,7 +646,7 @@ Page({
   },
 
   onStartCooking() {
-    this.setStatus('cooking')
+    this.setStatus(STATUS.cooking)
   },
 
   // 「已上菜」是终态（之后只能删单）→ 二次确认防误点
@@ -652,10 +656,10 @@ Page({
       title: '这一单都上菜啦？',
       content: '标记「已上菜」后就不能再改了哦',
       confirmText: '上菜咯',
-      confirmColor: '#FF7A9E',
+      confirmColor: CONFIRM_COLOR,
       cancelText: '再做会儿',
       success: function (res) {
-        if (res.confirm) self.setStatus('done')
+        if (res.confirm) self.setStatus(STATUS.done)
       },
     })
   },
@@ -704,10 +708,10 @@ Page({
       title: '收回这次驳回？',
       content: '这一单会回到「待开做」，TA 那边也会看到',
       confirmText: '收回来',
-      confirmColor: '#FF7A9E',
+      confirmColor: CONFIRM_COLOR,
       cancelText: '算了',
       success: function (res) {
-        if (res.confirm) self.setStatus('pending')
+        if (res.confirm) self.setStatus(STATUS.pending)
       },
     })
   },
@@ -721,13 +725,13 @@ Page({
       ui.toast('这一单是 TA 点的，你只能驳回哦')
       return
     }
-    if (this.data.status === 'cooking') {
+    if (this.data.status === STATUS.cooking) {
       ui.toast('这一单正在做，等做完再删吧')
       return
     }
     wx.showModal({
       title: '删掉这一单？',
-      content: '「' + (this.data.orderBy || '宝贝') + '」的这单会被删掉，删了就找不回来了',
+      content: '「' + (this.data.orderBy || DEFAULT_NAME) + '」的这单会被删掉，删了就找不回来了',
       confirmText: '删除',
       cancelText: '留着',
       success: async (res) => {

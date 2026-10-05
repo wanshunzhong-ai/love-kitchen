@@ -2,11 +2,13 @@
 
 /* 设计 token（品牌色 / 主渐变 / 圆角 / 阴影）+ 辣度皮肤 → styles/common.wxss
    空态三态视觉（.state / .state-* / .btn-retry） → styles/state.wxss
+   按压反馈（.tap-hover，供 hover-class 引用） → styles/tap.wxss
    @import 由 wxss 编译期内联，等价于写在这里，页面全局可用；
-   state-block 组件也 import 同一份 state.wxss，做到组件内自洽。
-   详见这两个文件的头部注释。 */
+   组件也 import 同一份，做到组件内自洽。
+   详见这三个文件的头部注释。 */
 @import "styles/common.wxss";
 @import "styles/state.wxss";
+@import "styles/tap.wxss";
 
 /* ============================================================
    兼容性约定（改样式前先读这段）

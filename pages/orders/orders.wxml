@@ -1,6 +1,6 @@
 <view class="page">
   <!-- 轮询发现变化时浮出来的一句话（6 秒后自己消失，点一下去对应页面） -->
-  <view class="notice" wx:if="{{notice}}" bindtap="onTapNotice">
+  <view class="notice" wx:if="{{notice}}" bindtap="onTapNotice" hover-class="tap-hover" aria-role="button">
     <text class="notice-emoji">{{notice.emoji}}</text>
     <text class="notice-text">{{notice.text}}</text>
     <text class="notice-go" wx:if="{{notice.path !== '/pages/orders/orders'}}">去看看 ›</text>
@@ -14,10 +14,9 @@
         wx:for="{{filters}}"
         wx:key="key"
         data-key="{{item.key}}"
-        bindtap="onFilterTap"
-      >{{item.emoji}} {{item.key === '全部' ? '全部' : statusMap[item.key].text}}</view>
+        bindtap="onFilterTap" hover-class="tap-hover" aria-role="button">{{item.emoji}} {{item.key === '全部' ? '全部' : statusMap[item.key].text}}</view>
     </scroll-view>
-    <view class="role-chip" bindtap="goProfile">{{roleInfo.emoji}} {{roleInfo.text}}</view>
+    <view class="role-chip" bindtap="goProfile" hover-class="tap-hover" aria-role="button">{{roleInfo.emoji}} {{roleInfo.text}}</view>
   </view>
 
   <!-- 订单列表（三态统一走 state-block 组件，视觉见 styles/state.wxss） -->
@@ -81,7 +80,7 @@
       <view class="order-remark" wx:if="{{item.remark}}">💬 {{item.remark}}</view>
 
       <!-- 被驳回：理由摆在最显眼处（干饭人看到的是「为什么不做」，不是一个冷冰冰的状态） -->
-      <view class="order-reject" wx:if="{{item.status === 'rejected'}}">
+      <view class="order-reject" wx:if="{{item.status === statusKeys.rejected}}">
         <text class="orj-emoji">🙅</text>
         <view class="orj-main">
           <text class="orj-title">掌勺人说先不做这一单</text>
@@ -91,7 +90,7 @@
       </view>
 
       <!-- 已上菜的单：评价进度一览 -->
-      <view class="order-review-bar" wx:if="{{item.status === 'done' && item.reviewSummary.any}}">
+      <view class="order-review-bar" wx:if="{{item.status === statusKeys.done && item.reviewSummary.any}}">
         <text class="orb-emoji">⭐</text>
         <text class="orb-text">平均 {{item.reviewSummary.avgText}} 分 · 已评 {{item.reviewSummary.rated}}/{{item.reviewSummary.total}} 道</text>
       </view>
@@ -101,37 +100,34 @@
         <view class="order-actions">
           <!-- 掌勺人：这一单只推进状态或驳回，改内容不给入口 -->
           <block wx:if="{{isCook}}">
-            <view wx:if="{{item.status === 'pending'}}" class="act act-main" data-idx="{{index}}" catchtap="onStartCooking">开始做</view>
-            <view wx:elif="{{item.status === 'cooking'}}" class="act act-main" data-idx="{{index}}" catchtap="onFinishCooking">做好了</view>
-            <view wx:if="{{item.canReject}}" class="act act-ghost" data-idx="{{index}}" catchtap="onReject">🙅 驳回</view>
-            <view wx:if="{{item.status === 'rejected'}}" class="act act-ghost" data-idx="{{index}}" catchtap="onWithdrawReject">↩️ 收回驳回</view>
+            <view wx:if="{{item.status === statusKeys.pending}}" class="act act-main" data-id="{{item.id}}" catchtap="onStartCooking" hover-class="tap-hover" aria-role="button">开始做</view>
+            <view wx:elif="{{item.status === statusKeys.cooking}}" class="act act-main" data-id="{{item.id}}" catchtap="onFinishCooking" hover-class="tap-hover" aria-role="button">做好了</view>
+            <view wx:if="{{item.canReject}}" class="act act-ghost" data-id="{{item.id}}" catchtap="onReject" hover-class="tap-hover" aria-role="button">🙅 驳回</view>
+            <view wx:if="{{item.status === statusKeys.rejected}}" class="act act-ghost" data-id="{{item.id}}" catchtap="onWithdrawReject" hover-class="tap-hover" aria-role="button">↩️ 收回驳回</view>
           </block>
 
           <!-- 干饭人：改单 / 删单 / 评价；状态不归他管 -->
           <block wx:else>
-            <text wx:if="{{item.status === 'pending'}}" class="order-wait">等掌勺人开做哦</text>
+            <text wx:if="{{item.status === statusKeys.pending}}" class="order-wait">等掌勺人开做哦</text>
             <!-- 开做中 = 掌勺人已经开火：不给编辑入口，免得改了白改 -->
-            <text wx:elif="{{item.status === 'cooking'}}" class="order-wait">掌勺人正在做，先别改单啦</text>
+            <text wx:elif="{{item.status === statusKeys.cooking}}" class="order-wait">掌勺人正在做，先别改单啦</text>
             <view
-              wx:if="{{item.status === 'done'}}"
+              wx:if="{{item.status === statusKeys.done}}"
               class="act act-main"
-              data-idx="{{index}}"
-              catchtap="onReview"
-            >{{item.reviewSummary.any ? '✏️ 改评价' : '🍽️ 去评价'}}</view>
+              data-id="{{item.id}}"
+              catchtap="onReview" hover-class="tap-hover" aria-role="button">{{item.reviewSummary.any ? '✏️ 改评价' : '🍽️ 去评价'}}</view>
             <!-- 可编辑的只有「待开做」和「已驳回」：开做中 / 已上菜都不给入口 -->
             <view
-              wx:if="{{item.status === 'pending' || item.status === 'rejected'}}"
+              wx:if="{{item.status === statusKeys.pending || item.status === statusKeys.rejected}}"
               class="act act-ghost"
-              data-idx="{{index}}"
-              catchtap="onEditOrder"
-            >{{item.status === 'rejected' ? '✏️ 改好重交' : '✏️ 编辑'}}</view>
+              data-id="{{item.id}}"
+              catchtap="onEditOrder" hover-class="tap-hover" aria-role="button">{{item.status === statusKeys.rejected ? '✏️ 改好重交' : '✏️ 编辑'}}</view>
             <!-- 开做中 = 掌勺人正在做这顿饭：不能改也不能删，等做完再说 -->
             <view
-              wx:if="{{item.status !== 'cooking'}}"
+              wx:if="{{item.status !== statusKeys.cooking}}"
               class="act act-danger"
-              data-idx="{{index}}"
-              catchtap="onDeleteOrder"
-            >🗑️ 删掉</view>
+              data-id="{{item.id}}"
+              catchtap="onDeleteOrder" hover-class="tap-hover" aria-role="button">🗑️ 删掉</view>
           </block>
         </view>
       </view>

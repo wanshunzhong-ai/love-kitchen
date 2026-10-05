@@ -14,11 +14,31 @@
 const { getDB, unwrap } = require('./cloud')
 const store = require('./store')
 const { formatDayLabel } = require('./format')
+const { DEFAULT_NAME } = require('./constants')
 
 const TABLE = 'dish_logs'
 
 // 日志页一次最多取多少条（与 orders 的 MAX_ORDERS 同样是一次性拉全再本地筛）
 const MAX_LOGS = 200
+
+// 默认只看最近多少天的日志（清单 C29）。
+//
+// 这张表是 append-only 的，没有任何删除策略 —— 用得越久越长。不加时间窗的话，
+// 每次进日志页都要把整表拉下来再在本地按天分组，页会越来越慢。
+// 留一个窗口 + 一个「看更早的」入口，比一次性拉全更稳（真要全量也能手动扩）。
+const DEFAULT_DAYS = 30
+
+// 窗口最多能扩到多少天（防手抖传个离谱的数把整表拖下来）
+const DAYS_MAX = 365
+
+const DAY_MS = 24 * 60 * 60 * 1000
+
+/** 把传进来的 days 收敛成合法窗口：没传 / 非法 / 非正数 → 默认窗口 */
+function clampDays(value) {
+  const n = Number(value)
+  if (!n || isNaN(n) || n <= 0) return DEFAULT_DAYS
+  return Math.min(Math.floor(n), DAYS_MAX)
+}
 
 // 动作枚举：与数据库 dish_logs_action_check 约束保持一致，加新动作时两边一起改
 const ACTIONS = ['add', 'update', 'delete', 'import']
@@ -173,9 +193,9 @@ function identity() {
   try {
     const role = store.getRole() === 'cook' ? 'cook' : 'orderer'
     const name = store.getNickname(role) || ''
-    return { role: role, name: clip(name, NAME_MAX) || (role === 'cook' ? '掌勺人' : '宝贝') }
+    return { role: role, name: clip(name, NAME_MAX) || (role === 'cook' ? '掌勺人' : DEFAULT_NAME) }
   } catch (err) {
-    return { role: 'orderer', name: '宝贝' }
+    return { role: 'orderer', name: DEFAULT_NAME }
   }
 }
 
@@ -196,7 +216,7 @@ function normalize(entry) {
     changes: action === 'update' ? normalizeChanges(e.changes) : [],
     dish_count: Math.max(1, Number(e.dish_count) || 1),
     by_role: who.role === 'cook' ? 'cook' : 'orderer',
-    by_name: clip(who.name, NAME_MAX) || '宝贝',
+    by_name: clip(who.name, NAME_MAX) || DEFAULT_NAME,
   }
 }
 
@@ -239,21 +259,41 @@ async function record(entry) {
   }
 }
 
-/** 取日志列表（最新在前）。读失败会抛错，由页面给出重试入口 */
+/**
+ * 取日志列表（最新在前）。
+ *
+ * 两道闸门，都会把拉取量按住（清单 C29）：
+ *   ① 时间窗：`event.days`（默认 DEFAULT_DAYS 天，用 clampDays 收敛）——
+ *      append-only 的表没有删除策略，不设窗口的话页会随使用时间越来越慢；
+ *   ② 条数上限：MAX_LOGS，窗口内也可能很多条。
+ * 返回值带上实际用的窗口与「是否顶到条数上限」，页面据此提示 + 给「看更早的」入口。
+ *
+ * 读失败会抛错，由页面给出重试入口。
+ */
 async function list(event) {
-  const want = Number(event && event.limit)
+  const e = event || {}
+  const want = Number(e.limit)
   const limit = Math.min(Math.max(1, isNaN(want) ? MAX_LOGS : want), MAX_LOGS)
+  const days = clampDays(e.days)
+  const since = new Date(Date.now() - days * DAY_MS).toISOString()
 
   const res = unwrap(
     await getDB()
       .from(TABLE)
       .select('*')
+      .gte('created_at', since)
       .order('created_at', { ascending: false })
       .range(0, limit - 1)
   )
 
   const rows = Array.isArray(res.data) ? res.data : []
-  return { logs: rows.map(rowToLog) }
+  return {
+    logs: rows.map(rowToLog),
+    days: days,
+    limit: limit,
+    // 顶到条数上限 → 窗口里还有更早的没拿到（页面提示「只显示了最近 N 条」）
+    capped: rows.length >= limit,
+  }
 }
 
 /** 数据库行 → 页面层结构（时间统一成毫秒数，与 orders 的处理一致） */
@@ -294,6 +334,9 @@ function handle(action, payload) {
 module.exports = {
   TABLE,
   MAX_LOGS,
+  DEFAULT_DAYS,
+  DAYS_MAX,
+  clampDays,
   ACTIONS,
   handle,
   HANDLERS,

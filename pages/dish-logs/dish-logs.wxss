@@ -130,3 +130,31 @@
   color: #C4B2AC;
   line-height: 1.5;
 }
+
+/* 时间窗尾巴：默认只显示最近 N 天，点一下把窗口放大再拉（清单 C29） */
+.lg-window {
+  padding: 28rpx 8rpx 8rpx;
+  text-align: center;
+}
+
+.lg-window-tip {
+  font-size: 23rpx;
+  color: #B9A29B;
+}
+
+.lg-window-end {
+  display: block;
+  margin-top: 12rpx;
+  font-size: 22rpx;
+  color: #C4B2AC;
+}
+
+.lg-more {
+  display: inline-block;
+  margin-top: 16rpx;
+  padding: 12rpx 32rpx;
+  border-radius: var(--radius-pill);
+  background: #FFF0F4;
+  color: #E0426E;
+  font-size: 24rpx;
+}

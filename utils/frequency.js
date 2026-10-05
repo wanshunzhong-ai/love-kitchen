@@ -12,8 +12,10 @@
 //
 // 本文件是纯函数（不碰 wx），可被 node 直接跑契约测试。
 
+const { STATUS } = require('./constants')
+
 /** 计入频率的订单状态；rejected 被排除（见文件头第 1 条） */
-const COUNT_STATUSES = ['pending', 'cooking', 'done']
+const COUNT_STATUSES = [STATUS.pending, STATUS.cooking, STATUS.done]
 
 /** 显示「🔥 常点」标签的最低次数 —— 点过 1 次的菜标出来太吵 */
 const HOT_MIN = 2
@@ -43,7 +45,7 @@ function itemKey(item) {
 /** 这一单要不要计入 */
 function isCounted(order) {
   if (!order) return false
-  return COUNT_STATUSES.indexOf(order.status || 'pending') >= 0
+  return COUNT_STATUSES.indexOf(order.status || STATUS.pending) >= 0
 }
 
 /**

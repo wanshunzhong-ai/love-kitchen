@@ -15,9 +15,13 @@
 
 const TABLE = 'orders'
 
-// 允许的订单状态（与 utils/constants.js 保持一致）
+// 常量（状态键 / 备注上限 / 兜底署名 / 默认辣度）—— 必须放在 ORDER_STATUSES 之前：
+// `const` 没有变量提升，写在使用之后会在模块加载时直接 TDZ 报错。
+const { DISH_NOTE_MAX, STATUS, DEFAULT_NAME, DEFAULT_SPICE } = require('./constants')
+
+// 允许的订单状态（键的定义在 utils/constants.js）
 // rejected = 掌勺人驳回，必须带理由；它不是「推进」出来的，走 rejectOrder
-const ORDER_STATUSES = ['pending', 'cooking', 'done']
+const ORDER_STATUSES = [STATUS.pending, STATUS.cooking, STATUS.done]
 
 // 用餐时间校验（日期范围 / 时段合法性）
 const dine = require('./dine')
@@ -31,9 +35,6 @@ const rejectLib = require('./reject')
 // 忌口的收敛规则（纯函数，与本地存储共用同一份）—— 忌口随订单一起送到掌勺人手上，
 // 进库前必须再校一遍：本地存储可能是老版本写的、或者是手工改过 storage 的脏数据
 const avoidsLib = require('./avoids')
-
-// 每道菜备注的长度上限（与前端输入框保持一致）
-const { DISH_NOTE_MAX } = require('./constants')
 
 // 单次最多拉多少条订单。订单页是一次性拉全再本地筛选，
 // 200 条足够很长一段时间的日常使用，超出后只显示最近的。
@@ -102,14 +103,14 @@ function rowToOrder(row) {
     id: id,
     items: parseItems(row.items),
     remark: row.remark || '',
-    order_by: row.order_by || '宝贝',
-    status: row.status || 'pending',
+    order_by: row.order_by || DEFAULT_NAME,
+    status: row.status || STATUS.pending,
     // 用餐时间：老订单可能没有（NULL → 空串），页面层自行兜底
     dine_date: row.dine_date || '',
     dine_slot: row.dine_slot || '',
     // 忌口快照：下单那一刻干饭人的清单（落库快照，事后改忌口不倒推历史订单）
     avoids: parseAvoids(row.avoids),
-    // 驳回：reason 只在 status === 'rejected' 时展示，at 是驳回时刻（毫秒，老订单为 0）
+    // 驳回：reason 只在 status === STATUS.rejected 时展示，at 是驳回时刻（毫秒，老订单为 0）
     reject_reason: row.reject_reason || '',
     rejected_at: toMillis(row.rejected_at),
     // 逐道菜的评价：{ "dishId|辣度": { rating, tags, text, by, at } }
@@ -140,7 +141,7 @@ function normalizeItems(raw) {
       dishId: it.dishId,
       name: it.name,
       emoji: it.emoji,
-      spice: it.spice || '不辣',
+      spice: it.spice || DEFAULT_SPICE,
       // 只接受字符串备注：脏数据（数字 / 对象）一律当没写
       note:
         typeof it.note === 'string'
@@ -195,8 +196,8 @@ async function createOrder(event) {
   const row = {
     items: items,
     remark: payload.remark || '',
-    order_by: payload.order_by || '宝贝',
-    status: 'pending',
+    order_by: payload.order_by || DEFAULT_NAME,
+    status: STATUS.pending,
     dine_date: dineFields.dine_date,
     dine_slot: dineFields.dine_slot,
     // 忌口快照：下单那一刻的清单跟着订单一起冻结。
@@ -234,21 +235,21 @@ async function updateOrder(event) {
   const cur = unwrap(await getDB().from(TABLE).select('id, status').eq('id', id).limit(1))
   const curRows = Array.isArray(cur.data) ? cur.data : []
   if (!curRows.length) throw new Error('这一单不存在了')
-  const status = curRows[0].status || 'pending'
-  if (status === 'done') throw new Error('这一单已经上菜了，不能再改')
-  if (status === 'cooking') throw new Error('这一单正在做，等做完这顿再说吧')
+  const status = curRows[0].status || STATUS.pending
+  if (status === STATUS.done) throw new Error('这一单已经上菜了，不能再改')
+  if (status === STATUS.cooking) throw new Error('这一单正在做，等做完这顿再说吧')
 
   const patch = {
     items: items,
     remark: payload.remark || '',
-    order_by: payload.order_by || '宝贝',
+    order_by: payload.order_by || DEFAULT_NAME,
     updated_at: new Date().toISOString(),
   }
 
   // 被驳回的单改完就是重新提交：状态回到待开做，并把上一次的驳回理由清掉
   // （理由留着会让人以为「又驳回了」，而这一单其实已经在等掌勺人开做）
-  if (status === 'rejected') {
-    patch.status = 'pending'
+  if (status === STATUS.rejected) {
+    patch.status = STATUS.pending
     patch.reject_reason = ''
     patch.rejected_at = null
   }
@@ -281,7 +282,7 @@ async function updateOrderStatus(event) {
   const status = event && event.status
   if (id === undefined || id === null || id === '') throw new Error('缺少订单 id')
   if (ORDER_STATUSES.indexOf(status) < 0) {
-    if (status === 'rejected') throw new Error('驳回要写一句理由，请用「驳回」按钮')
+    if (status === STATUS.rejected) throw new Error('驳回要写一句理由，请用「驳回」按钮')
     throw new Error('订单状态不合法')
   }
 
@@ -312,16 +313,16 @@ async function rejectOrder(event) {
   const curRows = Array.isArray(cur.data) ? cur.data : []
   if (!curRows.length) throw new Error('这一单不存在了')
 
-  const status = curRows[0].status || 'pending'
+  const status = curRows[0].status || STATUS.pending
   if (!rejectLib.canReject(status)) {
-    throw new Error(status === 'done' ? '这一单已经上菜了，没法驳回' : '这一单已经是驳回状态了')
+    throw new Error(status === STATUS.done ? '这一单已经上菜了，没法驳回' : '这一单已经是驳回状态了')
   }
 
   const now = new Date().toISOString()
   const rows = affectedRows(
     await getDB()
       .from(TABLE)
-      .update({ status: 'rejected', reject_reason: reason, rejected_at: now, updated_at: now })
+      .update({ status: STATUS.rejected, reject_reason: reason, rejected_at: now, updated_at: now })
       .eq('id', id)
       .select()
   )
@@ -338,7 +339,7 @@ async function deleteOrder(event) {
   const cur = unwrap(await getDB().from(TABLE).select('id, status').eq('id', id).limit(1))
   const curRows = Array.isArray(cur.data) ? cur.data : []
   if (!curRows.length) throw new Error('这一单不存在了')
-  if ((curRows[0].status || 'pending') === 'cooking') {
+  if ((curRows[0].status || STATUS.pending) === STATUS.cooking) {
     throw new Error('这一单正在做，等做完再删吧')
   }
 
@@ -366,7 +367,7 @@ async function saveReview(event) {
   if (!rows.length) throw new Error('这一单不存在了')
 
   // 服务端也拦一道：只有「已上菜」的单能评，别指望前端自觉
-  if ((rows[0].status || '') !== 'done') throw new Error('这一单还没上菜，先等掌勺人做完哦')
+  if ((rows[0].status || '') !== STATUS.done) throw new Error('这一单还没上菜，先等掌勺人做完哦')
 
   const input = (event && event.review) || null
   const rating = input ? reviewLib.normalizeRating(input.rating) : 0

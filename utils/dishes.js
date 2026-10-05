@@ -24,6 +24,7 @@ const csv = require('./csv')
 // 将来任何新入口都走这几个 action），埋在这里才能保证「只要菜单变了就有日志」。
 // 埋点的调用一律不 await —— record 内部全静默，写失败不影响本地改动。
 const dishLogs = require('./dish-logs')
+const { DEFAULT_SPICE } = require('./constants')
 
 const STORAGE_KEY = 'dishes_override_v1'
 const DELETED_KEY = 'dishes_deleted_v1'
@@ -218,7 +219,7 @@ function saveDish(event) {
     name: payload.name,
     category: payload.category || '经典热菜',
     emoji: payload.emoji || '🍴',
-    spice: payload.spice || '不辣',
+    spice: payload.spice || DEFAULT_SPICE,
     description: payload.description || '',
     created_at: Date.now(),
     updated_at: Date.now(),

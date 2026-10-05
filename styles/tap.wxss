@@ -1,0 +1,11 @@
+/* 全局按压反馈（.tap-hover）
+   可点的 view / text 加 hover-class="tap-hover"，按下时轻微缩放 + 变淡。
+   · 用 hover-class 而不是 CSS :active —— 小程序真机上 :active 常常不触发，
+     hover-class 是框架原生支持的（由它自己管手势状态），更可靠。
+   · <button> 自带原生态按压效果，不要再加。
+   · 这份零件要被自定义组件 @import（组件样式默认隔离，app.wxss 的类进不去），
+     所以不含任何 page 选择器，也不依赖设计 token（值本来也不会随主题变）。 */
+.tap-hover {
+  opacity: 0.7;
+  transform: scale(0.98);
+}

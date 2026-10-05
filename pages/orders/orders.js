@@ -16,7 +16,7 @@ const review = require('../../utils/review')
 const rejectLib = require('../../utils/reject')
 const avoidsLib = require('../../utils/avoids')
 const live = require('../../utils/live')
-const { ORDER_STATUS, spiceInfo } = require('../../utils/constants')
+const { ORDER_STATUS, STATUS, DEFAULT_SPICE, spiceInfo, CONFIRM_COLOR, DEFAULT_NAME, NOTICE_MS, UNDO_MS } = require('../../utils/constants')
 const { formatTime } = require('../../utils/format')
 
 Page({
@@ -25,13 +25,15 @@ Page({
     filteredOrders: [],
     filters: [
       { key: '全部', emoji: '📋' },
-      { key: 'pending', emoji: '📝' },
-      { key: 'cooking', emoji: '🧑‍🍳' },
-      { key: 'done', emoji: '🎉' },
-      { key: 'rejected', emoji: '🙅' },
+      { key: STATUS.pending, emoji: '📝' },
+      { key: STATUS.cooking, emoji: '🧑‍🍳' },
+      { key: STATUS.done, emoji: '🎉' },
+      { key: STATUS.rejected, emoji: '🙅' },
     ],
     activeFilter: '全部',
     statusMap: ORDER_STATUS,
+    // 模板里判状态用 statusKeys.pending，不写字面量（枚举只有一份，见 utils/constants.js）
+    statusKeys: STATUS,
     loading: true,
     loadError: false,
     // 身份：cook 才有「开始做 / 做好了」按钮；orderer 看到的是「等掌勺人开做」提示
@@ -77,6 +79,10 @@ Page({
   // ---------- 订阅实时数据 ----------
 
   startLive() {
+    // 防重入：onShow 可能被连着触发（切 tab 回来 + 下拉刷新），
+    // 没有这一句后一次订阅会把前一次的 unsub 覆盖掉 —— 旧订阅就永久泄漏了
+    // （照抄 menu.js::watchOrders 的做法）
+    if (this.unsub) return
     const self = this
     this.unsub = live.subscribe(function (d, orders, err) {
       if (err) {
@@ -135,14 +141,14 @@ Page({
           // 同一道菜可能有多种辣度，rowKey 必须带上辣度才唯一
           rowKey: it.key,
           spiceIdx: info.level,
-          spiceText: info.level > 0 ? '🌶️'.repeat(info.level) : '不辣',
+          spiceText: info.level > 0 ? '🌶️'.repeat(info.level) : DEFAULT_SPICE,
           // 星级拆成「亮星 + 暗星」两段，wxml 里直接拼，不写循环
           starFull: rating > 0 ? '★'.repeat(rating) : '',
           starDim: rating > 0 ? '☆'.repeat(review.RATING_MAX - rating) : '',
         })
       })
-      const status = o.status || 'pending'
-      const rejected = status === 'rejected'
+      const status = o.status || STATUS.pending
+      const rejected = status === STATUS.rejected
       return Object.assign({}, o, {
         id: o._id || o.id,
         status: status,
@@ -175,7 +181,7 @@ Page({
     this._noticeTimer = setTimeout(function () {
       self.setData({ notice: null })
       self._noticeTimer = null
-    }, 6000)
+    }, NOTICE_MS)
   },
 
   hideNotice() {
@@ -222,11 +228,26 @@ Page({
     this.applyFilter()
   },
 
+  /**
+   * 按 id 找订单。
+   *
+   * 不用「列表下标」：`updateStatus` 里 `await` 写库的这段时间，轮询可能已经
+   * 全量重画过列表（筛选条件没变也可能因为别的单变了而重排）—— 回来时下标
+   * 可能已经指向另一单，于是「点 A 开工、B 变了状态」。id 不受重画影响。
+   * 查的是 orders（全量）而不是 filteredOrders：单子可能因为状态变化
+   * 被筛出当前筛选结果，但用户点的确实是它。
+   */
+  findOrder(id) {
+    return (
+      this.data.orders.find(function (o) {
+        return String(o.id) === String(id)
+      }) || null
+    )
+  },
+
   // 推进状态：写入云端后本地同步，失败时明确提示
-  // 注意：找的是 filteredOrders（列表实际渲染的那份），
-  //       否则「筛选后」索引会与 orders 对不上，改错单。
-  async updateStatus(idx, nextStatus) {
-    const order = this.data.filteredOrders[idx]
+  async updateStatus(id, nextStatus) {
+    const order = this.findOrder(id)
     if (!order) return
     // 兜底：状态是掌勺人的活，干饭人的界面不该出现这条路径
     if (!this.data.isCook) {
@@ -259,12 +280,12 @@ Page({
   },
 
   onStartCooking(e) {
-    this.updateStatus(e.currentTarget.dataset.idx, 'cooking')
+    this.updateStatus(e.currentTarget.dataset.id, STATUS.cooking)
   },
 
   // 「已上菜」是终态（之后只能删单）→ 与待做页一致，二次确认防误点
   onFinishCooking(e) {
-    const idx = e.currentTarget.dataset.idx
+    const id = e.currentTarget.dataset.id
     const self = this
     // 弹窗期间暂停轮询：列表要是在对话框底下自己变了，用户会以为点错了
     live.pause()
@@ -272,13 +293,13 @@ Page({
       title: '这一单都上菜啦？',
       content: '标记「已上菜」后就不能再改了哦',
       confirmText: '上菜咯',
-      confirmColor: '#FF7A9E',
+      confirmColor: CONFIRM_COLOR,
       cancelText: '再做会儿',
       complete: function () {
         live.resume()
       },
       success: function (res) {
-        if (res.confirm) self.updateStatus(idx, 'done')
+        if (res.confirm) self.updateStatus(id, STATUS.done)
       },
     })
   },
@@ -289,14 +310,14 @@ Page({
   // 先给一排快捷说法（手机上一键选），想写别的就选「自己写一句」。
   // 驳回后球回到干饭人那边，他改完重新提交，状态自动回到「待开做」。
   async onReject(e) {
-    const order = this.data.filteredOrders[e.currentTarget.dataset.idx]
+    const order = this.findOrder(e.currentTarget.dataset.id)
     if (!order) return
     if (!this.data.isCook) {
       ui.toast('驳回是掌勺人的活哦')
       return
     }
     if (!rejectLib.canReject(order.status)) {
-      ui.toast(order.status === 'done' ? '已经上菜啦，没法驳回' : '这一单已经驳回了')
+      ui.toast(order.status === STATUS.done ? '已经上菜啦，没法驳回' : '这一单已经驳回了')
       return
     }
 
@@ -334,7 +355,7 @@ Page({
       // 本地先改一份，不必等下一轮轮询
       const orders = this.data.orders.map(function (o) {
         return o.id === order.id
-          ? Object.assign({}, o, { status: 'rejected', reject_reason: reason })
+          ? Object.assign({}, o, { status: STATUS.rejected, reject_reason: reason })
           : o
       })
       this.setData({ orders: orders })
@@ -349,21 +370,21 @@ Page({
 
   // 手滑驳错了 → 收回来（状态退回待开做，理由留着当历史，不再展示）
   onWithdrawReject(e) {
-    const order = this.data.filteredOrders[e.currentTarget.dataset.idx]
-    if (!order || order.status !== 'rejected') return
+    const order = this.findOrder(e.currentTarget.dataset.id)
+    if (!order || order.status !== STATUS.rejected) return
     const self = this
     live.pause()
     wx.showModal({
       title: '收回这次驳回？',
       content: '这一单会回到「待开做」，TA 那边也会看到',
       confirmText: '收回来',
-      confirmColor: '#FF7A9E',
+      confirmColor: CONFIRM_COLOR,
       cancelText: '算了',
       complete: function () {
         live.resume()
       },
       success: function (res) {
-        if (res.confirm) self.updateStatusByOrder(order, 'pending')
+        if (res.confirm) self.updateStatusByOrder(order, STATUS.pending)
       },
     })
   },
@@ -400,13 +421,13 @@ Page({
   // 已上菜 = 终态、开做中 = 掌勺人已经开火，两边都不给干饭人编辑入口
   // （列表里也不渲染，这里是兜底防误入）
   onEditOrder(e) {
-    const order = this.data.filteredOrders[e.currentTarget.dataset.idx]
+    const order = this.findOrder(e.currentTarget.dataset.id)
     if (!order) return
-    if (!this.data.isCook && order.status === 'done') {
+    if (!this.data.isCook && order.status === STATUS.done) {
       ui.toast('这一单已上菜，只能删掉')
       return
     }
-    if (!this.data.isCook && order.status === 'cooking') {
+    if (!this.data.isCook && order.status === STATUS.cooking) {
       ui.toast('这一单正在做，先别改啦')
       return
     }
@@ -415,9 +436,9 @@ Page({
 
   // 去给这一单的每道菜打分（只有干饭人 + 已上菜的单才有入口）
   onReview(e) {
-    const order = this.data.filteredOrders[e.currentTarget.dataset.idx]
+    const order = this.findOrder(e.currentTarget.dataset.id)
     if (!order) return
-    if (order.status !== 'done') {
+    if (order.status !== STATUS.done) {
       ui.toast('等掌勺人上菜后再评哦')
       return
     }
@@ -427,13 +448,13 @@ Page({
   // 删除整单：干饭人删自己点的单（掌勺人不删 TA 点的单，他只能驳回）。
   // 开做中的单删不得 —— 掌勺人正在做，等上菜之后随删。
   onDeleteOrder(e) {
-    const order = this.data.filteredOrders[e.currentTarget.dataset.idx]
+    const order = this.findOrder(e.currentTarget.dataset.id)
     if (!order) return
     if (this.data.isCook) {
       ui.toast('这一单是 TA 点的，你只能驳回哦')
       return
     }
-    if (order.status === 'cooking') {
+    if (order.status === STATUS.cooking) {
       ui.toast('这一单正在做，等做完再删吧')
       return
     }
@@ -443,7 +464,7 @@ Page({
       title: '删掉这一单？',
       content: '删掉后 5 秒内可以撤销',
       confirmText: '删掉',
-      confirmColor: '#FF7A9E',
+      confirmColor: CONFIRM_COLOR,
       cancelText: '再想想',
       complete: function () {
         live.resume()
@@ -500,7 +521,7 @@ Page({
         console.error('[orders] 删除订单失败', err)
         ui.toast('没删干净，稍后再试一次')
       })
-    }, 5000)
+    }, UNDO_MS)
   },
 
   // 提示条上的「撤销」：取消待删定时器，单子随下一轮轮询回来

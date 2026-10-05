@@ -26,7 +26,8 @@
 const api = require('../../utils/api')
 const ui = require('../../utils/ui')
 const dishSearch = require('../../utils/dish-search')
-const { CATEGORIES } = require('../../utils/constants')
+const paging = require('../../utils/paging')
+const { CATEGORIES, DEFAULT_SPICE } = require('../../utils/constants')
 
 const ALL = { key: dishSearch.ALL, emoji: '📜' }
 
@@ -42,8 +43,15 @@ Component({
     categories: [ALL].concat(CATEGORIES),
     activeCategory: dishSearch.ALL,
     allDishes: [],
+    // dishes = 筛选后的**完整**列表；真正渲染的是它的前 shownCount 条
+    // （分页，见 utils/paging.js —— 三百多道菜全量渲染会让弹层滚动发涩）
     dishes: [],
+    visibleDishes: [],
+    shownCount: 0,
+    hasMore: false,
     loading: false,
+    // 模板里「没填辣度就显示默认档」用得到（模板没法 require 常量）
+    defaultSpice: DEFAULT_SPICE,
     // 搜索（与菜单页同一套规则，见 utils/dish-search.js）
     keyword: '',
     searchFocus: false,
@@ -93,7 +101,11 @@ Component({
         .call('listDishes')
         .then(function (res) {
           self._loading = false
-          self.setData({ allDishes: (res && res.dishes) || [], loading: false })
+          // 补一个统一的 id（云开发主键是 _id）—— wxml 的 wx:key 与点击回查都用它
+          var list = ((res && res.dishes) || []).map(function (d) {
+            return Object.assign({}, d, { id: d._id || d.id })
+          })
+          self.setData({ allDishes: list, loading: false })
           self.applyFilter()
         })
         .catch(function (err) {
@@ -152,15 +164,44 @@ Component({
 
     /** 分类 + 关键词一起过，规则在 utils/dish-search.js（与菜单页同一份） */
     applyFilter: function () {
+      var list = dishSearch.filterBy(this.data.allDishes, this.data.activeCategory, this.data.keyword)
+      this.setData({ dishes: list })
+      // 筛选结果变了 → 回到第一页
+      this.resetPaging(list)
+    },
+
+    /** 回到第一页：首屏只渲染一页的量（见 utils/paging.js） */
+    resetPaging: function (list) {
+      var total = (list || []).length
+      var shown = paging.initial(total)
       this.setData({
-        dishes: dishSearch.filterBy(this.data.allDishes, this.data.activeCategory, this.data.keyword),
+        shownCount: shown,
+        visibleDishes: paging.slice(list, shown),
+        hasMore: paging.hasMore(shown, total),
+      })
+    },
+
+    /** 弹层里的列表滚到底 → 再放一页（scroll-view 的 bindscrolltolower） */
+    onReachLower: function () {
+      var list = this.data.dishes
+      if (!paging.hasMore(this.data.shownCount, list.length)) return
+      var shown = paging.grow(this.data.shownCount, list.length)
+      this.setData({
+        shownCount: shown,
+        visibleDishes: paging.slice(list, shown),
+        hasMore: paging.hasMore(shown, list.length),
       })
     },
 
     // ---------- 选中 / 关闭 ----------
 
     onPick: function (e) {
-      var dish = this.data.dishes[e.currentTarget.dataset.idx]
+      // 按 id 回查而不是按下标：弹层里的列表会因搜索 / 分页变化，
+      // 下标在「渲染」与「点击」之间可能已经指向别的菜
+      var id = e.currentTarget.dataset.id
+      var dish = this.data.dishes.find(function (d) {
+        return String(d.id) === String(id)
+      })
       if (!dish) return
       this.triggerEvent('pick', { dish: dish })
     },

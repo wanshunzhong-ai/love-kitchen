@@ -9,7 +9,7 @@
 
 const dine = require('./dine')
 const avoidsLib = require('./avoids')
-const { SPICE_LEVELS, DINE_SLOTS } = require('./constants')
+const { SPICE_LEVELS, DINE_SLOTS, STATUS, DEFAULT_SPICE } = require('./constants')
 
 const WEEK_LABELS = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
 
@@ -36,7 +36,7 @@ function dateLabel(dateKey) {
 // 订单 → 卡片数据：id 兜底 + 辣度档位 + rowKey（同名菜不同辣度要能区分）
 function toCard(o) {
   const items = (Array.isArray(o.items) ? o.items : []).map(function (it) {
-    const spice = it.spice || '不辣'
+    const spice = it.spice || DEFAULT_SPICE
     const hit = SPICE_LEVELS.find(function (s) {
       return s.key === spice
     })
@@ -45,7 +45,7 @@ function toCard(o) {
       rowKey: String(it.name) + '|' + spice,
       spice: spice,
       spiceIdx: level,
-      spiceText: level > 0 ? '🌶️'.repeat(level) : '不辣',
+      spiceText: level > 0 ? '🌶️'.repeat(level) : DEFAULT_SPICE,
     })
   })
   return Object.assign({}, o, {
@@ -98,7 +98,7 @@ function buildBoard(orders, todayKey) {
   ;(Array.isArray(orders) ? orders : []).forEach(function (o) {
     // 已上菜的不在待做范围；已驳回的也不在 —— 那一单球已经回到干饭人那边，
     // 等他改完重新提交才会以「待开做」的身份重新出现
-    if (!o || o.status === 'done' || o.status === 'rejected') return
+    if (!o || o.status === STATUS.done || o.status === STATUS.rejected) return
     const card = toCard(o)
     const date = card.dine_date || ''
 

@@ -23,6 +23,7 @@
 // 只有 createWatcher 会用到计时器。
 const review = require('./review')
 const rejectLib = require('./reject')
+const { STATUS } = require('./constants')
 
 // 轮询节奏（毫秒）。数字调大更省电，调小更灵敏，这三档是「手感」和「耗电」的折中。
 const INTERVALS = {
@@ -51,7 +52,7 @@ function snapshot(orders) {
       qty += Number(it && it.qty) || 1
     })
     map[id] = {
-      status: o.status || 'pending',
+      status: o.status || STATUS.pending,
       dishes: items.length,
       qty: qty,
       // 只关心「评价条数有没有变多」，具体内容由页面自己拉
@@ -128,11 +129,11 @@ function urgency(orders, role) {
   let unknown = 0
   list.forEach(function (o) {
     // 缺 status 的老订单按「待开做」处理（早期数据没有这个字段）
-    const s = (o && o.status) || 'pending'
-    if (s === 'pending') pending += 1
-    else if (s === 'cooking') cooking += 1
-    else if (s === 'done') done += 1
-    else if (s === 'rejected') rejected += 1
+    const s = (o && o.status) || STATUS.pending
+    if (s === STATUS.pending) pending += 1
+    else if (s === STATUS.cooking) cooking += 1
+    else if (s === STATUS.done) done += 1
+    else if (s === STATUS.rejected) rejected += 1
     else unknown += 1
   })
   // 「手上有活」= 有待开做 / 正在做；已驳回的不算（那是等 TA 改单的）
@@ -239,7 +240,7 @@ function notice(d, orders, role) {
     }
     // 被自己驳回的单，TA 改好又交回来了（已驳回 → 待开做）
     const back = d.statusChanged.filter(function (c) {
-      return c.from === 'rejected' && c.to === 'pending'
+      return c.from === STATUS.rejected && c.to === STATUS.pending
     })
     if (back.length) {
       return {
@@ -266,12 +267,12 @@ function notice(d, orders, role) {
   // 驳回排在最前 —— 这是要 TA 动手的事（改菜重新提交，或者干脆删掉），
   // 而且顺手把理由带出来，省得再点进去找。
   const backChange = d.statusChanged.filter(function (c) {
-    return c.to === 'rejected'
+    return c.to === STATUS.rejected
   })[0]
   if (backChange) {
     const why = rejectLib.shortReason((findOrder(orders, backChange.id) || {}).reject_reason, 10)
     return {
-      key: 'rejected',
+      key: STATUS.rejected,
       emoji: '🙅',
       text: why ? '这一单被退回啦：' + why : '有一单被退回来啦，去看看',
       path: '/pages/orders/orders',
@@ -281,12 +282,12 @@ function notice(d, orders, role) {
   let toCooking = 0
   let toDone = 0
   d.statusChanged.forEach(function (c) {
-    if (c.to === 'cooking') toCooking += 1
-    if (c.to === 'done') toDone += 1
+    if (c.to === STATUS.cooking) toCooking += 1
+    if (c.to === STATUS.done) toDone += 1
   })
   if (toDone > 0) {
     return {
-      key: 'done',
+      key: STATUS.done,
       emoji: '🎉',
       text: toDone > 1 ? toDone + ' 单都上菜啦，开饭！' : '上菜啦，快去端走 🎉',
       path: '/pages/orders/orders',
@@ -294,7 +295,7 @@ function notice(d, orders, role) {
   }
   if (toCooking > 0) {
     return {
-      key: 'cooking',
+      key: STATUS.cooking,
       emoji: '🧑‍🍳',
       text: '掌勺人已经开火啦，稍等一会儿',
       path: '/pages/orders/orders',

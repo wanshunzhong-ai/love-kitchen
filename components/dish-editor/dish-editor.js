@@ -15,7 +15,7 @@
 // 「换一道菜」不在组件里实现了 —— 直接用 components/dish-picker
 // （与编辑订单页的「＋ 从菜单加菜」是同一个弹层，含搜索）。
 const ui = require('../../utils/ui')
-const { SPICE_LEVELS, DISH_NOTE_MAX, DISH_NOTE_TAGS } = require('../../utils/constants')
+const { SPICE_LEVELS, DEFAULT_SPICE, DISH_NOTE_MAX, DISH_NOTE_TAGS } = require('../../utils/constants')
 
 Component({
   properties: {
@@ -28,7 +28,7 @@ Component({
     noteTags: DISH_NOTE_TAGS,
     noteMax: DISH_NOTE_MAX,
     // 草稿
-    spice: '不辣',
+    spice: DEFAULT_SPICE,
     note: '',
     // 换菜：只留开关，取菜单 / 分类 / 搜索都在 dish-picker 里
     pickerOpen: false,
@@ -39,7 +39,7 @@ Component({
       const it = this.properties.item || {}
       this._lastNote = it.note || ''
       this.setData({
-        spice: it.spice || '不辣',
+        spice: it.spice || DEFAULT_SPICE,
         note: it.note || '',
       })
     },
@@ -114,7 +114,7 @@ Component({
     onPickerPick(e) {
       const dish = (e.detail || {}).dish
       if (!dish) return
-      const spice = dish.spice || '不辣'
+      const spice = dish.spice || DEFAULT_SPICE
       this.setData({ spice: spice, pickerOpen: false })
       this.emitChange({
         dish: {

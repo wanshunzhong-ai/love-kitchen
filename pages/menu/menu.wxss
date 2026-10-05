@@ -142,6 +142,14 @@
   font-weight: 600;
 }
 
+/* 分页尾巴：还有没渲染完的菜（滚到底会自动接上，见 utils/paging.js） */
+.list-more {
+  font-size: 24rpx;
+  color: #B9A29B;
+  text-align: center;
+  padding: 24rpx 0 8rpx;
+}
+
 /* 分类胶囊条（.cats / .cat / .cat-active）与弹层基座在 styles/sheet.wxss，
    选菜弹层组件 @import 的是同一份 —— 同一套视觉只写一次。 */
 
